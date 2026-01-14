@@ -1,0 +1,124 @@
+name: pos
+description: "A new Flutter project."
+# The following line prevents the package from being accidentally published to
+# pub.dev using `flutter pub publish`. This is preferred for private packages.
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+
+# The following defines the version and build number for your application.
+# A version number is three numbers separated by dots, like 1.2.43
+# followed by an optional build number separated by a +.
+# Both the version and the builder number may be overridden in flutter
+# build by specifying --build-name and --build-number, respectively.
+# In Android, build-name is used as versionName while build-number used as versionCode.
+# Read more about Android versioning at https://developer.android.com/studio/publish/versioning
+# In iOS, build-name is used as CFBundleShortVersionString while build-number is used as CFBundleVersion.
+# Read more about iOS versioning at
+# https://developer.apple.com/library/archive/documentation/General/Reference/InfoPlistKeyReference/Articles/CoreFoundationKeys.html
+# In Windows, build-name is used as the major, minor, and patch parts
+# of the product and file versions while build-number is used as the build suffix.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.10.1
+
+# Dependencies specify other packages that your package needs in order to work.
+# To automatically upgrade your package dependencies to the latest versions
+# consider running `flutter pub upgrade --major-versions`. Alternatively,
+# dependencies can be manually updated by changing the version numbers below to
+# the latest version available on pub.dev. To see which dependencies have newer
+# versions available, run `flutter pub outdated`.
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+  introduction_screen: ^3.1.12
+  shared_preferences: ^2.0.11
+  flutter_svg: ^2.0.10
+  flutter_bloc: ^9.1.1
+  google_fonts: ^6.2.1
+  lottie: ^3.1.2
+  intl: ^0.18.0
+  pdf: ^3.10.6
+  printing: ^5.14.2
+  path_provider: ^2.1.3
+  share_plus: ^7.2.2
+  barcode_scanner: ^7.1.2
+  fl_chart: ^0.66.2
+  get_it: ^7.6.7
+  dio: ^5.9.0
+  flutter_pdfview: 1.3.2
+  connectivity_plus: ^7.0.0
+  sidebarx: ^0.17.2
+  bloc: ^9.1.0
+  meta: ^1.17.0
+  debounce_throttle: ^2.0.0
+  mobile_scanner: ^7.1.4
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  internet_connection_checker: ^1.0.0+1
+  equatable: ^2.0.8
+
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/svgs/
+    - assets/
+
+  # An image asset can refer to one or more resolution-specific "variants", see
+  # https://flutter.dev/to/resolution-aware-images
+
+  # For details regarding adding assets from package dependencies, see
+  # https://flutter.dev/to/asset-from-package
+
+  # To add custom fonts to your application, add a fonts section here,
+  # in this "flutter" section. Each entry in this list should have a
+  # "family" key with the font family name, and a "fonts" key with a
+  # list giving the asset and other descriptors for the font. For
+  # example:
+  fonts:
+    - family: URWGeometric
+      fonts:
+        - asset: assets/fonts/URWGeometricThin.otf
+          weight: 100
+        - asset: assets/fonts/URWGeometricExtraLight.otf
+          weight: 200
+        - asset: assets/fonts/URWGeometricLight.otf
+          weight: 300
+        - asset: assets/fonts/URWGeometricRegular.otf
+          weight: 400
+        - asset: assets/fonts/URWGeometricMedium.otf
+          weight: 500
+        - asset: assets/fonts/URWGeometricSemiBold.otf
+          weight: 600
+        - asset: assets/fonts/URWGeometricBold.otf
+          weight: 700
+        - asset: assets/fonts/URWGeometricExtraBold.otf
+          weight: 800
+        - asset: assets/fonts/URWGeometricBlack.otf
+          weight: 900
+  # fonts:
+  #   - family: Schyler
+  #     fonts:
+  #       - asset: fonts/Schyler-Regular.ttf
+  #       - asset: fonts/Schyler-Italic.ttf
+  #         style: italic
+  #   - family: Trajan Pro
+  #     fonts:
+  #       - asset: fonts/TrajanPro.ttf
+  #       - asset: fonts/TrajanPro_Bold.ttf
+  #         weight: 700
+  #
+  # For details regarding fonts from package dependencies,
+  # see https://flutter.dev/to/font-from-package
