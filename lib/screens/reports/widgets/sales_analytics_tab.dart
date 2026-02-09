@@ -1,12 +1,17 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pos/domain/requests/report_request.dart';
+import 'package:pos/core/dependency.dart';
 import 'package:pos/domain/models/reports/sales_analytics_model.dart';
+import 'package:pos/domain/repository/crm_repo.dart';
+import 'package:pos/domain/repository/products_repo.dart';
+import 'package:pos/domain/repository/store_repo.dart';
+import 'package:pos/domain/requests/sales/get_customer_request.dart';
+import 'package:pos/domain/requests/report_request.dart';
 import 'package:pos/presentation/reports/bloc/reports_bloc.dart';
 import 'package:pos/screens/reports/widgets/common_widgets.dart';
 import 'package:pos/utils/report_pdf_generator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/core/services/storage_service.dart';
 import 'dart:convert';
 
 class SalesAnalyticsTab extends StatefulWidget {
@@ -21,6 +26,18 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
   String _currency = '';
   DateTimeRange? selectedDateRange;
 
+  // Filter State
+  String? selectedWarehouse = 'All Warehouses';
+  String? selectedItemGroup = 'All Item Groups';
+  String? selectedCustomer = 'All Customers';
+  String selectedGroupBy = 'Customer';
+  final TextEditingController _searchController = TextEditingController();
+
+  List<String> warehouses = ['All Warehouses'];
+  List<String> itemGroups = ['All Item Groups'];
+  List<String> customers = ['All Customers'];
+  final List<String> groupByOptions = ['Date', 'Item Group', 'Customer'];
+
   @override
   void initState() {
     super.initState();
@@ -30,6 +47,88 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
       end: DateTime(now.year, now.month + 1, 0),
     );
     _loadUserAndFetch();
+    _fetchFilterOptions();
+  }
+
+  Future<void> _fetchFilterOptions() async {
+    try {
+      final results = await Future.wait([
+        getIt<StoreRepo>().getAllStores(companyName),
+        getIt<ProductsRepo>().getItemGroup(),
+        getIt<CrmRepo>().getAllCustomers(
+          CustomerRequest(company: companyName, limit: 1000),
+        ),
+      ]);
+
+      if (mounted) {
+        setState(() {
+          // Warehouses
+          try {
+            final storeResponse = results[0] as dynamic;
+            if (storeResponse != null &&
+                storeResponse.message != null &&
+                storeResponse.message.success == true) {
+              final fetched = (storeResponse.message.data as List)
+                  .map((w) => w.warehouseName as String?)
+                  .where((name) => name != null && name.isNotEmpty)
+                  .cast<String>()
+                  .toList();
+              warehouses = {'All Warehouses', ...fetched}.toList();
+
+              if (!warehouses.contains(selectedWarehouse)) {
+                selectedWarehouse = 'All Warehouses';
+              }
+            }
+          } catch (e) {
+            debugPrint('Error parsing warehouses: $e');
+          }
+
+          // Item Groups
+          try {
+            final itemGroupResponse = results[1] as dynamic;
+            if (itemGroupResponse != null &&
+                itemGroupResponse.message != null &&
+                itemGroupResponse.message.itemGroups != null) {
+              final fetched = (itemGroupResponse.message.itemGroups as List)
+                  .map((ig) => ig.itemGroupName as String?)
+                  .where((name) => name != null && name.isNotEmpty)
+                  .cast<String>()
+                  .toList();
+              itemGroups = {'All Item Groups', ...fetched}.toList();
+
+              if (!itemGroups.contains(selectedItemGroup)) {
+                selectedItemGroup = 'All Item Groups';
+              }
+            }
+          } catch (e) {
+            debugPrint('Error parsing item groups: $e');
+          }
+
+          // Customers
+          try {
+            final customerResponse = results[2] as dynamic;
+            if (customerResponse != null &&
+                customerResponse.message != null &&
+                customerResponse.message.success == true) {
+              final fetched = (customerResponse.message.data as List)
+                  .map((c) => c.customerName as String?)
+                  .where((name) => name != null && name.isNotEmpty)
+                  .cast<String>()
+                  .toList();
+              customers = {'All Customers', ...fetched}.toList();
+
+              if (!customers.contains(selectedCustomer)) {
+                selectedCustomer = 'All Customers';
+              }
+            }
+          } catch (e) {
+            debugPrint('Error parsing customers: $e');
+          }
+        });
+      }
+    } catch (e) {
+      debugPrint('Error fetching filter options: $e');
+    }
   }
 
   Future<void> _pickDateRange() async {
@@ -49,8 +148,8 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
   }
 
   Future<void> _loadUserAndFetch() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString != null) {
       final user = jsonDecode(userString);
       companyName = user['message']['company']['name'] ?? '';
@@ -69,6 +168,19 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
                 'T',
               )[0],
               endDate: selectedDateRange!.end.toIso8601String().split('T')[0],
+              warehouse: selectedWarehouse == 'All Warehouses'
+                  ? null
+                  : selectedWarehouse,
+              itemGroup: selectedItemGroup == 'All Item Groups'
+                  ? null
+                  : selectedItemGroup,
+              customer: selectedCustomer == 'All Customers'
+                  ? null
+                  : selectedCustomer,
+              groupBy: selectedGroupBy.toLowerCase().replaceAll(' ', '_'),
+              searchTerm: _searchController.text.isEmpty
+                  ? null
+                  : _searchController.text,
             ),
           ),
         );
@@ -101,15 +213,11 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
           return ListView(
             padding: const EdgeInsets.all(16),
             children: [
+              _buildFilters(context),
+              const SizedBox(height: 16),
               Row(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  Expanded(
-                    child: ReportDateFilter(
-                      selectedRange: selectedDateRange,
-                      onTap: _pickDateRange,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Material(
                     color: Colors.black,
                     borderRadius: BorderRadius.circular(12),
@@ -118,7 +226,7 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
                       borderRadius: BorderRadius.circular(12),
                       child: Container(
                         padding: const EdgeInsets.all(12),
-                        height: 52, // Match approximate height of date filter
+                        height: 52,
                         width: 52,
                         child: const Icon(
                           Icons.picture_as_pdf_outlined,
@@ -316,6 +424,88 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
     );
   }
 
+  Widget _buildFilters(BuildContext context) {
+    return ReportFilterSection(
+      searchController: _searchController,
+      onSearch: _loadUserAndFetch,
+      children: [
+        FilterInput(
+          label: 'Date Range',
+          child: ReportDateFilter(
+            selectedRange: selectedDateRange,
+            onTap: _pickDateRange,
+          ),
+        ),
+        FilterInput(
+          label: 'Warehouse',
+          child: _buildDropdown(selectedWarehouse, warehouses, (val) {
+            setState(() => selectedWarehouse = val);
+            _loadUserAndFetch();
+          }, 'All Warehouses'),
+        ),
+        FilterInput(
+          label: 'Item Group',
+          child: _buildDropdown(selectedItemGroup, itemGroups, (val) {
+            setState(() => selectedItemGroup = val);
+            _loadUserAndFetch();
+          }, 'All Item Groups'),
+        ),
+        FilterInput(
+          label: 'Customer',
+          child: _buildDropdown(selectedCustomer, customers, (val) {
+            setState(() => selectedCustomer = val);
+            _loadUserAndFetch();
+          }, 'All Customers'),
+        ),
+        FilterInput(
+          label: 'Group By',
+          child: _buildDropdown(selectedGroupBy, groupByOptions, (val) {
+            if (val != null) {
+              setState(() => selectedGroupBy = val);
+              _loadUserAndFetch();
+            }
+          }, 'Customer'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDropdown(
+    String? value,
+    List<String> items,
+    Function(String?) onChanged,
+    String hint,
+  ) {
+    // Ensure value exists in items
+    final safeItems = items.toSet().toList();
+    String? safeValue = value;
+    if (safeValue != null && !safeItems.contains(safeValue)) {
+      safeValue = safeItems.isNotEmpty ? safeItems.first : null;
+    }
+
+    final isMobile = MediaQuery.of(context).size.width < 600;
+
+    return DropdownButtonFormField<String>(
+      isExpanded: true,
+      initialValue: safeValue,
+      decoration: modernInputDecoration(hint, isMobile: isMobile),
+      items: safeItems.map((item) {
+        return DropdownMenuItem<String>(
+          value: item,
+          child: Text(
+            item,
+            style: TextStyle(
+              fontSize: isMobile ? 11 : 13,
+              color: const Color(0xFF1E293B),
+            ),
+            overflow: TextOverflow.ellipsis,
+          ),
+        );
+      }).toList(),
+      onChanged: onChanged,
+    );
+  }
+
   String _formatCurrency(double value) {
     return value
         .toStringAsFixed(2)
@@ -323,5 +513,11 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
           RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
           (Match m) => '${m[1]},',
         );
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 }

@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:pos/domain/responses/product_response.dart';
+import 'package:pos/domain/responses/products/product_response.dart';
 
 abstract class WarrantiesState extends Equatable {
   const WarrantiesState();

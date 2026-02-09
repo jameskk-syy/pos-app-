@@ -10,6 +10,7 @@ class FetchPurchaseOrdersEvent extends PurchaseEvent {
   final int limit;
   final int offset;
   final String? status;
+  final String? searchTerm;
   final Map<String, dynamic>? filters;
 
   FetchPurchaseOrdersEvent({
@@ -17,6 +18,7 @@ class FetchPurchaseOrdersEvent extends PurchaseEvent {
     this.limit = 20,
     this.offset = 0,
     this.status,
+    this.searchTerm,
     this.filters,
   });
 }
@@ -32,11 +34,13 @@ class CreatePurchaseOrderEvent extends PurchaseEvent {
 
   CreatePurchaseOrderEvent({required this.request});
 }
+
 class SubmitPurchaseOrderEvent extends PurchaseEvent {
   final String lpoNo;
 
   SubmitPurchaseOrderEvent({required this.lpoNo});
 }
+
 final class PurchaseOrderSubmitting extends PurchaseState {
   final String lpoNo;
 
@@ -47,31 +51,28 @@ final class PurchaseOrderSubmitted extends PurchaseState {
   final SubmitPurchaseOrderResponse response;
   final String message;
 
-  PurchaseOrderSubmitted({
-    required this.response,
-    required this.message,
-  });
+  PurchaseOrderSubmitted({required this.response, required this.message});
 }
 
 final class PurchaseOrderSubmitError extends PurchaseState {
   final String message;
   final String? lpoNo;
 
-  PurchaseOrderSubmitError({
-    required this.message,
-    this.lpoNo,
-  });
+  PurchaseOrderSubmitError({required this.message, this.lpoNo});
 }
+
 class ResubmitPurchaseOrderEvent extends PurchaseEvent {
   final String lpoNo;
 
   ResubmitPurchaseOrderEvent({required this.lpoNo});
 }
+
 class CreateGrnEvent extends PurchaseEvent {
   final CreateGrnRequest request;
 
   CreateGrnEvent({required this.request});
 }
+
 class FetchPurchaseOrderDetailEvent extends PurchaseEvent {
   final String poName;
 

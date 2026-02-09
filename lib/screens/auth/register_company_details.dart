@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:pos/domain/requests/register_company.dart';
-import 'package:pos/domain/requests/register_user.dart';
+import 'package:pos/domain/requests/users/register_company.dart';
+import 'package:pos/domain/requests/users/register_user.dart';
 import 'package:pos/presentation/registerCompanyBloc/bloc/register_company_bloc.dart';
-import 'package:pos/screens/bussiness_type.dart';
+import 'package:pos/screens/users/bussiness_type.dart';
 import 'package:pos/utils/themes/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/core/services/storage_service.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 import 'dart:convert';
 
 class RegisterCompanyDetails extends StatefulWidget {
@@ -25,20 +27,127 @@ class _RegisterCompanyDetailsState extends State<RegisterCompanyDetails> {
   final TextEditingController cityController = TextEditingController();
   final TextEditingController countryController = TextEditingController();
 
+  bool isDetectingLocation = false;
+
+  Future<void> _getLocation() async {
+    if (!mounted) return;
+    setState(() => isDetectingLocation = true);
+    try {
+      debugPrint('Starting location detection...');
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        throw 'Location services are disabled. Please enable them in settings.';
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          throw 'Location permissions are denied. We need them to auto-fill your country.';
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        throw 'Location permissions are permanently denied. Please enable them in app settings.';
+      }
+
+      debugPrint('Getting current position...');
+      const LocationSettings locationSettings = LocationSettings(
+        accuracy: LocationAccuracy.high,
+        timeLimit: Duration(seconds: 10),
+      );
+
+      Position position = await Geolocator.getCurrentPosition(
+        locationSettings: locationSettings,
+      );
+
+      debugPrint(
+        'Position found: ${position.latitude}, ${position.longitude}. Getting placemarks...',
+      );
+
+      List<Placemark> placemarks = [];
+      try {
+        placemarks = await placemarkFromCoordinates(
+          position.latitude,
+          position.longitude,
+        );
+      } catch (geocodingError) {
+        debugPrint('Geocoding error: $geocodingError');
+        if (mounted) {
+          setState(() {
+            countryController.text = "";
+            cityController.text = "";
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text(
+                'GPS found coordinates, but could not determine address. Please type it manually.',
+              ),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        throw 'Determining address failed.';
+      }
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        debugPrint('Placemark raw data: ${place.toString()}');
+        if (mounted) {
+          setState(() {
+            countryController.text = place.country ?? "";
+            cityController.text =
+                place.locality ??
+                place.subAdministrativeArea ??
+                place.name ??
+                "";
+          });
+        }
+      } else {
+        debugPrint('No placemarks found for coordinates.');
+        throw 'No address found for these coordinates.';
+      }
+    } catch (e) {
+      debugPrint('Location detection exception: $e');
+      if (mounted && !e.toString().contains('Determining address failed')) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Location error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isDetectingLocation = false);
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     if (widget.registerRequest != null) {
-      companyNameController.text = widget.registerRequest!.businessName;
-      abbrController.text = _generateAbbr(widget.registerRequest!.businessName);
+      companyNameController.text = widget.registerRequest!.businessName ?? "";
+      abbrController.text = _generateAbbr(
+        widget.registerRequest!.businessName ?? "",
+      );
     } else {
       _loadUserData();
     }
+
+    // Use post-frame callback and a small delay for better stability
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) {
+          _getLocation();
+        }
+      });
+    });
   }
 
   Future<void> _loadUserData() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userDataJson = prefs.getString('userData');
+    final storage = getIt<StorageService>();
+    final userDataJson = await storage.getString('userData');
     if (userDataJson != null) {
       final userData = jsonDecode(userDataJson);
       setState(() {
@@ -89,9 +198,8 @@ class _RegisterCompanyDetailsState extends State<RegisterCompanyDetails> {
             }
 
             if (state is RegisterCompanySuccess) {
-              SharedPreferences.getInstance().then((prefs) {
-                prefs.setBool('company_registered', true);
-              });
+              final storage = getIt<StorageService>();
+              storage.setBool('company_registered', true);
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text("Company registered successfully!"),
@@ -138,6 +246,8 @@ class _RegisterCompanyDetailsState extends State<RegisterCompanyDetails> {
                         ),
                         SizedBox(height: isTablet ? 40 : 32),
 
+                        SizedBox(height: isTablet ? 40 : 32),
+
                         _InputLabel("Company Name", isTablet: isTablet),
                         _InputField(
                           controller: companyNameController,
@@ -159,20 +269,62 @@ class _RegisterCompanyDetailsState extends State<RegisterCompanyDetails> {
 
                         SizedBox(height: isTablet ? 20 : 16),
 
-                        _InputLabel("Country", isTablet: isTablet),
-                        _InputField(
-                          controller: countryController,
-                          hint: "Enter your country",
-                          isTablet: isTablet,
-                        ),
-
-                        SizedBox(height: isTablet ? 20 : 16),
-
-                        _InputLabel("City", isTablet: isTablet),
-                        _InputField(
-                          controller: cityController,
-                          hint: "Enter your city",
-                          isTablet: isTablet,
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  _InputLabel("Country", isTablet: isTablet),
+                                  Stack(
+                                    alignment: Alignment.centerRight,
+                                    children: [
+                                      _InputField(
+                                        controller: countryController,
+                                        hint: "Enter your country",
+                                        isTablet: isTablet,
+                                      ),
+                                      Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 8.0,
+                                        ),
+                                        child: isDetectingLocation
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                    ),
+                                              )
+                                            : IconButton(
+                                                icon: const Icon(
+                                                  Icons.my_location,
+                                                  color: AppColors.blue,
+                                                  size: 20,
+                                                ),
+                                                onPressed: _getLocation,
+                                                tooltip: "Detect Location",
+                                              ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            ),
+                            SizedBox(width: isTablet ? 16 : 12),
+                            Expanded(
+                              child: Column(
+                                children: [
+                                  _InputLabel("City", isTablet: isTablet),
+                                  _InputField(
+                                    controller: cityController,
+                                    hint: "Enter your city",
+                                    isTablet: isTablet,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
 
                         SizedBox(height: isTablet ? 36 : 28),

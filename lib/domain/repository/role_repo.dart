@@ -1,11 +1,11 @@
-import 'package:pos/domain/requests/create_role_request.dart';
-import 'package:pos/domain/responses/create_role_response.dart';
-import 'package:pos/domain/responses/roles.dart';
-import 'package:pos/domain/requests/role_permissions_request.dart';
-import 'package:pos/domain/responses/role_permissions_response.dart';
-import 'package:pos/domain/requests/assign_permissions_request.dart';
-import 'package:pos/domain/responses/assign_permissions_response.dart';
-import 'package:pos/domain/responses/get_role_details_response.dart';
+import 'package:pos/domain/requests/users/create_role_request.dart';
+import 'package:pos/domain/responses/users/create_role_response.dart';
+import 'package:pos/domain/responses/users/roles.dart';
+import 'package:pos/domain/requests/users/role_permissions_request.dart';
+import 'package:pos/domain/responses/users/role_permissions_response.dart';
+import 'package:pos/domain/requests/users/assign_permissions_request.dart';
+import 'package:pos/domain/responses/users/assign_permissions_response.dart';
+import 'package:pos/domain/responses/users/get_role_details_response.dart';
 import 'package:pos/domain/responses/system_responses.dart';
 
 abstract class RoleRepo {

@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pos/domain/responses/product_response.dart';
+import 'package:pos/domain/responses/products/product_response.dart';
 import 'package:pos/presentation/warranties/bloc/warranties_bloc.dart';
 import 'package:pos/presentation/warranties/bloc/warranties_event.dart';
 import 'package:pos/presentation/warranties/bloc/warranties_state.dart';
-import 'package:pos/widgets/warranties_list.dart';
-import 'package:pos/widgets/warranty_form_dialog.dart';
+import 'package:pos/widgets/products/warranties_list.dart';
+import 'package:pos/widgets/products/warranty_form_dialog.dart';
 import 'dart:async';
 
 class WarrantiesPage extends StatefulWidget {

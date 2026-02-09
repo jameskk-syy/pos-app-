@@ -2,12 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:pos/presentation/widgets/custom_text_field.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:pos/domain/requests/login.dart';
+import 'package:pos/domain/requests/users/login.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 import 'package:pos/screens/auth/register_user.dart';
-import 'package:pos/screens/auth/reset_password.dart';
-import 'package:pos/screens/dashboard.dart';
+// import 'package:pos/screens/auth/reset_password.dart';
+import 'package:pos/screens/sales/dashboard.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -79,7 +80,6 @@ class _SignInScreenState extends State<SignInScreen> {
                     child: Column(
                       children: [
                         SizedBox(height: h * 0.06),
-
                         SvgPicture.asset(
                           "assets/svgs/maiLogo.svg",
                           height: isTablet ? 80 : 70,
@@ -157,12 +157,12 @@ class _SignInScreenState extends State<SignInScreen> {
                             const Spacer(),
                             TextButton(
                               onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context2) => ResetPasswordPage(),
-                                  ),
-                                );
+                                // Navigator.push(
+                                //   context,
+                                //   MaterialPageRoute(
+                                //     builder: (context2) => ResetPasswordPage(),
+                                //   ),
+                                // );
                               },
                               child: Text(
                                 "Forgot Password?",
@@ -272,13 +272,18 @@ class _SignInScreenState extends State<SignInScreen> {
                               style: TextStyle(fontSize: isTablet ? 15 : 14),
                             ),
                             GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => const SignUpScreen(),
-                                  ),
-                                );
+                              onTap: () async {
+                                final storage = getIt<StorageService>();
+                                await storage.remove('access_token');
+
+                                if (context.mounted) {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => const SignUpScreen(),
+                                    ),
+                                  );
+                                }
                               },
                               child: Text(
                                 "Sign Up",

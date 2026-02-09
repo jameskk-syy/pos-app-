@@ -10,7 +10,7 @@ class Message {
   final int expiresIn;
   final String expiresAt;
   final String refreshToken;
-  final bool emailVerified;
+  final bool? emailVerified;
   final bool? phoneVerified;
   final String message;
   final PosIndustry posIndustry;
@@ -40,10 +40,12 @@ class Message {
       expiresIn: json['expires_in'],
       expiresAt: json['expires_at'],
       refreshToken: json['refresh_token'],
-      emailVerified: json['email_verified'],
-      phoneVerified: json['phone_verified'],
-      message: json['message'],
-      posIndustry: PosIndustry.fromJson(json['pos_industry']),
+      emailVerified: json['email_verified'] ?? false,
+      phoneVerified: json['phone_verified'] ?? false,
+      message: json['message'] ?? '',
+      posIndustry: json['pos_industry'] != null
+          ? PosIndustry.fromJson(json['pos_industry'])
+          : PosIndustry(name: '', industryName: ''),
     );
   }
 

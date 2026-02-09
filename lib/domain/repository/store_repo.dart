@@ -1,8 +1,8 @@
-import 'package:pos/domain/requests/create_warehouse.dart';
-import 'package:pos/domain/requests/update_warehouse.dart';
-import 'package:pos/domain/responses/create_warehouse.dart';
-import 'package:pos/domain/responses/store_response.dart';
-import 'package:pos/domain/responses/update_warehouse_response.dart';
+import 'package:pos/domain/requests/inventory/create_warehouse.dart';
+import 'package:pos/domain/requests/inventory/update_warehouse.dart';
+import 'package:pos/domain/responses/inventory/create_warehouse.dart';
+import 'package:pos/domain/responses/sales/store_response.dart';
+import 'package:pos/domain/responses/inventory/update_warehouse_response.dart';
 
 abstract class StoreRepo {
   Future<StoreGetResponse> getAllStores(

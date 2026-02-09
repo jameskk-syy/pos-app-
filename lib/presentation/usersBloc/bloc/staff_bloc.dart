@@ -3,14 +3,15 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:pos/domain/repository/users_repo.dart';
-import 'package:pos/domain/requests/assign_staff_to_store.dart';
-import 'package:pos/domain/requests/create_staff.dart';
-import 'package:pos/domain/requests/update_staff_roles.dart';
-import 'package:pos/domain/requests/update_staff_user_request.dart';
-import 'package:pos/domain/responses/assign_roles_response.dart';
-import 'package:pos/domain/responses/role_response.dart';
-import 'package:pos/domain/responses/update_staff_user_response.dart';
-import 'package:pos/domain/responses/users_list.dart';
+import 'package:pos/domain/requests/users/assign_staff_to_store.dart';
+import 'package:pos/domain/requests/users/create_staff.dart';
+import 'package:pos/domain/requests/users/update_staff_roles.dart';
+import 'package:pos/domain/requests/users/update_staff_user_request.dart';
+import 'package:pos/domain/responses/users/assign_roles_response.dart';
+import 'package:pos/domain/responses/users/role_response.dart';
+import 'package:pos/domain/responses/users/update_staff_user_response.dart';
+import 'package:pos/domain/responses/users/users_list.dart';
+import 'package:pos/domain/responses/users/get_warehouse_staff_response.dart';
 
 part 'staff_event.dart';
 part 'staff_state.dart';
@@ -25,6 +26,8 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     on<AssignStaffToStore>(_assignStaffToStore);
     on<UpdateStaffUser>(_updateStaffUser);
     on<AssignRolesToStaff>(_assignRolesToStaff);
+    on<GetWarehouseStaff>(_getWarehouseStaff);
+    on<RemoveStaffFromWarehouse>(_removeStaffFromWarehouse);
   }
   Future<void> _assignRolesToStaff(
     AssignRolesToStaff event,
@@ -103,7 +106,56 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     emit(StaffStateLoading());
     try {
       await userListRepo.assignStaff(event.assignWarehousesRequest);
-      emit(StaffAssignedSuccessful());
+      emit(
+        StaffAssignedSuccessful(
+          userEmail: event.assignWarehousesRequest.userEmail,
+        ),
+      );
+    } catch (e) {
+      debugPrint(e.toString());
+      emit(StaffStateFailure(error: e.toString()));
+    }
+  }
+
+  Future<void> _getWarehouseStaff(
+    GetWarehouseStaff event,
+    Emitter<StaffState> emit,
+  ) async {
+    debugPrint(
+      'StaffBloc: Fetching warehouse staff for ${event.warehouseName}',
+    );
+    emit(StaffStateLoading());
+    try {
+      final response = await userListRepo.getWarehouseStaff(
+        event.warehouseName,
+      );
+      debugPrint(
+        'StaffBloc: Successfully loaded ${response.message.data.length} staff members',
+      );
+      emit(WarehouseStaffLoaded(response: response));
+    } catch (e) {
+      debugPrint('StaffBloc ERROR in _getWarehouseStaff: $e');
+      emit(StaffStateFailure(error: e.toString()));
+    }
+  }
+
+  Future<void> _removeStaffFromWarehouse(
+    RemoveStaffFromWarehouse event,
+    Emitter<StaffState> emit,
+  ) async {
+    // emit(StaffStateLoading()); // Optional: loading state if you want to show a spinner during removal
+    try {
+      final response = await userListRepo.removeStaffFromWarehouse(
+        event.email,
+        event.warehouseName,
+      );
+      if (response.message.success) {
+        emit(StaffRemovalSuccess(message: response.message.message));
+        // Refresh the list after successful removal
+        add(GetWarehouseStaff(warehouseName: event.warehouseName));
+      } else {
+        emit(StaffStateFailure(error: "Failed to remove staff"));
+      }
     } catch (e) {
       debugPrint(e.toString());
       emit(StaffStateFailure(error: e.toString()));

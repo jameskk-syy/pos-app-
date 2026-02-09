@@ -4,7 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/auth/set_new_password.dart';
-import 'package:pos/screens/loading_message.dart';
+import 'package:pos/screens/sales/loading_message.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 
 class OtpScreen extends StatelessWidget {
@@ -42,57 +42,60 @@ class OtpScreen extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Center(
             child: SingleChildScrollView(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  SizedBox(height: h * 0.06),
-                  SvgPicture.asset("assets/svgs/maiLogo.svg", height: 70),
-                  const SizedBox(height: 24),
-                  const Text(
-                    "Verification",
-                    style: TextStyle(
-                      color: Colors.black,
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    "We sent a code to youremail@mail.com. Enter the code to proceed",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(color: Color(0xFF757575)),
-                  ),
-                  const SizedBox(height: 48),
-                  OtpForm(title: title,),
-                  const SizedBox(height: 16),
-                  ResendCodeWidget(),
-                  SizedBox(height: MediaQuery.of(context).size.height * 0.03),
-                  if (showBackLogin)
-                    GestureDetector(
-                      onTap: () => {
-                        Navigator.pushReplacement(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => SignInScreen(),
-                          ),
-                        ),
-                      },
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.arrow_back, color: AppColors.red),
-                          SizedBox(width: 4),
-                          Text(
-                            "Back to Login",
-                            style: TextStyle(
-                              color: AppColors.red,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 500),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(height: h * 0.06),
+                    SvgPicture.asset("assets/svgs/maiLogo.svg", height: 70),
+                    const SizedBox(height: 24),
+                    const Text(
+                      "Verification",
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      "We sent a code to youremail@mail.com. Enter the code to proceed",
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Color(0xFF757575)),
+                    ),
+                    const SizedBox(height: 48),
+                    OtpForm(title: title),
+                    const SizedBox(height: 16),
+                    ResendCodeWidget(),
+                    SizedBox(height: MediaQuery.of(context).size.height * 0.03),
+                    if (showBackLogin)
+                      GestureDetector(
+                        onTap: () => {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => SignInScreen(),
+                            ),
+                          ),
+                        },
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.arrow_back, color: AppColors.red),
+                            SizedBox(width: 4),
+                            Text(
+                              "Back to Login",
+                              style: TextStyle(
+                                color: AppColors.red,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
             ),
           ),
@@ -123,7 +126,7 @@ class _ResendCodeWidgetState extends State<ResendCodeWidget> {
   void _startTimer() {
     _canResend = false;
     _secondsRemaining = 60;
-    
+
     _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
       setState(() {
         if (_secondsRemaining > 0) {
@@ -233,8 +236,7 @@ class OtpForm extends StatelessWidget {
                     context,
                     MaterialPageRoute(builder: (context) => SetPasswordPage()),
                   );
-                }
-                else if (title == "register") {
+                } else if (title == "register") {
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => LoadingMessage()),

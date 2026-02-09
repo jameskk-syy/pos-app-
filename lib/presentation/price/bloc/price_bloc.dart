@@ -9,6 +9,38 @@ class PriceBloc extends Bloc<PriceEvent, PriceState> {
 
   PriceBloc({required this.productsRepo}) : super(PriceInitial()) {
     on<SetProductPriceEvent>(_onSetProductPrice);
+    on<GetProductPriceEvent>(_onGetProductPrice);
+    on<LoadPriceListsForPriceEvent>(_onLoadPriceLists);
+  }
+
+  Future<void> _onLoadPriceLists(
+    LoadPriceListsForPriceEvent event,
+    Emitter<PriceState> emit,
+  ) async {
+    emit(PriceLoading());
+    try {
+      final response = await productsRepo.getPriceLists(event.company);
+      emit(PriceListsLoaded(response.priceLists));
+    } catch (e) {
+      emit(PriceFailure(e.toString()));
+    }
+  }
+
+  Future<void> _onGetProductPrice(
+    GetProductPriceEvent event,
+    Emitter<PriceState> emit,
+  ) async {
+    emit(PriceLoading());
+    try {
+      final response = await productsRepo.getProductPrice(
+        itemCode: event.itemCode,
+        company: event.company,
+        priceList: event.priceList,
+      );
+      emit(ProductPriceLoaded(response.message));
+    } catch (e) {
+      emit(PriceFailure(e.toString()));
+    }
   }
 
   Future<void> _onSetProductPrice(

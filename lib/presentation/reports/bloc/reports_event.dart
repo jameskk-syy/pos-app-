@@ -27,3 +27,13 @@ class FetchAgingStock extends ReportsEvent {
   final ReportRequest request;
   FetchAgingStock(this.request);
 }
+
+class FetchProfitAndLoss extends ReportsEvent {
+  final ReportRequest request;
+  FetchProfitAndLoss(this.request);
+}
+
+class FetchInventorySummary extends ReportsEvent {
+  final ReportRequest request;
+  FetchInventorySummary(this.request);
+}

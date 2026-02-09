@@ -22,7 +22,6 @@ final class PaymentMethodsLoaded extends SalesState {
   @override
   int get hashCode => paymentMethods.hashCode;
 }
-// Add these states to your sales_bloc.dart
 
 final class SalesInvoiceLoading extends SalesState {}
 
@@ -196,6 +195,76 @@ final class POSSessionCloseError extends SalesState {
   bool operator ==(Object other) =>
       identical(this, other) ||
       other is POSSessionCloseError &&
+          runtimeType == other.runtimeType &&
+          message == other.message;
+
+  @override
+  int get hashCode => message.hashCode;
+}
+
+final class CreateCreditPaymentLoading extends SalesState {}
+
+final class CreditPaymentCreated extends SalesState {
+  final Map<String, dynamic> response;
+  final String message;
+
+  CreditPaymentCreated({required this.response, required this.message});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CreditPaymentCreated &&
+          runtimeType == other.runtimeType &&
+          response == other.response &&
+          message == other.message;
+
+  @override
+  int get hashCode => response.hashCode ^ message.hashCode;
+}
+
+final class CreateCreditPaymentError extends SalesState {
+  final String message;
+
+  CreateCreditPaymentError({required this.message});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CreateCreditPaymentError &&
+          runtimeType == other.runtimeType &&
+          message == other.message;
+
+  @override
+  int get hashCode => message.hashCode;
+}
+
+final class ReceivableAccountLoading extends SalesState {}
+
+final class ReceivableAccountLoaded extends SalesState {
+  final Map<String, dynamic> data;
+
+  ReceivableAccountLoaded({required this.data});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReceivableAccountLoaded &&
+          runtimeType == other.runtimeType &&
+          data == other.data;
+
+  @override
+  int get hashCode => data.hashCode;
+}
+
+final class ReceivableAccountError extends SalesState {
+  final String message;
+
+  ReceivableAccountError({required this.message});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is ReceivableAccountError &&
           runtimeType == other.runtimeType &&
           message == other.message;
 

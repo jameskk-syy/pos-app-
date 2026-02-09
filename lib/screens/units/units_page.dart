@@ -5,10 +5,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/domain/responses/uom_response.dart';
 import 'package:pos/presentation/units/bloc/units_bloc.dart';
-import 'package:pos/widgets/create_unit_dialog.dart';
-import 'package:pos/widgets/edit_unit_dialog.dart';
-import 'package:pos/widgets/units_list.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/widgets/products/create_unit_dialog.dart';
+import 'package:pos/widgets/products/edit_unit_dialog.dart';
+import 'package:pos/widgets/products/units_list.dart';
+import 'package:pos/core/services/storage_service.dart';
 
 class UnitsPage extends StatefulWidget {
   const UnitsPage({super.key});
@@ -83,8 +83,8 @@ class _UnitsPageState extends State<UnitsPage> {
           ElevatedButton(
             onPressed: () async {
               Navigator.pop(context);
-              final prefs = await SharedPreferences.getInstance();
-              final userString = prefs.getString('current_user');
+              final storage = getIt<StorageService>();
+              final userString = await storage.getString('current_user');
               if (userString != null) {
                 final userMap = jsonDecode(userString);
                 if (userMap['message'] != null &&

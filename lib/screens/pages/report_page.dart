@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:pos/widgets/inventory_card.dart';
+import 'package:pos/widgets/inventory/inventory_card.dart';
 
 class ReportPage extends StatelessWidget {
   const ReportPage({super.key});

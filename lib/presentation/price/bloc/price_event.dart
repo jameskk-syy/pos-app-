@@ -16,3 +16,20 @@ class SetProductPriceEvent extends PriceEvent {
     required this.currency,
   });
 }
+
+class GetProductPriceEvent extends PriceEvent {
+  final String itemCode;
+  final String company;
+  final String? priceList;
+
+  GetProductPriceEvent({
+    required this.itemCode,
+    required this.company,
+    this.priceList,
+  });
+}
+
+class LoadPriceListsForPriceEvent extends PriceEvent {
+  final String company;
+  LoadPriceListsForPriceEvent({required this.company});
+}

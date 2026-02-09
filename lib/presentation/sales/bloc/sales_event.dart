@@ -102,3 +102,37 @@ class ClosePOSSession extends SalesEvent {
   @override
   int get hashCode => request.hashCode;
 }
+
+class CreateCreditPayment extends SalesEvent {
+  final Map<String, dynamic> request;
+
+  CreateCreditPayment({required this.request});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CreateCreditPayment &&
+          runtimeType == other.runtimeType &&
+          request == other.request;
+
+  @override
+  int get hashCode => request.hashCode;
+}
+
+class FetchReceivableAccount extends SalesEvent {
+  final String customer;
+  final String company;
+
+  FetchReceivableAccount({required this.customer, required this.company});
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is FetchReceivableAccount &&
+          runtimeType == other.runtimeType &&
+          customer == other.customer &&
+          company == other.company;
+
+  @override
+  int get hashCode => customer.hashCode ^ company.hashCode;
+}

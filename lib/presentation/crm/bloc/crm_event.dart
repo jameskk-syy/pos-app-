@@ -20,25 +20,30 @@ class UpdateCreditLimit extends CrmEvent {
 
   UpdateCreditLimit({required this.request});
 }
+
 final class UpdateCustomer extends CrmEvent {
   final UpdateCustomerRequest updateRequest;
   final String customerId;
 
-  UpdateCustomer({
-    required this.updateRequest,
-    required this.customerId,
-  });
-  
+  UpdateCustomer({required this.updateRequest, required this.customerId});
 }
+
 final class AssignLoyaltyProgram extends CrmEvent {
   final AssignLoyaltyProgramRequest request;
 
   AssignLoyaltyProgram({required this.request});
 }
+
 final class GetLoyaltyBalance extends CrmEvent {
   final String customerId;
+  final double? invoiceAmount;
+  final String? company;
 
-  GetLoyaltyBalance({required this.customerId});
+  GetLoyaltyBalance({
+    required this.customerId,
+    this.invoiceAmount,
+    this.company,
+  });
 }
 
 final class RedeemPoints extends CrmEvent {
@@ -52,6 +57,7 @@ final class RedeemPoints extends CrmEvent {
     this.referenceDocument,
   });
 }
+
 class GetLoyaltyHistory extends CrmEvent {
   final String customerId;
   final int page;
@@ -64,4 +70,11 @@ class GetLoyaltyHistory extends CrmEvent {
     this.limit = 50,
     this.transactionType,
   });
+}
+
+final class EarnPoints extends CrmEvent {
+  final String customerId;
+  final double purchaseAmount;
+
+  EarnPoints({required this.customerId, required this.purchaseAmount});
 }

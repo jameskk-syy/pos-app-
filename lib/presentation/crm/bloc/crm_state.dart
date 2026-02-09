@@ -20,17 +20,20 @@ final class CrmStateFailure extends CrmState {
 
   CrmStateFailure({required this.error});
 }
+
 // crm_state.dart
 final class UpdateCreditLimitSuccess extends CrmState {
   final UpdateCreditLimitResponse response;
 
   UpdateCreditLimitSuccess({required this.response});
 }
+
 final class UpdateCustomerSuccess extends CrmState {
   final UpdateCustomerResponse response;
 
   UpdateCustomerSuccess({required this.response});
 }
+
 final class AssignLoyaltyProgramLoading extends CrmState {}
 
 final class AssignLoyaltyProgramSuccess extends CrmState {
@@ -44,6 +47,7 @@ final class AssignLoyaltyProgramError extends CrmState {
 
   AssignLoyaltyProgramError({required this.error});
 }
+
 final class LoyaltyLoading extends CrmState {}
 
 final class LoyaltyBalanceLoaded extends CrmState {
@@ -60,12 +64,13 @@ final class LoyaltyError extends CrmState {
   final String error;
   LoyaltyError({required this.error});
 }
+
 final class LoyaltyHistoryLoading extends CrmState {}
 
 final class LoyaltyHistoryLoaded extends CrmState {
   final LoyaltyHistoryResponse historyResponse;
   final List<LoyaltyHistoryTransaction> transactions;
-  
+
   LoyaltyHistoryLoaded({
     required this.historyResponse,
     required this.transactions,
@@ -75,4 +80,16 @@ final class LoyaltyHistoryLoaded extends CrmState {
 final class LoyaltyHistoryError extends CrmState {
   final String error;
   LoyaltyHistoryError({required this.error});
+}
+
+final class EarnPointsLoading extends CrmState {}
+
+final class EarnPointsSuccess extends CrmState {
+  final EarnLoyaltyPointsResponse response;
+  EarnPointsSuccess({required this.response});
+}
+
+final class EarnPointsError extends CrmState {
+  final String error;
+  EarnPointsError({required this.error});
 }

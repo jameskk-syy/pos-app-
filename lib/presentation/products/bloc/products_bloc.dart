@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:pos/domain/repository/products_repo.dart';
-import 'package:pos/domain/requests/create_product.dart';
-import 'package:pos/domain/requests/stock_request.dart';
-import 'package:pos/domain/responses/item_group.dart';
-import 'package:pos/domain/responses/item_list.dart';
-import 'package:pos/domain/responses/product_response.dart';
-import 'package:pos/domain/responses/stock_reco.dart';
-import 'package:pos/domain/responses/item_brand.dart';
+import 'package:pos/domain/requests/products/create_product.dart';
+import 'package:pos/domain/requests/inventory/stock_request.dart';
+import 'package:pos/domain/responses/products/item_group.dart';
+import 'package:pos/domain/responses/products/item_list.dart';
+import 'package:pos/domain/responses/products/product_response.dart';
+import 'package:pos/domain/responses/inventory/stock_reco.dart';
+import 'package:pos/domain/responses/products/item_brand.dart';
 import 'package:pos/domain/responses/uom_response.dart';
 part 'products_event.dart';
 part 'products_state.dart';
@@ -27,6 +27,24 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     on<UpdateProduct>(_updateProduct);
     on<DisableProductEvent>(_disableProduct);
     on<EnableProductEvent>(_enableProduct);
+    on<SearchProductByBarcode>(_onSearchProductByBarcode);
+  }
+
+  Future<void> _onSearchProductByBarcode(
+    SearchProductByBarcode event,
+    Emitter<ProductsState> emit,
+  ) async {
+    emit(ProductsStateLoading());
+    try {
+      final product = await productsRepo.searchProductByBarcode(
+        barcode: event.barcode,
+        posProfile: event.posProfile,
+      );
+      emit(BarcodeSearchSuccess(product: product));
+    } catch (e) {
+      debugPrint("Barcode search error: ${e.toString()}");
+      emit(ProductsStateFailure(error: e.toString()));
+    }
   }
 
   Future<void> _getAllProducts(
@@ -40,10 +58,13 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.getAllProducts(
         event.company,
         searchTerm: event.searchTerm,
+        itemGroup: event.itemGroup,
+        brand: event.brand,
+        warehouse: event.warehouse,
         page: event.page ?? 1,
         pageSize: event.pageSize ?? 20,
       );
-      emit(ProductsStateSuccess(productResponseSimple: response));
+      emit(ProductsStateSuccess(productResponse: response));
     } catch (e) {
       debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
@@ -155,8 +176,8 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
   ) async {
     emit(ProductsStateLoading());
     try {
-      await productsRepo.disableProduct(event.itemCode);
-      emit(ProductsUpdateStateSuccess());
+      final message = await productsRepo.disableProduct(event.itemCode);
+      emit(ProductsUpdateStateSuccess(message: message));
     } catch (e) {
       debugPrint("Disable product error: ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));

@@ -1,18 +1,20 @@
 import 'dart:convert';
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart' hide DataCell;
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pos/domain/requests/create_staff.dart';
-import 'package:pos/domain/responses/get_current_user.dart';
-import 'package:pos/domain/responses/role_response.dart';
-import 'package:pos/domain/responses/users_list.dart';
+import 'package:pos/domain/requests/users/create_staff.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
+import 'package:pos/domain/responses/users/role_response.dart';
+import 'package:pos/domain/responses/users/users_list.dart';
 import 'package:pos/presentation/usersBloc/bloc/staff_bloc.dart';
 import 'package:pos/utils/themes/app_colors.dart';
-import 'package:pos/widgets/edit_staff.dart';
+import 'package:pos/widgets/users/edit_staff.dart';
 
-import 'package:pos/widgets/manage_user_roles.dart';
-import 'package:pos/widgets/view_staff_widget.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/widgets/users/manage_user_roles.dart';
+import 'package:pos/widgets/users/view_staff_widget.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
 
 enum StaffMenuAction { viewDetails, edit, manange }
 
@@ -79,8 +81,8 @@ class _RegisterStaffState extends State<RegisterStaff> {
   }
 
   Future<CurrentUserResponse?> _getSavedCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString == null) return null;
     return CurrentUserResponse.fromJson(jsonDecode(userString));
   }
@@ -165,14 +167,11 @@ class _RegisterStaffState extends State<RegisterStaff> {
           }
           // Handle staff update success
           else if (state is StaffUpdateSuccess) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(state.response.message),
-                backgroundColor: Colors.green,
-                duration: const Duration(seconds: 3),
-              ),
-            );
             // Refresh the user list
+            _refreshStaff();
+          }
+          // Handle staff role assignment success
+          else if (state is StaffRolesAssignSuccess) {
             _refreshStaff();
           }
           // Handle staff create success
@@ -366,16 +365,22 @@ class _RegisterStaffState extends State<RegisterStaff> {
       );
     }
 
-    return ListView.builder(
-      controller: _scrollController,
-      itemCount: _filteredStaffUsers.length + (_isLoading ? 1 : 0),
-      itemBuilder: (_, index) {
-        if (index == _filteredStaffUsers.length) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        final staff = _filteredStaffUsers[index];
-        return _staffRowWithData(staff);
+    return RefreshIndicator(
+      onRefresh: () async {
+        _refreshStaff();
       },
+      child: ListView.builder(
+        physics: const AlwaysScrollableScrollPhysics(),
+        controller: _scrollController,
+        itemCount: _filteredStaffUsers.length + (_isLoading ? 1 : 0),
+        itemBuilder: (_, index) {
+          if (index == _filteredStaffUsers.length) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          final staff = _filteredStaffUsers[index];
+          return _staffRowWithData(staff);
+        },
+      ),
     );
   }
 
@@ -777,7 +782,10 @@ class _RegisterStaffState extends State<RegisterStaff> {
                                       borderRadius: BorderRadius.circular(10),
                                     ),
                                   ),
-                                  keyboardType: TextInputType.phone,
+                                  keyboardType: TextInputType.number,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
                                 ),
                               ),
                             ],
@@ -890,7 +898,10 @@ class _RegisterStaffState extends State<RegisterStaff> {
                               borderRadius: BorderRadius.circular(10),
                             ),
                           ),
-                          keyboardType: TextInputType.phone,
+                          keyboardType: TextInputType.number,
+                          inputFormatters: [
+                            FilteringTextInputFormatter.digitsOnly,
+                          ],
                         ),
                         const SizedBox(height: 12),
                         TextField(
@@ -1057,7 +1068,7 @@ class _RegisterStaffState extends State<RegisterStaff> {
       roles: _selectedRoles,
       enabled: _isEnabled,
       sendWelcomeEmail: _sendWelcomeEmail,
-      company: currentUserResponse!.message.company.name,
+      company: currentUserResponse!.message.company.companyName,
     );
 
     context.read<StaffBloc>().add(

@@ -173,6 +173,24 @@ class CreateDiscountRule extends InventoryEvent {
   CreateDiscountRule({required this.request});
 }
 
+class UpdateDiscountRule extends InventoryEvent {
+  final UpdateDiscountRuleRequest request;
+
+  UpdateDiscountRule({required this.request});
+}
+
+class DisableDiscountRule extends InventoryEvent {
+  final DisableDiscountRuleRequest request;
+
+  DisableDiscountRule({required this.request});
+}
+
+class EnableDiscountRule extends InventoryEvent {
+  final EnableDiscountRuleRequest request;
+
+  EnableDiscountRule({required this.request});
+}
+
 class CreateLoyaltyProgram extends InventoryEvent {
   final CreateLoyaltyProgramRequest request;
 

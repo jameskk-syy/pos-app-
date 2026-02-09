@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:pos/domain/requests/register_user.dart';
+import 'package:pos/domain/requests/users/register_user.dart';
 import 'package:pos/domain/responses/industries_list_response.dart';
 import 'package:pos/presentation/industries/bloc/industries_bloc.dart';
 import 'package:pos/presentation/registerBloc/bloc/register_bloc.dart';
 import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/auth/register_company_details.dart';
 import 'package:pos/utils/themes/app_colors.dart';
+import 'package:intl_phone_number_input/intl_phone_number_input.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -17,25 +18,15 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  bool obscure = true;
-  String password = "";
   bool acceptedTerms = false;
-  String? selectedIndustry;
   String? selectedIndustryCode;
+  PhoneNumber number = PhoneNumber(isoCode: 'KE');
 
   @override
   void initState() {
     super.initState();
     context.read<IndustriesBloc>().add(GetIndustriesList());
   }
-
-  bool get showRules => password.isNotEmpty;
-  bool get hasMinLength => password.length >= 8;
-  bool get hasUpperLower =>
-      password.contains(RegExp(r'[A-Z]')) &&
-      password.contains(RegExp(r'[a-z]'));
-  bool get hasNumber => password.contains(RegExp(r'[0-9]'));
-  bool get hasSpecial => password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
 
   final TextEditingController firstNameController = TextEditingController();
   final TextEditingController lastNameController = TextEditingController();
@@ -65,10 +56,27 @@ class _SignUpScreenState extends State<SignUpScreen> {
             return BlocConsumer<RegisterBloc, RegisterState>(
               listener: (context, state) {
                 if (state is RegisterFailure) {
+                  final isAlreadyRegistered = state.error
+                      .toLowerCase()
+                      .contains('already exists');
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(state.error),
                       backgroundColor: Colors.red,
+                      action: isAlreadyRegistered
+                          ? SnackBarAction(
+                              label: 'Login',
+                              textColor: Colors.white,
+                              onPressed: () {
+                                Navigator.pushReplacement(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => const SignInScreen(),
+                                  ),
+                                );
+                              },
+                            )
+                          : null,
                     ),
                   );
                 }
@@ -85,6 +93,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     firstName: firstNameController.text.trim(),
                     lastName: lastNameController.text.trim(),
                     password: passwordController.text.trim(),
+                    phone: phoneController.text.trim(),
                     sendWelcomeEmail: true,
                     posIndustry: selectedIndustryCode ?? "RETAIL",
                     businessName: "",
@@ -158,26 +167,86 @@ class _SignUpScreenState extends State<SignUpScreen> {
 
                             SizedBox(height: isTablet ? 20 : 16),
 
-                            /// EMAIL & PHONE (2 INPUTS PER ROW)
-                            _InputLabel("Contact Details", isTablet: isTablet),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: _InputField(
-                                    controller: emailController,
-                                    hint: "Email address",
-                                    isTablet: isTablet,
+                            /// EMAIL (Full Width)
+                            _InputLabel("Email Address", isTablet: isTablet),
+                            _InputField(
+                              controller: emailController,
+                              hint: "Email address",
+                              isTablet: isTablet,
+                            ),
+
+                            SizedBox(height: isTablet ? 20 : 16),
+
+                            /// PHONE NUMBER (Country Code Picker + Input)
+                            _InputLabel("Phone Number", isTablet: isTablet),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.black.withAlpha(40),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Theme(
+                                data: Theme.of(context).copyWith(
+                                  canvasColor: Colors.white,
+                                  bottomSheetTheme: const BottomSheetThemeData(
+                                    backgroundColor: Colors.white,
+                                    surfaceTintColor: Colors.white,
                                   ),
                                 ),
-                                SizedBox(width: isTablet ? 16 : 12),
-                                Expanded(
-                                  child: _InputField(
-                                    controller: phoneController,
-                                    hint: "Phone number",
-                                    isTablet: isTablet,
+                                child: InternationalPhoneNumberInput(
+                                  onInputChanged: (PhoneNumber value) {
+                                    setState(() {
+                                      number = value;
+                                    });
+                                  },
+                                  onSaved: (PhoneNumber number) {
+                                    setState(() {
+                                      this.number = number;
+                                    });
+                                  },
+                                  selectorConfig: SelectorConfig(
+                                    selectorType: isTablet
+                                        ? PhoneInputSelectorType.DIALOG
+                                        : PhoneInputSelectorType.BOTTOM_SHEET,
+                                    showFlags: true,
+                                    useEmoji: true,
+                                  ),
+                                  ignoreBlank: false,
+                                  autoValidateMode: AutovalidateMode.disabled,
+                                  selectorTextStyle: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: isTablet ? 16 : 14,
+                                  ),
+                                  initialValue: number,
+                                  textFieldController: phoneController,
+                                  formatInput: true,
+                                  keyboardType:
+                                      const TextInputType.numberWithOptions(
+                                        signed: true,
+                                        decimal: true,
+                                      ),
+                                  inputDecoration: InputDecoration(
+                                    hintText: "Phone number",
+                                    hintStyle: TextStyle(
+                                      fontSize: isTablet ? 16 : 14,
+                                    ),
+                                    border: InputBorder.none,
+                                    enabledBorder: InputBorder.none,
+                                    focusedBorder: InputBorder.none,
+                                    contentPadding: EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: isTablet ? 16 : 14,
+                                    ),
+                                  ),
+                                  searchBoxDecoration: const InputDecoration(
+                                    labelText:
+                                        'Search by country name or dial code',
                                   ),
                                 ),
-                              ],
+                              ),
                             ),
 
                             SizedBox(height: isTablet ? 20 : 16),
@@ -210,62 +279,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 20 : 16),
 
                             /// PASSWORD
-                            _InputLabel("Password", isTablet: isTablet),
-                            TextField(
+                            _PasswordSection(
                               controller: passwordController,
-                              obscureText: obscure,
-                              onChanged: (v) => setState(() => password = v),
-                              style: TextStyle(fontSize: isTablet ? 16 : 14),
-                              decoration: InputDecoration(
-                                hintText: "Keep it secure",
-                                hintStyle: TextStyle(
-                                  fontSize: isTablet ? 16 : 14,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                contentPadding: EdgeInsets.symmetric(
-                                  horizontal: isTablet ? 18 : 16,
-                                  vertical: isTablet ? 16 : 14,
-                                ),
-                                suffixIcon: GestureDetector(
-                                  onTap: () =>
-                                      setState(() => obscure = !obscure),
-                                  child: Icon(
-                                    obscure
-                                        ? Icons.visibility_off_outlined
-                                        : Icons.visibility_outlined,
-                                    size: isTablet ? 22 : 20,
-                                  ),
-                                ),
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                              ),
+                              isTablet: isTablet,
                             ),
-
-                            if (showRules) ...[
-                              SizedBox(height: isTablet ? 14 : 10),
-                              _PasswordRule(
-                                "Minimum 8 characters",
-                                hasMinLength,
-                                isTablet: isTablet,
-                              ),
-                              _PasswordRule(
-                                "Uppercase & lowercase letters",
-                                hasUpperLower,
-                                isTablet: isTablet,
-                              ),
-                              _PasswordRule(
-                                "At least 1 number",
-                                hasNumber,
-                                isTablet: isTablet,
-                              ),
-                              _PasswordRule(
-                                "At least 1 special character",
-                                hasSpecial,
-                                isTablet: isTablet,
-                              ),
-                            ],
 
                             SizedBox(height: isTablet ? 24 : 20),
 
@@ -415,9 +432,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                               .trim(),
                                           password: passwordController.text
                                               .trim(),
-                                          sendWelcomeEmail: true,
+                                          sendWelcomeEmail: false,
                                           posIndustry: selectedIndustryCode!,
                                           businessName: "",
+                                          phone: number.phoneNumber!,
                                         );
 
                                         context.read<RegisterBloc>().add(
@@ -562,22 +580,20 @@ class _PasswordRule extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (valid) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.only(bottom: 4),
       child: Row(
         children: [
           Icon(
-            valid ? Icons.check_circle : Icons.circle_outlined,
+            Icons.error_outline,
             size: isTablet ? 18 : 16,
-            color: valid ? Colors.green : Colors.grey,
+            color: Colors.red,
           ),
           SizedBox(width: isTablet ? 10 : 8),
           Text(
             text,
-            style: TextStyle(
-              fontSize: isTablet ? 15 : 13,
-              color: valid ? Colors.green : Colors.black54,
-            ),
+            style: TextStyle(fontSize: isTablet ? 15 : 13, color: Colors.red),
           ),
         ],
       ),
@@ -618,6 +634,112 @@ class _DropdownField extends StatelessWidget {
         ),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
+    );
+  }
+}
+
+class _PasswordSection extends StatefulWidget {
+  final TextEditingController controller;
+  final bool isTablet;
+
+  const _PasswordSection({required this.controller, this.isTablet = false});
+
+  @override
+  State<_PasswordSection> createState() => _PasswordSectionState();
+}
+
+class _PasswordSectionState extends State<_PasswordSection> {
+  bool obscure = true;
+  String password = "";
+
+  bool get showRules => password.isNotEmpty;
+  bool get hasMinLength => password.length >= 8;
+  bool get hasUpperLower =>
+      password.contains(RegExp(r'[A-Z]')) &&
+      password.contains(RegExp(r'[a-z]'));
+  bool get hasNumber => password.contains(RegExp(r'[0-9]'));
+  bool get hasSpecial => password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize password with current controller text in case of rebuilds/re-entry
+    password = widget.controller.text;
+    widget.controller.addListener(_updatePassword);
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_updatePassword);
+    super.dispose();
+  }
+
+  void _updatePassword() {
+    if (widget.controller.text != password) {
+      setState(() {
+        password = widget.controller.text;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _InputLabel("Password", isTablet: widget.isTablet),
+        TextField(
+          controller: widget.controller,
+          obscureText: obscure,
+          // Update local state on change to trigger validation rules rebuild
+          // This only rebuilds _PasswordSection, not the entire screen
+          onChanged: (v) => setState(() => password = v),
+          style: TextStyle(fontSize: widget.isTablet ? 16 : 14),
+          decoration: InputDecoration(
+            hintText: "Keep it secure",
+            hintStyle: TextStyle(fontSize: widget.isTablet ? 16 : 14),
+            filled: true,
+            fillColor: Colors.white,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: widget.isTablet ? 18 : 16,
+              vertical: widget.isTablet ? 16 : 14,
+            ),
+            suffixIcon: GestureDetector(
+              onTap: () => setState(() => obscure = !obscure),
+              child: Icon(
+                obscure
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+                size: widget.isTablet ? 22 : 20,
+              ),
+            ),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+          ),
+        ),
+        if (showRules) ...[
+          SizedBox(height: widget.isTablet ? 14 : 10),
+          _PasswordRule(
+            "Minimum 8 characters",
+            hasMinLength,
+            isTablet: widget.isTablet,
+          ),
+          _PasswordRule(
+            "Uppercase & lowercase letters",
+            hasUpperLower,
+            isTablet: widget.isTablet,
+          ),
+          _PasswordRule(
+            "At least 1 number",
+            hasNumber,
+            isTablet: widget.isTablet,
+          ),
+          _PasswordRule(
+            "At least 1 special character",
+            hasSpecial,
+            isTablet: widget.isTablet,
+          ),
+        ],
+      ],
     );
   }
 }

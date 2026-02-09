@@ -58,108 +58,113 @@ class _SetPasswordPageState extends State<SetPasswordPage> {
         ),
       ),
       body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              SizedBox(height: h * 0.05),
-              SvgPicture.asset("assets/svgs/maiLogo.svg", height: 60),
-              const SizedBox(height: 24),
-              const Text(
-                "Set New Password",
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
-              ),
-              const SizedBox(height: 6),
-              const Text(
-                "Create a unique password",
-                style: TextStyle(fontSize: 14, color: Colors.black54),
-              ),
-              const SizedBox(height: 32),
-              _label("New Password"),
-              TextField(
-                controller: passwordCtrl,
-                obscureText: obscurePassword,
-                onChanged: validatePassword,
-                decoration: InputDecoration(
-                  hintText: "Keep it secure",
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscurePassword
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        obscurePassword = !obscurePassword;
-                      });
-                    },
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  SizedBox(height: h * 0.05),
+                  SvgPicture.asset("assets/svgs/maiLogo.svg", height: 60),
+                  const SizedBox(height: 24),
+                  const Text(
+                    "Set New Password",
+                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700),
                   ),
-                  border: _border(),
-                  enabledBorder: _border(),
-                  focusedBorder: _border(),
-                ),
-              ),
-              const SizedBox(height: 14),
-              _rule("Minimum 8 characters", hasMinLength),
-              _rule("1 uppercase letter (A–Z)", hasUpper),
-              _rule("1 lowercase letter (a–z)", hasLower),
-              _rule("1 number (0–9)", hasNumber),
-              _rule("1 special character (!@#\$%^&*)", hasSpecial),
-              const SizedBox(height: 24),
-              _label("Confirm Password"),
-              TextField(
-                obscureText: obscureConfirm,
-                decoration: InputDecoration(
-                  hintText: "Confirm your password",
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      obscureConfirm
-                          ? Icons.visibility_off_outlined
-                          : Icons.visibility_outlined,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        obscureConfirm = !obscureConfirm;
-                      });
-                    },
+                  const SizedBox(height: 6),
+                  const Text(
+                    "Create a unique password",
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
                   ),
-                  border: _border(),
-                  enabledBorder: _border(),
-                  focusedBorder: _border(),
-                ),
-              ),
-              const SizedBox(height: 32),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context2) => ConfirmationResetPage(),
+                  const SizedBox(height: 32),
+                  _label("New Password"),
+                  TextField(
+                    controller: passwordCtrl,
+                    obscureText: obscurePassword,
+                    onChanged: validatePassword,
+                    decoration: InputDecoration(
+                      hintText: "Keep it secure",
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePassword
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscurePassword = !obscurePassword;
+                          });
+                        },
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
+                      border: _border(),
+                      enabledBorder: _border(),
+                      focusedBorder: _border(),
                     ),
                   ),
-                  child: const Text(
-                    "Reset Password",
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.white,
+                  const SizedBox(height: 14),
+                  _rule("Minimum 8 characters", hasMinLength),
+                  _rule("1 uppercase letter (A–Z)", hasUpper),
+                  _rule("1 lowercase letter (a–z)", hasLower),
+                  _rule("1 number (0–9)", hasNumber),
+                  _rule("1 special character (!@#\$%^&*)", hasSpecial),
+                  const SizedBox(height: 24),
+                  _label("Confirm Password"),
+                  TextField(
+                    obscureText: obscureConfirm,
+                    decoration: InputDecoration(
+                      hintText: "Confirm your password",
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscureConfirm
+                              ? Icons.visibility_off_outlined
+                              : Icons.visibility_outlined,
+                        ),
+                        onPressed: () {
+                          setState(() {
+                            obscureConfirm = !obscureConfirm;
+                          });
+                        },
+                      ),
+                      border: _border(),
+                      enabledBorder: _border(),
+                      focusedBorder: _border(),
                     ),
                   ),
-                ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 52,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context2) => ConfirmationResetPage(),
+                          ),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.blue,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        "Reset Password",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 40),
+                ],
               ),
-              const SizedBox(height: 40),
-            ],
+            ),
           ),
         ),
       ),

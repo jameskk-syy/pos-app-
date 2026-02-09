@@ -3,9 +3,9 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:pos/domain/repository/store_repo.dart';
-import 'package:pos/domain/requests/create_warehouse.dart';
-import 'package:pos/domain/requests/update_warehouse.dart';
-import 'package:pos/domain/responses/store_response.dart';
+import 'package:pos/domain/requests/inventory/create_warehouse.dart';
+import 'package:pos/domain/requests/inventory/update_warehouse.dart';
+import 'package:pos/domain/responses/sales/store_response.dart';
 
 part 'store_event.dart';
 part 'store_state.dart';

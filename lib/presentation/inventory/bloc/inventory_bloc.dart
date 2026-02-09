@@ -4,47 +4,53 @@ import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:pos/domain/models/stock_ledger_entry.dart';
 import 'package:pos/domain/repository/inventory_repo.dart';
-import 'package:pos/domain/requests/add_stock_take_request.dart';
-import 'package:pos/domain/requests/approve_stock_transfer_request.dart';
+import 'package:pos/domain/requests/inventory/add_stock_take_request.dart';
+import 'package:pos/domain/requests/inventory/approve_stock_transfer_request.dart';
 import 'package:pos/domain/requests/create_discount_rule_request.dart';
-import 'package:pos/domain/requests/create_loyalty_program_request.dart';
-import 'package:pos/domain/requests/create_material_issue_request.dart';
-import 'package:pos/domain/requests/create_material_receipt_request.dart';
-import 'package:pos/domain/requests/create_stock_reconciliation_request.dart';
-import 'package:pos/domain/requests/create_stock_transfer_request.dart';
-import 'package:pos/domain/requests/create_transfer_request.dart';
-import 'package:pos/domain/requests/dispatch_stock_transfer_request.dart';
+import 'package:pos/domain/requests/crm/create_loyalty_program_request.dart';
+import 'package:pos/domain/requests/inventory/create_material_issue_request.dart';
+import 'package:pos/domain/requests/inventory/create_material_receipt_request.dart';
+import 'package:pos/domain/requests/inventory/create_stock_reconciliation_request.dart';
+import 'package:pos/domain/requests/inventory/create_stock_transfer_request.dart';
+import 'package:pos/domain/requests/inventory/create_transfer_request.dart';
+import 'package:pos/domain/requests/disable_discount_rule_request.dart';
+import 'package:pos/domain/requests/enable_discount_rule_request.dart';
+import 'package:pos/domain/requests/inventory/dispatch_stock_transfer_request.dart';
 import 'package:pos/domain/requests/get_inventory_discount_rules_request.dart';
-import 'package:pos/domain/requests/get_loyalty_programs_request.dart';
-import 'package:pos/domain/requests/get_material_requests_request.dart';
-import 'package:pos/domain/requests/get_stock_reconciliation_request.dart';
-import 'package:pos/domain/requests/get_stock_reconciliations_request.dart';
-import 'package:pos/domain/requests/receive_stock_request.dart';
-import 'package:pos/domain/requests/stock_entries_request.dart';
-import 'package:pos/domain/requests/stock_entry.dart';
-import 'package:pos/domain/requests/submit_stock_transfer_request.dart';
-import 'package:pos/domain/responses/add_stock_take_response.dart';
-import 'package:pos/domain/responses/approve_stock_transfer_response.dart';
+import 'package:pos/domain/requests/crm/get_loyalty_programs_request.dart';
+import 'package:pos/domain/requests/inventory/get_material_requests_request.dart';
+import 'package:pos/domain/requests/inventory/get_stock_reconciliation_request.dart';
+import 'package:pos/domain/requests/inventory/get_stock_reconciliations_request.dart';
+import 'package:pos/domain/requests/inventory/receive_stock_request.dart';
+import 'package:pos/domain/requests/inventory/stock_entries_request.dart';
+import 'package:pos/domain/requests/inventory/stock_entry.dart';
+import 'package:pos/domain/requests/inventory/submit_stock_transfer_request.dart';
+import 'package:pos/domain/requests/update_discount_rule_request.dart';
+import 'package:pos/domain/responses/inventory/add_stock_take_response.dart';
+import 'package:pos/domain/responses/inventory/approve_stock_transfer_response.dart';
 import 'package:pos/domain/responses/create_discount_rule_response.dart';
-import 'package:pos/domain/responses/create_loyalty_program_response.dart';
-import 'package:pos/domain/responses/create_material_issue_response.dart';
-import 'package:pos/domain/responses/create_material_receipt_response.dart';
-import 'package:pos/domain/responses/create_stock_reconciliation_response.dart';
-import 'package:pos/domain/responses/create_stock_transfer_response.dart';
-import 'package:pos/domain/responses/create_transfer_response.dart';
-import 'package:pos/domain/responses/dispatch_stock_transfer_response.dart';
+import 'package:pos/domain/responses/crm/create_loyalty_program_response.dart';
+import 'package:pos/domain/responses/inventory/create_material_issue_response.dart';
+import 'package:pos/domain/responses/inventory/create_material_receipt_response.dart';
+import 'package:pos/domain/responses/inventory/create_stock_reconciliation_response.dart';
+import 'package:pos/domain/responses/inventory/create_stock_transfer_response.dart';
+import 'package:pos/domain/responses/inventory/create_transfer_response.dart';
+import 'package:pos/domain/responses/disable_discount_rule_response.dart';
+import 'package:pos/domain/responses/enable_discount_rule_response.dart';
+import 'package:pos/domain/responses/inventory/dispatch_stock_transfer_response.dart';
 import 'package:pos/domain/responses/get_inventory_discount_rules_response.dart';
-import 'package:pos/domain/responses/get_loyalty_programs_response.dart';
-import 'package:pos/domain/responses/get_stock_reconciliation_response.dart';
-import 'package:pos/domain/responses/get_stock_transfer_response.dart';
-import 'package:pos/domain/responses/low_alert_response.dart';
-import 'package:pos/domain/responses/material_requests_response.dart';
-import 'package:pos/domain/responses/receive_stock_response.dart';
-import 'package:pos/domain/responses/stock_entries_response.dart';
-import 'package:pos/domain/responses/stock_entry_response.dart';
-import 'package:pos/domain/responses/stock_reconciliations_response.dart';
-import 'package:pos/domain/responses/stock_summary_response.dart';
-import 'package:pos/domain/responses/submit_stock_transfer_response.dart';
+import 'package:pos/domain/responses/crm/get_loyalty_programs_response.dart';
+import 'package:pos/domain/responses/inventory/get_stock_reconciliation_response.dart';
+import 'package:pos/domain/responses/inventory/get_stock_transfer_response.dart';
+import 'package:pos/domain/responses/inventory/low_alert_response.dart';
+import 'package:pos/domain/responses/inventory/material_requests_response.dart';
+import 'package:pos/domain/responses/inventory/receive_stock_response.dart';
+import 'package:pos/domain/responses/inventory/stock_entries_response.dart';
+import 'package:pos/domain/responses/inventory/stock_entry_response.dart';
+import 'package:pos/domain/responses/inventory/stock_reconciliations_response.dart';
+import 'package:pos/domain/responses/inventory/stock_summary_response.dart';
+import 'package:pos/domain/responses/inventory/submit_stock_transfer_response.dart';
+import 'package:pos/domain/responses/update_discount_rule_response.dart';
 part 'inventory_event.dart';
 part 'inventory_state.dart';
 
@@ -75,6 +81,9 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     on<CreateDiscountRule>(_createDiscountRule);
     on<CreateLoyaltyProgram>(_createLoyaltyProgram);
     on<GetLoyaltyPrograms>(_getLoyaltyPrograms);
+    on<UpdateDiscountRule>(_updateDiscountRule);
+    on<DisableDiscountRule>(_disableDiscountRule);
+    on<EnableDiscountRule>(_enableDiscountRule);
   }
   FutureOr<void> _getLoyaltyPrograms(
     GetLoyaltyPrograms event,
@@ -91,7 +100,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error fetching loyalty programs: $e");
-      emit(GetLoyaltyProgramsError(e.toString()));
+      emit(GetLoyaltyProgramsError(_cleanError(e)));
     }
   }
 
@@ -110,7 +119,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error creating loyalty program: $e");
-      emit(CreateLoyaltyProgramError(e.toString()));
+      emit(CreateLoyaltyProgramError(_cleanError(e)));
     }
   }
 
@@ -129,7 +138,64 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error creating discount rule: $e");
-      emit(CreateDiscountRuleError(e.toString()));
+      emit(CreateDiscountRuleError(_cleanError(e)));
+    }
+  }
+
+  FutureOr<void> _updateDiscountRule(
+    UpdateDiscountRule event,
+    Emitter<InventoryState> emit,
+  ) async {
+    emit(UpdateDiscountRuleLoading());
+    debugPrint("Updating inventory discount rule: ${event.request.name}...");
+
+    try {
+      final response = await inventoryRepo.updateDiscountRule(event.request);
+      emit(UpdateDiscountRuleSuccess(response));
+      debugPrint(
+        "Discount rule updated successfully: ${response.message.data.name}",
+      );
+    } catch (e) {
+      debugPrint("Error updating discount rule: $e");
+      emit(UpdateDiscountRuleError(_cleanError(e)));
+    }
+  }
+
+  FutureOr<void> _disableDiscountRule(
+    DisableDiscountRule event,
+    Emitter<InventoryState> emit,
+  ) async {
+    emit(DisableDiscountRuleLoading());
+    debugPrint("Disabling inventory discount rule: ${event.request.name}...");
+
+    try {
+      final response = await inventoryRepo.disableDiscountRule(event.request);
+      emit(DisableDiscountRuleSuccess(response));
+      debugPrint(
+        "Discount rule disabled successfully: ${response.message.data.name}",
+      );
+    } catch (e) {
+      debugPrint("Error disabling discount rule: $e");
+      emit(DisableDiscountRuleError(_cleanError(e)));
+    }
+  }
+
+  FutureOr<void> _enableDiscountRule(
+    EnableDiscountRule event,
+    Emitter<InventoryState> emit,
+  ) async {
+    emit(EnableDiscountRuleLoading());
+    debugPrint("Enabling inventory discount rule: ${event.request.name}...");
+
+    try {
+      final response = await inventoryRepo.enableDiscountRule(event.request);
+      emit(EnableDiscountRuleSuccess(response));
+      debugPrint(
+        "Discount rule enabled successfully: ${response.message.data.name}",
+      );
+    } catch (e) {
+      debugPrint("Error enabling discount rule: $e");
+      emit(EnableDiscountRuleError(_cleanError(e)));
     }
   }
 
@@ -150,7 +216,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error getting inventory discount rules: $e");
-      emit(GetInventoryDiscountRulesError(e.toString()));
+      emit(GetInventoryDiscountRulesError(_cleanError(e)));
     }
   }
 
@@ -172,7 +238,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error adding stock take: $e");
-      emit(AddStockTakeError(e.toString()));
+      emit(AddStockTakeError(_cleanError(e)));
     }
   }
 
@@ -195,7 +261,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error getting stock reconciliation: $e");
-      emit(GetStockReconciliationError(e.toString()));
+      emit(GetStockReconciliationError(_cleanError(e)));
     }
   }
 
@@ -216,7 +282,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error creating stock reconciliation: $e");
-      emit(CreateStockReconciliationError(e.toString()));
+      emit(CreateStockReconciliationError(_cleanError(e)));
     }
   }
 
@@ -237,7 +303,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error fetching stock reconciliations: $e");
-      emit(StockReconciliationsError(e.toString()));
+      emit(StockReconciliationsError(_cleanError(e)));
     }
   }
 
@@ -256,7 +322,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error receiving stock: $e");
-      emit(ReceiveStockError(e.toString()));
+      emit(ReceiveStockError(_cleanError(e)));
     }
   }
 
@@ -273,11 +339,11 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
       emit(StockTransferRequestLoaded(response));
       debugPrint(
-        "Stock transfer request fetched: ${response.message.data.name} - ${response.message.data.status}",
+        "Stock transfer request fetched: ${response.message.data} - ${response.message.data.status}",
       );
     } catch (e) {
       debugPrint("Error fetching stock transfer request: $e");
-      emit(StockTransferRequestError(e.toString()));
+      emit(StockTransferRequestError(_cleanError(e)));
     }
   }
 
@@ -296,7 +362,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error dispatching stock transfer: $e");
-      emit(DispatchStockTransferError(e.toString()));
+      emit(DispatchStockTransferError(_cleanError(e)));
     }
   }
 
@@ -315,7 +381,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error submitting stock transfer: $e");
-      emit(SubmitStockTransferError(e.toString()));
+      emit(SubmitStockTransferError(_cleanError(e)));
     }
   }
 
@@ -334,7 +400,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error approving stock transfer: $e");
-      emit(ApproveStockTransferError(e.toString()));
+      emit(ApproveStockTransferError(_cleanError(e)));
     }
   }
 
@@ -355,7 +421,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error fetching material requests: $e");
-      emit(MaterialRequestsError(e.toString()));
+      emit(MaterialRequestsError(_cleanError(e)));
     }
   }
 
@@ -374,7 +440,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       );
     } catch (e) {
       debugPrint("Error creating stock transfer request: $e");
-      emit(CreateStockTransferError(e.toString()));
+      emit(CreateStockTransferError(_cleanError(e)));
     }
   }
 
@@ -391,7 +457,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       debugPrint("Material issue created: ${response.data?.name}");
     } catch (e) {
       debugPrint("Error creating material issue: $e");
-      emit(CreateMaterialIssueError(e.toString()));
+      emit(CreateMaterialIssueError(_cleanError(e)));
     }
   }
 
@@ -408,7 +474,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       debugPrint("Material receipt created: ${response.data?.name}");
     } catch (e) {
       debugPrint("Error creating material receipt: $e");
-      emit(CreateMaterialReceiptError(e.toString()));
+      emit(CreateMaterialReceiptError(_cleanError(e)));
     }
   }
 
@@ -431,7 +497,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       final response = await inventoryRepo.getStockEntries(request: request);
       emit(StockEntriesLoaded(response));
     } catch (e) {
-      emit(StockEntriesError(e.toString()));
+      emit(StockEntriesError(_cleanError(e)));
     }
   }
 
@@ -450,7 +516,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
 
       emit(LowStockLoaded(response));
     } catch (e) {
-      emit(LowStockError(e.toString()));
+      emit(LowStockError(_cleanError(e)));
     }
   }
 
@@ -464,7 +530,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       final response = await inventoryRepo.createStockEntry(event.request);
       emit(CreateStockEntrySuccess(response));
     } catch (e) {
-      emit(CreateStockEntryError(e.toString()));
+      emit(CreateStockEntryError(_cleanError(e)));
     }
   }
 
@@ -486,7 +552,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
 
       emit(StockSummaryLoaded(response));
     } catch (e) {
-      emit(StockSummaryError(e.toString()));
+      emit(StockSummaryError(_cleanError(e)));
     }
   }
 
@@ -505,7 +571,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
       debugPrint("Material transfer created: ${response.data.name}");
     } catch (e) {
       debugPrint("Error creating material transfer: $e");
-      emit(CreateMaterialTransferError(e.toString()));
+      emit(CreateMaterialTransferError(_cleanError(e)));
     }
   }
 
@@ -526,7 +592,15 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
 
       emit(StockLedgerLoaded(response));
     } catch (e) {
-      emit(StockLedgerError(e.toString()));
+      emit(StockLedgerError(_cleanError(e)));
     }
+  }
+
+  String _cleanError(dynamic e) {
+    String message = e.toString();
+    if (message.startsWith('Exception: ')) {
+      message = message.replaceFirst('Exception: ', '');
+    }
+    return message.trim();
   }
 }

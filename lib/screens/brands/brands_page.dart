@@ -2,13 +2,13 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:pos/domain/responses/item_brand.dart';
+import 'package:pos/domain/responses/products/item_brand.dart';
 import 'package:pos/presentation/brands/bloc/brands_bloc.dart';
 import 'package:pos/presentation/brands/bloc/brands_event.dart';
 import 'package:pos/presentation/brands/bloc/brands_state.dart';
-import 'package:pos/widgets/brands_list.dart';
-import 'package:pos/widgets/create_brand_dialog.dart';
-import 'package:pos/widgets/edit_brand_dialog.dart';
+import 'package:pos/widgets/products/brands_list.dart';
+import 'package:pos/widgets/products/create_brand_dialog.dart';
+import 'package:pos/widgets/products/edit_brand_dialog.dart';
 
 class BrandsPage extends StatefulWidget {
   const BrandsPage({super.key});

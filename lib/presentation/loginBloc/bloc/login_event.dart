@@ -8,3 +8,10 @@ class LoginUser extends LoginEvent {
 
   LoginUser({required this.loginRequest});
 }
+
+class ChangePassword extends LoginEvent {
+  final String oldPassword;
+  final String newPassword;
+
+  ChangePassword({required this.oldPassword, required this.newPassword});
+}

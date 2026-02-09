@@ -7,16 +7,18 @@ import 'package:pos/domain/models/invoice_model_get.dart';
 import 'package:pos/domain/models/payment_method_model.dart';
 import 'package:pos/domain/models/pos_session_model.dart';
 import 'package:pos/domain/repository/abstract_sales_repository.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/core/services/storage_service.dart';
 
 part 'sales_event.dart';
 part 'sales_state.dart';
 
 class SalesBloc extends Bloc<SalesEvent, SalesState> {
   final SalesRepository salesRepository;
+  final StorageService storageService;
   final List<BalanceDetail> _balanceDetails = [];
 
-  SalesBloc({required this.salesRepository}) : super(SalesInitial()) {
+  SalesBloc({required this.salesRepository, required this.storageService})
+    : super(SalesInitial()) {
     on<GetPaymentMethod>(_getPaymentMethods);
     on<CreatePOSSession>(_createPOSSession);
     on<CreateInvoice>(_createInvoice);
@@ -24,9 +26,27 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
     on<ClearBalanceDetails>(_clearBalanceDetails);
     on<GetSalesInvoice>(_getSalesInvoice);
     on<ClosePOSSession>(_closePOSSession);
+    on<CreateCreditPayment>(_createCreditPayment);
+    on<FetchReceivableAccount>(_fetchReceivableAccount);
   }
 
   List<BalanceDetail> get balanceDetails => List.from(_balanceDetails);
+
+  FutureOr<void> _fetchReceivableAccount(
+    FetchReceivableAccount event,
+    Emitter<SalesState> emit,
+  ) async {
+    emit(ReceivableAccountLoading());
+    try {
+      final response = await salesRepository.getReceivableAccount(
+        customer: event.customer,
+        company: event.company,
+      );
+      emit(ReceivableAccountLoaded(data: response['data'] ?? {}));
+    } catch (e) {
+      emit(ReceivableAccountError(message: e.toString()));
+    }
+  }
 
   FutureOr<void> _getPaymentMethods(
     GetPaymentMethod event,
@@ -91,8 +111,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
 
   Future<void> _saveSessionToPrefs(POSSessionResponse session) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(
+      await storageService.setString(
         'current_pos_session',
         jsonEncode({
           'name': session.name,
@@ -179,6 +198,28 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
       }
     } catch (e) {
       emit(POSSessionCloseError(message: e.toString()));
+    }
+  }
+
+  FutureOr<void> _createCreditPayment(
+    CreateCreditPayment event,
+    Emitter<SalesState> emit,
+  ) async {
+    emit(CreateCreditPaymentLoading());
+    try {
+      final response = await salesRepository.createCreditModeOfPayment(
+        request: event.request,
+      );
+      emit(
+        CreditPaymentCreated(
+          response: response,
+          message:
+              response['message']?.toString() ??
+              'Credit mode of payment configured',
+        ),
+      );
+    } catch (e) {
+      emit(CreateCreditPaymentError(message: e.toString()));
     }
   }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/repository/products_repo.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/dependency.dart';
 import 'dart:convert';
 import 'price_list_event.dart';
 import 'price_list_state.dart';
@@ -16,8 +17,8 @@ class PriceListBloc extends Bloc<PriceListEvent, PriceListState> {
   }
 
   Future<String?> _getCompany() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString == null) return null;
     final userMap = jsonDecode(userString);
     if (userMap['message'] != null && userMap['message']['company'] != null) {

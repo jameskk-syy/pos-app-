@@ -1,7 +1,10 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/core/globals.dart';
+import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/presentation/dashboard/bloc/dashboard_bloc.dart';
 import 'package:pos/presentation/industries/bloc/industries_bloc.dart';
@@ -20,7 +23,14 @@ import 'package:pos/presentation/usersBloc/bloc/staff_bloc.dart';
 import 'package:pos/screens/splash_screen.dart';
 import 'package:pos/presentation/registerBloc/bloc/register_bloc.dart';
 import 'package:pos/presentation/warranties/bloc/warranties_bloc.dart';
+import 'package:pos/presentation/warehouse_cubit/warehouse_cubit.dart';
+import 'package:pos/presentation/purchase_invoice/bloc/purchase_invoice_bloc.dart';
+import 'package:pos/presentation/grn/bloc/grn_bloc.dart';
+import 'package:pos/presentation/invoices/bloc/invoices_bloc.dart';
+import 'package:pos/presentation/categories/bloc/categories_bloc.dart';
+import 'package:pos/presentation/sales/bloc/pos_opening_entries_bloc.dart';
 import 'package:pos/utils/themes/app_theme.dart';
+import 'package:pos/widgets/connectivity_wrapper.dart';
 
 class MyHttpOverrides extends HttpOverrides {
   @override
@@ -34,6 +44,18 @@ class MyHttpOverrides extends HttpOverrides {
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   HttpOverrides.global = MyHttpOverrides();
+
+  await Hive.initFlutter();
+  await Hive.openBox('customers');
+  await Hive.openBox('products');
+  await Hive.openBox('inventory_rules');
+  await Hive.openBox('payment_methods');
+  await Hive.openBox('offline_sales');
+  await Hive.openBox('warehouses');
+  await Hive.openBox('loyalty_programs');
+  await Hive.openBox('offline_loyalty_points');
+  await Hive.openBox('dashboard_data');
+  await Hive.openBox('staff');
 
   setUp();
 
@@ -66,12 +88,28 @@ class MyApp extends StatelessWidget {
         BlocProvider<PurchaseBloc>(create: (_) => getIt<PurchaseBloc>()),
         BlocProvider<ReportsBloc>(create: (_) => getIt<ReportsBloc>()),
         BlocProvider<WarrantiesBloc>(create: (_) => getIt<WarrantiesBloc>()),
+        BlocProvider<WarehouseCubit>(
+          create: (_) => WarehouseCubit()..loadSavedWarehouse(),
+        ),
+        BlocProvider<PurchaseInvoiceBloc>(
+          create: (_) => getIt<PurchaseInvoiceBloc>(),
+        ),
+        BlocProvider<GrnBloc>(create: (_) => getIt<GrnBloc>()),
+        BlocProvider<InvoicesBloc>(create: (_) => getIt<InvoicesBloc>()),
+        BlocProvider<PosOpeningEntriesBloc>(
+          create: (_) => getIt<PosOpeningEntriesBloc>(),
+        ),
+        BlocProvider<CategoriesBloc>(create: (_) => getIt<CategoriesBloc>()),
         // add other blocs here if needed
       ],
-      child: MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme().init(),
-        home: const SplashScreen(),
+      child: ConnectivityWrapper(
+        connectivityService: getIt<ConnectivityService>(),
+        child: MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme().init(),
+          home: const SplashScreen(),
+        ),
       ),
     );
   }

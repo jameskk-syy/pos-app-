@@ -35,3 +35,16 @@ class AssignRolesToStaff extends StaffEvent {
 
   AssignRolesToStaff({required this.assignRolesRequest});
 }
+
+class GetWarehouseStaff extends StaffEvent {
+  final String warehouseName;
+
+  GetWarehouseStaff({required this.warehouseName});
+}
+
+class RemoveStaffFromWarehouse extends StaffEvent {
+  final String email;
+  final String warehouseName;
+
+  RemoveStaffFromWarehouse({required this.email, required this.warehouseName});
+}
