@@ -1,12 +1,10 @@
-import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:pos/domain/models/reports/inventory_reports_model.dart';
-import 'package:pos/domain/requests/report_request.dart';
-import 'package:pos/presentation/reports/bloc/reports_bloc.dart';
-import 'package:pos/screens/reports/widgets/common_widgets.dart';
-import 'package:pos/utils/report_pdf_generator.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/screens/reports/widgets/inventory_cost_method_page.dart';
+import 'package:pos/screens/reports/widgets/inventory_value_by_category_page.dart';
+import 'package:pos/screens/reports/widgets/inventory_value_trends_page.dart';
+import 'package:pos/widgets/inventory/inventory_card.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
 import 'dart:convert';
 
 class InventoryValuationTab extends StatefulWidget {
@@ -18,7 +16,6 @@ class InventoryValuationTab extends StatefulWidget {
 
 class _InventoryValuationTabState extends State<InventoryValuationTab> {
   String companyName = '';
-  String _currency = '';
 
   @override
   void initState() {
@@ -27,192 +24,84 @@ class _InventoryValuationTabState extends State<InventoryValuationTab> {
   }
 
   Future<void> _loadUserAndFetch() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString != null) {
       final user = jsonDecode(userString);
       companyName = user['message']['company']['name'] ?? '';
-
-      // Fetch currency
-      final posProfile = user['message']['pos_profile'] ?? {};
-      final company = user['message']['company'] ?? {};
-      _currency = posProfile['currency'] ?? company['default_currency'] ?? '';
-
-      if (mounted) {
-        context.read<ReportsBloc>().add(
-          FetchInventoryValue(ReportRequest(company: companyName)),
-        );
-      }
-    }
-  }
-
-  Future<void> _exportPdf(List<InventoryCategoryValue> data) async {
-    try {
-      await ReportPdfGenerator().generateInventoryValuationPdf(data, _currency);
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error generating PDF: $e')));
-      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<ReportsBloc, ReportsState>(
-      builder: (context, state) {
-        if (state is ReportsLoading) {
-          return const Center(child: CircularProgressIndicator());
-        } else if (state is ReportsError) {
-          return Center(child: Text('Error: ${state.message}'));
-        } else if (state is InventoryValueLoaded) {
-          final data = state.response.data;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final w = MediaQuery.of(context).size.width;
+          int crossAxisCount = w < 600 ? 2 : (w < 1100 ? 3 : 4);
+          double childAspectRatio = w < 600 ? 1.4 : (w < 1100 ? 1.6 : 1.8);
 
-          double totalValue = 0;
-          for (var item in data) {
-            totalValue += item.totalValue;
-          }
-
-          return ListView(
-            padding: const EdgeInsets.all(16),
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: childAspectRatio,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
             children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  Material(
-                    color: Colors.black,
-                    borderRadius: BorderRadius.circular(12),
-                    child: InkWell(
-                      onTap: () => _exportPdf(data),
-                      borderRadius: BorderRadius.circular(12),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: const [
-                            Icon(
-                              Icons.picture_as_pdf_outlined,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'Export PDF',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: Colors.blue.withAlpha(26),
+                iconColor: Colors.blue,
+                icon: Icons.category_outlined,
+                title: "Value by Category",
+                subtitle: "View inventory value distribution",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const InventoryValueByCategoryPage(),
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
-              const SizedBox(height: 16),
-              MetricCard(
-                title: 'Total Inventory Value',
-                value: '$_currency ${_formatCurrency(totalValue)}',
-                icon: Icons.inventory_2,
-                color: Colors.blue,
-              ),
-              const SizedBox(height: 24),
-
-              ReportSectionCard(
-                title: 'Value by Category',
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 300,
-                      child: PieChart(
-                        PieChartData(
-                          sections: data.map((item) {
-                            final percentage =
-                                (item.totalValue / totalValue) * 100;
-                            return PieChartSectionData(
-                              value: item.totalValue,
-                              title: '${percentage.toStringAsFixed(1)}%',
-                              color: [
-                                Colors.blue,
-                                Colors.black,
-                              ][data.indexOf(item) % 2],
-                              radius: 80,
-                              titleStyle: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.white,
-                              ),
-                            );
-                          }).toList(),
-                          sectionsSpace: 2,
-                          centerSpaceRadius: 40,
-                        ),
-                      ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: Colors.orange.withAlpha(26),
+                iconColor: Colors.orange,
+                icon: Icons.compare_arrows,
+                title: "Cost Method Comparison",
+                subtitle: "Compare FIFO vs Weighted Average",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const InventoryCostMethodPage(),
                     ),
-                    const SizedBox(height: 24),
-                    // Legend List
-                    ...data.map((item) {
-                      final color = [
-                        Colors.blue,
-                        Colors.black,
-                      ][data.indexOf(item) % 2];
-
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 12.0),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                Container(
-                                  width: 12,
-                                  height: 12,
-                                  decoration: BoxDecoration(
-                                    color: color,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Text(
-                                  item.itemGroup,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            Text(
-                              '$_currency ${_formatCurrency(item.totalValue)}',
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    }),
-                  ],
-                ),
+                  );
+                },
+              ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: Colors.purple.withAlpha(26),
+                iconColor: Colors.purple,
+                icon: Icons.trending_up,
+                title: "Inventory Value Trends",
+                subtitle: "Analyze inventory value over time",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const InventoryValueTrendsPage(),
+                    ),
+                  );
+                },
               ),
             ],
           );
-        }
-        return const Center(child: Text('Load Data'));
-      },
+        },
+      ),
     );
-  }
-
-  String _formatCurrency(double value) {
-    return value
-        .toStringAsFixed(2)
-        .replaceAllMapped(
-          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-          (Match m) => '${m[1]},',
-        );
   }
 }

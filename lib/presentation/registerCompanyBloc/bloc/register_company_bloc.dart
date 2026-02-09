@@ -1,7 +1,7 @@
 import 'package:bloc/bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:pos/domain/repository/register_company_repo.dart';
-import 'package:pos/domain/requests/register_company.dart';
+import 'package:pos/domain/requests/users/register_company.dart';
 
 part 'register_company_event.dart';
 part 'register_company_state.dart';

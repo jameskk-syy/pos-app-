@@ -4,6 +4,7 @@ import 'package:pos/screens/pages/point_of_sale/app_bar.dart';
 class POSActionButtons extends StatelessWidget {
   final VoidCallback? onCloseSession;
   final VoidCallback? onSaveDraft;
+  final VoidCallback? onInvoicesPressed;
   final bool showCloseSession;
   final bool showSaveDraft;
 
@@ -11,6 +12,7 @@ class POSActionButtons extends StatelessWidget {
     super.key,
     this.onCloseSession,
     this.onSaveDraft,
+    this.onInvoicesPressed,
     this.showCloseSession = true,
     this.showSaveDraft = true,
   });
@@ -33,7 +35,10 @@ class POSActionButtons extends StatelessWidget {
               ),
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Colors.red, width: 1),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
                 minimumSize: Size.zero,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(4),
@@ -42,6 +47,23 @@ class POSActionButtons extends StatelessWidget {
             ),
             if (showSaveDraft) const SizedBox(width: 8),
           ],
+          OutlinedButton.icon(
+            onPressed: onInvoicesPressed ?? () {},
+            icon: const Icon(Icons.description, color: Colors.blue, size: 14),
+            label: const Text(
+              'Invoices',
+              style: TextStyle(color: Colors.blue, fontSize: 11),
+            ),
+            style: OutlinedButton.styleFrom(
+              side: const BorderSide(color: Colors.blue, width: 1),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+              minimumSize: Size.zero,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
           // if (showSaveDraft)
           //   OutlinedButton.icon(
           //     onPressed: onSaveDraft ?? () {},
@@ -64,6 +86,7 @@ class POSActionButtons extends StatelessWidget {
     );
   }
 }
+
 class SaleSummaryPageExample extends StatelessWidget {
   const SaleSummaryPageExample({super.key});
 
@@ -74,23 +97,14 @@ class SaleSummaryPageExample extends StatelessWidget {
       appBar: POSAppBar(
         statusText: 'Connected to Printer',
         statusColor: Colors.green,
-        onBackPressed: () => Navigator.pop(context), 
-        onStatusPressed: () {  },
+        onBackPressed: () => Navigator.pop(context),
+        onStatusPressed: () {},
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          POSActionButtons(
-            onCloseSession: () {
-            },
-            onSaveDraft: () {
-            },
-          ),
-          Expanded(
-            child: Center(
-              child: Text('Page Content'),
-            ),
-          ),
+          POSActionButtons(onCloseSession: () {}, onSaveDraft: () {}),
+          Expanded(child: Center(child: Text('Page Content'))),
         ],
       ),
     );

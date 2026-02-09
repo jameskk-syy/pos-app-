@@ -6,8 +6,8 @@ import 'package:pos/domain/responses/price_list_response.dart';
 import 'package:pos/presentation/price_list/bloc/price_list_bloc.dart';
 import 'package:pos/presentation/price_list/bloc/price_list_event.dart';
 import 'package:pos/presentation/price_list/bloc/price_list_state.dart';
-import 'package:pos/widgets/price_lists_list.dart';
-import 'package:pos/widgets/price_list_form_dialog.dart';
+import 'package:pos/widgets/products/price_lists_list.dart';
+import 'package:pos/widgets/products/price_list_form_dialog.dart';
 
 class PriceListsPage extends StatefulWidget {
   const PriceListsPage({super.key});

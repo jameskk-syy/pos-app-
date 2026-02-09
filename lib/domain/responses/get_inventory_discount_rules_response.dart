@@ -1,40 +1,37 @@
 class GetInventoryDiscountRulesResponse {
   final InventoryDiscountRulesMessage message;
 
-  GetInventoryDiscountRulesResponse({
-    required this.message,
-  });
+  GetInventoryDiscountRulesResponse({required this.message});
 
-  factory GetInventoryDiscountRulesResponse.fromJson(Map<String, dynamic> json) =>
-      GetInventoryDiscountRulesResponse(
-        message: InventoryDiscountRulesMessage.fromJson(json["message"]),
-      );
+  factory GetInventoryDiscountRulesResponse.fromJson(
+    Map<String, dynamic> json,
+  ) => GetInventoryDiscountRulesResponse(
+    message: InventoryDiscountRulesMessage.fromJson(json["message"]),
+  );
+
+  Map<String, dynamic> toJson() => {'message': message.toJson()};
 }
 
 class InventoryDiscountRulesMessage {
   final bool success;
   final InventoryDiscountRulesData data;
 
-  InventoryDiscountRulesMessage({
-    required this.success,
-    required this.data,
-  });
+  InventoryDiscountRulesMessage({required this.success, required this.data});
 
   factory InventoryDiscountRulesMessage.fromJson(Map<String, dynamic> json) =>
       InventoryDiscountRulesMessage(
         success: json["success"],
         data: InventoryDiscountRulesData.fromJson(json["data"]),
       );
+
+  Map<String, dynamic> toJson() => {'success': success, 'data': data.toJson()};
 }
 
 class InventoryDiscountRulesData {
   final List<InventoryDiscountRule> rules;
   final PaginationData pagination;
 
-  InventoryDiscountRulesData({
-    required this.rules,
-    required this.pagination,
-  });
+  InventoryDiscountRulesData({required this.rules, required this.pagination});
 
   factory InventoryDiscountRulesData.fromJson(Map<String, dynamic> json) =>
       InventoryDiscountRulesData(
@@ -43,6 +40,11 @@ class InventoryDiscountRulesData {
             .toList(),
         pagination: PaginationData.fromJson(json["pagination"]),
       );
+
+  Map<String, dynamic> toJson() => {
+    'rules': rules.map((rule) => rule.toJson()).toList(),
+    'pagination': pagination.toJson(),
+  };
 }
 
 class InventoryDiscountRule {
@@ -95,6 +97,23 @@ class InventoryDiscountRule {
         validUpto: json["valid_upto"],
         description: json["description"],
       );
+
+  Map<String, dynamic> toJson() => {
+    'name': name,
+    'rule_type': ruleType,
+    'item_code': itemCode,
+    'batch_no': batchNo,
+    'item_group': itemGroup,
+    'warehouse': warehouse,
+    'company': company,
+    'discount_type': discountType,
+    'discount_value': discountValue,
+    'priority': priority,
+    'is_active': isActive,
+    'valid_from': validFrom,
+    'valid_upto': validUpto,
+    'description': description,
+  };
 }
 
 class PaginationData {
@@ -111,9 +130,16 @@ class PaginationData {
   });
 
   factory PaginationData.fromJson(Map<String, dynamic> json) => PaginationData(
-        page: json["page"],
-        pageSize: json["page_size"],
-        total: json["total"],
-        totalPages: json["total_pages"],
-      );
+    page: json["page"],
+    pageSize: json["page_size"],
+    total: json["total"],
+    totalPages: json["total_pages"],
+  );
+
+  Map<String, dynamic> toJson() => {
+    'page': page,
+    'page_size': pageSize,
+    'total': total,
+    'total_pages': totalPages,
+  };
 }

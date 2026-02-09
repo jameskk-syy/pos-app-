@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart'; // For kIsWeb
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/dependency.dart';
 
 class ApiClient {
   late final Dio dio;
@@ -9,8 +10,8 @@ class ApiClient {
     dio = Dio(
       BaseOptions(
         baseUrl: "https://savanna.nyikatech.com/api/method/",
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
+        connectTimeout: const Duration(seconds: 60),
+        receiveTimeout: const Duration(seconds: 60),
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
@@ -29,8 +30,8 @@ class ApiClient {
             return handler.next(options);
           }
 
-          final prefs = await SharedPreferences.getInstance();
-          final token = prefs.getString('access_token');
+          final storage = getIt<StorageService>();
+          final token = await storage.getString('access_token');
 
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';

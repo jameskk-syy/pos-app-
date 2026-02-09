@@ -2,12 +2,12 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:pos/domain/responses/item_group.dart';
+import 'package:pos/domain/responses/products/item_group.dart';
 import 'package:pos/presentation/categories/bloc/categories_bloc.dart';
 import 'package:pos/presentation/categories/bloc/categories_event.dart';
 import 'package:pos/presentation/categories/bloc/categories_state.dart';
-import 'package:pos/widgets/categories_list.dart';
-import 'package:pos/widgets/category_form_dialog.dart';
+import 'package:pos/widgets/products/categories_list.dart';
+import 'package:pos/widgets/products/category_form_dialog.dart';
 
 class CategoriesPage extends StatefulWidget {
   const CategoriesPage({super.key});

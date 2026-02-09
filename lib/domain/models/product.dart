@@ -1,4 +1,4 @@
-import 'package:pos/domain/responses/item_list.dart';
+import 'package:pos/domain/responses/products/item_list.dart';
 
 class Products {
   final String id;

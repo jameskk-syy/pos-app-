@@ -1,14 +1,15 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:pos/domain/repository/purchase_repo.dart';
-import 'package:pos/domain/requests/create_grn_request.dart';
-import 'package:pos/domain/requests/create_purchase_order_request.dart';
-import 'package:pos/domain/requests/submit_purchase_order_request.dart';
-import 'package:pos/domain/responses/create_grn_response.dart';
-import 'package:pos/domain/responses/create_purchase_order_response.dart' hide PurchaseOrderData;
-import 'package:pos/domain/responses/purchase_order_detail_response.dart';
-import 'package:pos/domain/responses/purchase_order_response.dart';
-import 'package:pos/domain/responses/submit_purchase_order_response.dart';
+import 'package:pos/domain/requests/purchase/create_grn_request.dart';
+import 'package:pos/domain/requests/purchase/create_purchase_order_request.dart';
+import 'package:pos/domain/requests/purchase/submit_purchase_order_request.dart';
+import 'package:pos/domain/responses/purchase/create_grn_response.dart';
+import 'package:pos/domain/responses/purchase/create_purchase_order_response.dart'
+    hide PurchaseOrderData;
+import 'package:pos/domain/responses/purchase/purchase_order_detail_response.dart';
+import 'package:pos/domain/responses/purchase/purchase_order_response.dart';
+import 'package:pos/domain/responses/purchase/submit_purchase_order_response.dart';
 
 part 'purchase_event.dart';
 part 'purchase_state.dart';
@@ -20,52 +21,45 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     on<FetchPurchaseOrdersEvent>(_onFetchPurchaseOrders);
     on<RefreshPurchaseOrdersEvent>(_onRefreshPurchaseOrders);
     on<CreatePurchaseOrderEvent>(_onCreatePurchaseOrder);
-      on<SubmitPurchaseOrderEvent>(_onSubmitPurchaseOrder);
+    on<SubmitPurchaseOrderEvent>(_onSubmitPurchaseOrder);
     on<ResubmitPurchaseOrderEvent>(_onResubmitPurchaseOrder);
     on<CreateGrnEvent>(_onCreateGrn);
     on<FetchPurchaseOrderDetailEvent>(_onFetchPurchaseOrderDetail);
   }
   Future<void> _onFetchPurchaseOrderDetail(
-  FetchPurchaseOrderDetailEvent event,
-  Emitter<PurchaseState> emit,
-) async {
-  emit(PurchaseOrderDetailLoading());
+    FetchPurchaseOrderDetailEvent event,
+    Emitter<PurchaseState> emit,
+  ) async {
+    emit(PurchaseOrderDetailLoading());
 
-  try {
-    final response = await purchaseRepo.getPurchaseOrderDetail(
-      poName: event.poName,
-    );
-    
-    emit(PurchaseOrderDetailLoaded(response: response));
-  } catch (e) {
-    emit(PurchaseOrderDetailError(
-      message: e.toString(),
-      poName: event.poName,
-    ));
+    try {
+      final response = await purchaseRepo.getPurchaseOrderDetail(
+        poName: event.poName,
+      );
+
+      emit(PurchaseOrderDetailLoaded(response: response));
+    } catch (e) {
+      emit(
+        PurchaseOrderDetailError(message: e.toString(), poName: event.poName),
+      );
+    }
   }
-}
+
   Future<void> _onCreateGrn(
-  CreateGrnEvent event,
-  Emitter<PurchaseState> emit,
-) async {
-  emit(GrnCreating());
+    CreateGrnEvent event,
+    Emitter<PurchaseState> emit,
+  ) async {
+    emit(GrnCreating());
 
-  try {
-    final response = await purchaseRepo.createGrn(
-      request: event.request,
-    );
-    
-    emit(GrnCreated(
-      response: response,
-      message: response.message,
-    ));
-  } catch (e) {
-    emit(GrnCreateError(
-      message: e.toString(),
-      lpoNo: event.request.lpoNo,
-    ));
+    try {
+      final response = await purchaseRepo.createGrn(request: event.request);
+
+      emit(GrnCreated(response: response, message: response.message));
+    } catch (e) {
+      emit(GrnCreateError(message: e.toString(), lpoNo: event.request.lpoNo));
+    }
   }
-}
+
   Future<void> _onSubmitPurchaseOrder(
     SubmitPurchaseOrderEvent event,
     Emitter<PurchaseState> emit,
@@ -75,16 +69,15 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     try {
       final request = SubmitPurchaseOrderRequest(lpoNo: event.lpoNo);
       final response = await purchaseRepo.submitPurchaseOrder(request: request);
-      
-      emit(PurchaseOrderSubmitted(
-        response: response,
-        message: 'Purchase order submitted successfully',
-      ));
+
+      emit(
+        PurchaseOrderSubmitted(
+          response: response,
+          message: 'Purchase order submitted successfully',
+        ),
+      );
     } catch (e) {
-      emit(PurchaseOrderSubmitError(
-        message: e.toString(),
-        lpoNo: event.lpoNo,
-      ));
+      emit(PurchaseOrderSubmitError(message: e.toString(), lpoNo: event.lpoNo));
     }
   }
 
@@ -97,19 +90,19 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     try {
       final request = SubmitPurchaseOrderRequest(lpoNo: event.lpoNo);
       final response = await purchaseRepo.submitPurchaseOrder(request: request);
-      
-      emit(PurchaseOrderSubmitted(
-        response: response,
-        message: 'Purchase order resubmitted successfully',
-      ));
+
+      emit(
+        PurchaseOrderSubmitted(
+          response: response,
+          message: 'Purchase order resubmitted successfully',
+        ),
+      );
     } catch (e) {
-      emit(PurchaseOrderSubmitError(
-        message: e.toString(),
-        lpoNo: event.lpoNo,
-      ));
+      emit(PurchaseOrderSubmitError(message: e.toString(), lpoNo: event.lpoNo));
     }
   }
-   Future<void> _onCreatePurchaseOrder(
+
+  Future<void> _onCreatePurchaseOrder(
     CreatePurchaseOrderEvent event,
     Emitter<PurchaseState> emit,
   ) async {
@@ -138,16 +131,19 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
         limit: event.limit,
         offset: event.offset,
         status: event.status,
+        searchTerm: event.searchTerm,
         filters: event.filters,
       );
 
       if (response.purchaseOrders.isEmpty) {
         emit(PurchaseEmpty());
       } else {
-        emit(PurchaseLoaded(
-          purchaseOrders: response.purchaseOrders,
-          totalCount: response.totalCount,
-        ));
+        emit(
+          PurchaseLoaded(
+            purchaseOrders: response.purchaseOrders,
+            totalCount: response.totalCount,
+          ),
+        );
       }
     } catch (e) {
       emit(PurchaseError(message: e.toString()));
@@ -169,10 +165,12 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
       if (response.purchaseOrders.isEmpty) {
         emit(PurchaseEmpty());
       } else {
-        emit(PurchaseLoaded(
-          purchaseOrders: response.purchaseOrders,
-          totalCount: response.totalCount,
-        ));
+        emit(
+          PurchaseLoaded(
+            purchaseOrders: response.purchaseOrders,
+            totalCount: response.totalCount,
+          ),
+        );
       }
     } catch (e) {
       emit(PurchaseError(message: e.toString()));

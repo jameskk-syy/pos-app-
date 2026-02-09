@@ -1,29 +1,66 @@
-import 'package:pos/data/datasource/user_remote_datasource.dart';
+import 'package:pos/data/datasource/crm_datasource.dart';
 import 'package:pos/domain/repository/crm_repo.dart';
-import 'package:pos/domain/requests/assign_loyalty_program_request.dart';
-import 'package:pos/domain/requests/create_customer.dart';
-import 'package:pos/domain/requests/customer_credit.dart';
-import 'package:pos/domain/requests/get_customer_request.dart';
-import 'package:pos/domain/requests/loyalty_history_models.dart';
-import 'package:pos/domain/requests/update_customer_request.dart';
-import 'package:pos/domain/responses/assign_loyalty_program_response.dart';
-import 'package:pos/domain/responses/create_customer.dart';
-import 'package:pos/domain/responses/crm_customer.dart';
-import 'package:pos/domain/responses/customer_credit.dart';
-import 'package:pos/domain/responses/loyalty_response.dart';
-import 'package:pos/domain/responses/update_customer_response.dart';
+import 'package:pos/domain/requests/crm/assign_loyalty_program_request.dart';
+import 'package:pos/domain/requests/sales/create_customer.dart';
+import 'package:pos/domain/requests/finance/customer_credit.dart';
+import 'package:pos/domain/requests/sales/get_customer_request.dart';
+import 'package:pos/domain/requests/crm/loyalty_history_models.dart';
+import 'package:pos/domain/requests/sales/update_customer_request.dart';
+import 'package:pos/domain/responses/crm/assign_loyalty_program_response.dart'
+    hide Customer;
+import 'package:pos/domain/responses/sales/create_customer.dart';
+import 'package:pos/domain/responses/sales/crm_customer.dart';
+import 'package:pos/domain/responses/finance/customer_credit.dart';
+import 'package:pos/domain/responses/crm/loyalty_response.dart';
+import 'package:pos/domain/responses/sales/update_customer_response.dart';
+import 'package:pos/core/services/connectivity_service.dart';
+import 'package:pos/data/datasource/local_datasource.dart';
 
 class CrmRepoImpl implements CrmRepo {
-  final RemoteDataSource remoteDataSource;
+  final CrmRemoteDataSource remoteDataSource;
+  final ConnectivityService connectivityService;
+  final LocalDataSource localDataSource;
 
-  CrmRepoImpl({required this.remoteDataSource});
+  CrmRepoImpl({
+    required this.remoteDataSource,
+    required this.connectivityService,
+    required this.localDataSource,
+  });
+
   @override
   Future<CustomerResponse> getAllCustomers(CustomerRequest request) async {
-    try {
-      final result = await remoteDataSource.getAllCustomers(request);
-      return result;
-    } catch (e) {
-      rethrow;
+    final isConnected = await connectivityService.checkNow();
+
+    if (isConnected) {
+      try {
+        final result = await remoteDataSource.getAllCustomers(request);
+        // Cache customers for offline use
+        final customersData = result.message.data
+            .map((c) => c.toJson())
+            .toList();
+        await localDataSource.cacheCustomers(customersData);
+        return result;
+      } catch (e) {
+        rethrow;
+      }
+    } else {
+      // Offline: Return cached customers
+      final cached = localDataSource.getCachedCustomers();
+      if (cached.isNotEmpty) {
+        final customers = cached.map((c) => Customer.fromJson(c)).toList();
+        // Create a response matching the expected structure
+        return CustomerResponse(
+          message: CrmMessage(
+            success: true,
+            data: customers,
+            count: customers.length,
+          ),
+        );
+      } else {
+        throw Exception(
+          'No internet connection and no cached customers available.',
+        );
+      }
     }
   }
 
@@ -60,13 +97,48 @@ class CrmRepoImpl implements CrmRepo {
   }
 
   @override
-  Future<LoyaltyBalanceResponse> getLoyaltyBalance(String customerId) async {
-    return await remoteDataSource.getLoyaltyBalance(customerId);
+  Future<LoyaltyBalanceResponse> getLoyaltyBalance(
+    String customerId, {
+    double? invoiceAmount,
+    String? company,
+  }) async {
+    return await remoteDataSource.getLoyaltyBalance(
+      customerId,
+      invoiceAmount: invoiceAmount,
+      company: company,
+    );
   }
 
   @override
   Future<RedeemPointsResponse> redeemPoints(RedeemPointsRequest request) async {
     return await remoteDataSource.redeemPoints(request);
+  }
+
+  @override
+  Future<EarnLoyaltyPointsResponse> earnLoyaltyPoints(
+    EarnLoyaltyPointsRequest request,
+  ) async {
+    final isConnected = await connectivityService.checkNow();
+
+    if (isConnected) {
+      try {
+        return await remoteDataSource.earnLoyaltyPoints(request);
+      } catch (e) {
+        rethrow;
+      }
+    } else {
+      // Offline: Save for later sync
+      await localDataSource.saveOfflineLoyaltyPoints(request.toJson());
+
+      // Return mock success response
+      return EarnLoyaltyPointsResponse(
+        status: 'success',
+        message: 'Loyalty points queued offline. Will sync when online.',
+        pointsEarned: 0, // Will be calculated when synced
+        totalPoints: 0, // Will be updated when synced
+        debug: ['Saved offline'],
+      );
+    }
   }
 
   @override

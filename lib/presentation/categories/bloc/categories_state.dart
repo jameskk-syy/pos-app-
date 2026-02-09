@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:pos/domain/responses/item_group.dart';
+import 'package:pos/domain/responses/products/item_group.dart';
 
 abstract class CategoriesState extends Equatable {
   const CategoriesState();

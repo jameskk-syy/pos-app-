@@ -1,13 +1,13 @@
 import 'package:bloc/bloc.dart';
 import 'package:meta/meta.dart';
 import 'package:pos/domain/repository/suppliers_repo.dart';
-import 'package:pos/domain/requests/create_supplier_group_request.dart';
-import 'package:pos/domain/requests/create_supplier_request.dart';
-import 'package:pos/domain/requests/update_supplier_request.dart';
-import 'package:pos/domain/responses/create_supplier_group_response.dart';
-import 'package:pos/domain/responses/create_supplier_response.dart';
-import 'package:pos/domain/responses/supplier_group_response.dart';
-import 'package:pos/domain/responses/suppliers_response.dart';
+import 'package:pos/domain/requests/suppliers/create_supplier_group_request.dart';
+import 'package:pos/domain/requests/suppliers/create_supplier_request.dart';
+import 'package:pos/domain/requests/suppliers/update_supplier_request.dart';
+import 'package:pos/domain/responses/suppliers/create_supplier_group_response.dart';
+import 'package:pos/domain/responses/suppliers/create_supplier_response.dart';
+import 'package:pos/domain/responses/suppliers/supplier_group_response.dart';
+import 'package:pos/domain/responses/suppliers/suppliers_response.dart';
 
 part 'suppliers_event.dart';
 part 'suppliers_state.dart';

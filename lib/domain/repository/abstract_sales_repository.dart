@@ -24,4 +24,13 @@ abstract class SalesRepository {
   Future<ClosePOSSessionResponse> closePOSSession({
     required ClosePOSSessionRequest request,
   });
+
+  Future<Map<String, dynamic>> createCreditModeOfPayment({
+    required Map<String, dynamic> request,
+  });
+
+  Future<Map<String, dynamic>> getReceivableAccount({
+    required String customer,
+    required String company,
+  });
 }

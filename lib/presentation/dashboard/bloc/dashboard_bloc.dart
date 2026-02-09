@@ -3,8 +3,8 @@ import 'dart:async';
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pos/domain/repository/dashboard_repo.dart';
-import 'package:pos/domain/requests/dashboard_request.dart';
-import 'package:pos/domain/responses/dashboard_response.dart';
+import 'package:pos/domain/requests/sales/dashboard_request.dart';
+import 'package:pos/domain/responses/sales/dashboard_response.dart';
 
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';

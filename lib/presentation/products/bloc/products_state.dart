@@ -10,9 +10,9 @@ final class ProductsStateLoading extends ProductsState {}
 final class ProductsCreateStateSuccess extends ProductsState {}
 
 final class ProductsStateSuccess extends ProductsState {
-  final ProductResponseSimple productResponseSimple;
+  final ProductResponseSimple productResponse;
 
-  ProductsStateSuccess({required this.productResponseSimple});
+  ProductsStateSuccess({required this.productResponse});
 }
 
 final class ItemsStateSuccess extends ProductsState {
@@ -51,4 +51,13 @@ final class AddItemToStockSuccess extends ProductsState {
   AddItemToStockSuccess({required this.stockResponse});
 }
 
-final class ProductsUpdateStateSuccess extends ProductsState {}
+final class ProductsUpdateStateSuccess extends ProductsState {
+  final String? message;
+  ProductsUpdateStateSuccess({this.message});
+}
+
+final class BarcodeSearchSuccess extends ProductsState {
+  final ProductItem product;
+
+  BarcodeSearchSuccess({required this.product});
+}

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:pos/domain/models/cart_item.dart';
-import 'package:pos/domain/responses/crm_customer.dart';
+import 'package:pos/domain/responses/sales/crm_customer.dart';
 import 'package:pos/screens/pages/point_of_sale/app_bar.dart';
 import 'package:pos/screens/pages/point_of_sale/buttons_widget.dart';
 import 'package:pos/screens/pages/point_of_sale/checkout.dart';
@@ -15,7 +15,8 @@ class SaleSummaryPage extends StatefulWidget {
     super.key,
     required this.selectedCustomer,
     required this.selectedWarehouse,
-    required this.company, required this.posName,
+    required this.company,
+    required this.posName,
   });
 
   @override
@@ -35,6 +36,7 @@ class _SaleSummaryPageState extends State<SaleSummaryPage> {
   Future<void> _loadCart() async {
     setState(() => isLoading = true);
     final loadedCart = await CartManager.getCart();
+    if (!mounted) return;
     setState(() {
       cart = loadedCart;
       isLoading = false;
@@ -61,6 +63,7 @@ class _SaleSummaryPageState extends State<SaleSummaryPage> {
 
     await CartManager.updateQuantity(cart[index].product.id, newQuantity);
     final updatedCart = await CartManager.getCart();
+    if (!mounted) return;
     setState(() {
       cart = updatedCart;
     });
@@ -69,6 +72,7 @@ class _SaleSummaryPageState extends State<SaleSummaryPage> {
   Future<void> _removeItem(int index) async {
     await CartManager.removeFromCart(cart[index].product.id);
     final updatedCart = await CartManager.getCart();
+    if (!mounted) return;
     setState(() {
       cart = updatedCart;
     });
@@ -92,8 +96,8 @@ class _SaleSummaryPageState extends State<SaleSummaryPage> {
       appBar: POSAppBar(
         statusText: 'Open session',
         statusColor: Colors.green,
-        onBackPressed: () => Navigator.pop(context), 
-        onStatusPressed: () {  },
+        onBackPressed: () => Navigator.pop(context),
+        onStatusPressed: () {},
       ),
       body: Column(
         children: [
@@ -408,11 +412,18 @@ class _SaleSummaryPageState extends State<SaleSummaryPage> {
                           posName: widget.posName,
                         ),
                       ),
-                    ).then((_) async {
-                      final updatedCart = await CartManager.getCart();
-                      setState(() {
-                        cart = updatedCart;
-                      });
+                    ).then((result) async {
+                      if (!mounted) return;
+                      if (result == true) {
+                        // ignore: use_build_context_synchronously
+                        Navigator.of(context).pop();
+                      } else {
+                        final updatedCart = await CartManager.getCart();
+                        if (!mounted) return;
+                        setState(() {
+                          cart = updatedCart;
+                        });
+                      }
                     });
                   }
                 },

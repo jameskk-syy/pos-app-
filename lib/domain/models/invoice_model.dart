@@ -48,17 +48,24 @@ class InvoiceRequest {
       customer: json['customer'],
       company: json['company'],
       warehouse: json['warehouse'],
-      updateStock: json['update_stock'],
+      updateStock: json['update_stock'] ?? false,
       items: (json['items'] as List)
-          .map((item) => InvoiceItem.fromJson(item))
+          .map(
+            (item) =>
+                InvoiceItem.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList(),
       postingDate: json['posting_date'],
       posProfile: json['pos_profile'],
       payments: (json['payments'] as List)
-          .map((payment) => InvoicePayment.fromJson(payment))
+          .map(
+            (payment) => InvoicePayment.fromJson(
+              Map<String, dynamic>.from(payment as Map),
+            ),
+          )
           .toList(),
-      doNotSubmit: json['do_not_submit'],
-      isPos: json['is_pos'],
+      doNotSubmit: json['do_not_submit'] ?? false,
+      isPos: json['is_pos'] ?? 0,
       invoiceType: json['invoice_type'],
     );
   }

@@ -5,11 +5,15 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/domain/models/cart_item.dart';
 import 'package:pos/domain/models/product.dart';
-import 'package:pos/domain/responses/get_current_user.dart';
-import 'package:pos/domain/responses/product_response.dart';
-import 'package:pos/domain/responses/store_response.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
+import 'package:pos/domain/responses/products/item_group.dart';
+import 'package:pos/domain/responses/products/product_response.dart';
+import 'package:pos/domain/responses/sales/store_response.dart';
 import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
+import 'package:pos/domain/models/inventory_discount_rule.dart';
+import 'package:pos/domain/requests/get_inventory_discount_rules_request.dart';
+import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/presentation/sales/bloc/sales_bloc.dart';
 import 'package:pos/domain/models/pos_session_model.dart';
@@ -17,14 +21,16 @@ import 'package:pos/screens/pages/point_of_sale/add_cart.dart';
 import 'package:pos/screens/pages/point_of_sale/app_bar.dart';
 import 'package:pos/screens/pages/point_of_sale/buttons_widget.dart';
 import 'package:pos/screens/pages/point_of_sale/summary.dart';
+import 'package:pos/screens/sales/invoices_page.dart';
 import 'package:pos/utils/cart_manager.dart';
-import 'package:pos/domain/responses/crm_customer.dart';
+import 'package:pos/domain/responses/sales/crm_customer.dart';
 import 'dart:async';
 
-import 'package:pos/widgets/customer_dropdown.dart';
-import 'package:pos/widgets/open_session_dialog.dart';
-import 'package:pos/widgets/warehouse_dropdown.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/widgets/sales/customer_dropdown.dart';
+import 'package:pos/widgets/sales/open_session_dialog.dart';
+import 'package:pos/widgets/inventory/warehouse_dropdown.dart';
+import 'package:pos/widgets/common/barcode_scanner_screen.dart';
+import 'package:pos/core/services/storage_service.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -53,12 +59,18 @@ class _ProductsPageState extends State<ProductsPage> {
   bool _isLoadingProducts = true;
   String? _productsError;
 
+  List<ItemGroup> _categories = [];
+  String? _selectedCategory;
+  final List<InventoryDiscountRule> _discountRules = [];
+
   // Infinite Scroll variables
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
   final int _pageSize = 20;
   bool _hasMore = true;
   bool _isLoadingMore = false;
+
+  bool _isAutoAddingFromBarcode = false;
 
   @override
   void initState() {
@@ -67,6 +79,7 @@ class _ProductsPageState extends State<ProductsPage> {
     _loadCurrentUser();
     _initializeWalkInCustomer();
     _setupSearchListener();
+    _fetchCategories();
     _scrollController.addListener(_onScroll);
   }
 
@@ -94,6 +107,8 @@ class _ProductsPageState extends State<ProductsPage> {
             _fetchProducts(
               currentUserResponse?.message.company.name,
               _searchQuery,
+              _selectedCategory,
+              selectedWarehouse?.name,
             );
           });
         }
@@ -117,7 +132,12 @@ class _ProductsPageState extends State<ProductsPage> {
         _isLoadingMore = true;
         _currentPage++;
       });
-      _fetchProducts(currentUserResponse!.message.company.name, _searchQuery);
+      _fetchProducts(
+        currentUserResponse!.message.company.name,
+        _searchQuery,
+        _selectedCategory,
+        selectedWarehouse?.name,
+      );
     }
   }
 
@@ -154,8 +174,8 @@ class _ProductsPageState extends State<ProductsPage> {
   }
 
   Future<CurrentUserResponse?> _getSavedCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString == null) return null;
     return CurrentUserResponse.fromJson(jsonDecode(userString));
   }
@@ -168,19 +188,60 @@ class _ProductsPageState extends State<ProductsPage> {
       currentUserResponse = savedUser;
     });
     _fetchWarehouses(currentUserResponse!.message.company.name);
-    _fetchProducts(currentUserResponse!.message.company.name);
+    _fetchProducts(
+      currentUserResponse!.message.company.name,
+      _searchQuery,
+      _selectedCategory,
+      selectedWarehouse?.name,
+    );
+    _fetchDiscountRules();
+  }
+
+  void _fetchDiscountRules() {
+    if (currentUserResponse != null) {
+      context.read<InventoryBloc>().add(
+        GetInventoryDiscountRules(
+          request: GetInventoryDiscountRulesRequest(
+            ruleType: 'Item',
+            company: currentUserResponse!.message.company.name,
+            pageSize: 1000, // Fetch all for lookup
+          ),
+        ),
+      );
+      // Also fetch Item Group rules
+      context.read<InventoryBloc>().add(
+        GetInventoryDiscountRules(
+          request: GetInventoryDiscountRulesRequest(
+            ruleType: 'Item Group',
+            company: currentUserResponse!.message.company.name,
+            pageSize: 1000,
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _fetchCategories() async {
+    context.read<ProductsBloc>().add(GetItemGroup());
   }
 
   Future<void> _fetchWarehouses([String? name]) async {
     context.read<StoreBloc>().add(GetAllStores(company: name ?? ''));
   }
 
-  Future<void> _fetchProducts([String? name, String? searchTerm]) async {
+  Future<void> _fetchProducts([
+    String? name,
+    String? searchTerm,
+    String? category,
+    String? warehouse,
+  ]) async {
     if (name != null && name.isNotEmpty) {
       context.read<ProductsBloc>().add(
         GetAllProducts(
           company: name,
           searchTerm: searchTerm ?? '',
+          itemGroup: category,
+          warehouse: warehouse,
           page: _currentPage,
           pageSize: _pageSize,
         ),
@@ -213,6 +274,7 @@ class _ProductsPageState extends State<ProductsPage> {
               uom: product.stockUom,
             ),
             quantity: quantity,
+            discountRules: _discountRules,
           );
           await _loadCart();
 
@@ -228,6 +290,24 @@ class _ProductsPageState extends State<ProductsPage> {
         },
       ),
     );
+  }
+
+  Future<void> _openBarcodeScanner() async {
+    final result = await Navigator.push<String>(
+      context,
+      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      if (mounted) {
+        context.read<ProductsBloc>().add(
+          SearchProductByBarcode(
+            barcode: result,
+            posProfile: currentUserResponse?.message.posProfile.name ?? '',
+          ),
+        );
+      }
+    }
   }
 
   void _showCustomerSelectionBottomSheet() {
@@ -284,7 +364,15 @@ class _ProductsPageState extends State<ProductsPage> {
             onWarehouseSelected: (warehouse) {
               setState(() {
                 selectedWarehouse = warehouse;
+                _currentPage = 1;
+                _allProducts.clear();
               });
+              _fetchProducts(
+                currentUserResponse?.message.company.name,
+                _searchQuery,
+                _selectedCategory,
+                warehouse?.name,
+              );
             },
           ),
         );
@@ -318,6 +406,15 @@ class _ProductsPageState extends State<ProductsPage> {
                           ),
                   );
                   selectedWarehouse = defaultWarehouse;
+                  // Fetch products for the default warehouse
+                  _currentPage = 1;
+                  _allProducts.clear();
+                  _fetchProducts(
+                    currentUserResponse?.message.company.name,
+                    _searchQuery,
+                    _selectedCategory,
+                    selectedWarehouse?.name,
+                  );
                 }
               });
             } else if (state is StoreStateFailure) {
@@ -337,14 +434,29 @@ class _ProductsPageState extends State<ProductsPage> {
             if (state is ProductsStateSuccess) {
               setState(() {
                 if (_currentPage == 1) {
-                  _allProducts = state.productResponseSimple.products;
+                  _allProducts = state.productResponse.products;
                 } else {
-                  _allProducts.addAll(state.productResponseSimple.products);
+                  _allProducts.addAll(state.productResponse.products);
                 }
-                _hasMore = state.productResponseSimple.pagination.hasNextPage;
+                _hasMore = state.productResponse.pagination.hasNextPage;
                 _isLoadingProducts = false;
                 _isLoadingMore = false;
                 _filterProducts();
+
+                if (_isAutoAddingFromBarcode) {
+                  _isAutoAddingFromBarcode = false;
+                  if (_allProducts.isNotEmpty) {
+                    _showAddToCartDialog(_allProducts.first);
+                  } else {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'No product matches found for the scanned item.',
+                        ),
+                      ),
+                    );
+                  }
+                }
               });
             } else if (state is ProductsStateLoading) {
               if (_currentPage == 1) {
@@ -364,9 +476,45 @@ class _ProductsPageState extends State<ProductsPage> {
               });
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Failed to load products: ${state.error}'),
+                  content: Text('Failed to load products: Retry please'),
                 ),
               );
+            } else if (state is ProductsItemGroupsStateSuccess) {
+              setState(() {
+                _categories = state.itemGroupResponse.message.itemGroups;
+              });
+            } else if (state is BarcodeSearchSuccess) {
+              setState(() {
+                _isAutoAddingFromBarcode = true;
+                _searchController.text = state.product.itemName;
+                _searchQuery = state.product.itemName;
+                _currentPage = 1;
+                _allProducts.clear();
+              });
+              _fetchProducts(
+                currentUserResponse?.message.company.name,
+                state.product.itemName,
+                _selectedCategory,
+                selectedWarehouse?.name,
+              );
+            }
+          },
+        ),
+        BlocListener<InventoryBloc, InventoryState>(
+          listener: (context, state) {
+            if (state is GetInventoryDiscountRulesLoaded) {
+              setState(() {
+                final newRules = state.response.message.data.rules
+                    .map((e) => InventoryDiscountRule.fromApiModel(e))
+                    .toList();
+
+                // Merge with existing rules, avoiding duplicates
+                for (var rule in newRules) {
+                  if (!_discountRules.any((r) => r.name == rule.name)) {
+                    _discountRules.add(rule);
+                  }
+                }
+              });
             }
           },
         ),
@@ -379,12 +527,8 @@ class _ProductsPageState extends State<ProductsPage> {
                   backgroundColor: Colors.green,
                 ),
               );
-              // Optimistically update UI or state if needed
-              // For now, removing session locally
-              SharedPreferences.getInstance().then((prefs) {
-                prefs.remove('current_pos_session');
-              });
-              // Show open session bottom sheet again if needed or navigate
+              getIt<StorageService>().remove('current_pos_session');
+
               _showOpenSessionBottomSheet();
             } else if (state is POSSessionCloseError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -427,6 +571,14 @@ class _ProductsPageState extends State<ProductsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     POSActionButtons(
+                      onInvoicesPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const InvoicesPage(),
+                          ),
+                        );
+                      },
                       onCloseSession: () {
                         showDialog(
                           context: context,
@@ -470,11 +622,10 @@ class _ProductsPageState extends State<ProductsPage> {
                                         Navigator.pop(context);
 
                                         try {
-                                          final prefs =
-                                              await SharedPreferences.getInstance();
-                                          final sessionString = prefs.getString(
-                                            'current_pos_session',
-                                          );
+                                          final storage =
+                                              getIt<StorageService>();
+                                          final sessionString = await storage
+                                              .getString('current_pos_session');
                                           if (sessionString != null) {
                                             final sessionJson = jsonDecode(
                                               sessionString,
@@ -574,6 +725,14 @@ class _ProductsPageState extends State<ProductsPage> {
                                   size: 20,
                                   color: Colors.grey.shade600,
                                 ),
+                                suffixIcon: IconButton(
+                                  icon: Icon(
+                                    Icons.qr_code_scanner,
+                                    size: 20,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                  onPressed: _openBarcodeScanner,
+                                ),
                                 filled: true,
                                 fillColor: Colors.white,
                                 border: OutlineInputBorder(
@@ -648,16 +807,21 @@ class _ProductsPageState extends State<ProductsPage> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          _getFirstName(
-                                            selectedCustomer?.customerName ??
-                                                'Walk-in Customer',
-                                          ),
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade700,
+                                        Expanded(
+                                          child: Text(
+                                            _getFirstName(
+                                              selectedCustomer?.customerName ??
+                                                  'Walk-in Customer',
+                                            ),
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
+                                        const SizedBox(width: 8),
                                         Icon(
                                           Icons.arrow_drop_down,
                                           size: 20,
@@ -701,14 +865,19 @@ class _ProductsPageState extends State<ProductsPage> {
                                       mainAxisAlignment:
                                           MainAxisAlignment.spaceBetween,
                                       children: [
-                                        Text(
-                                          selectedWarehouse?.warehouseName ??
-                                              'Select Warehouse',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            color: Colors.grey.shade700,
+                                        Expanded(
+                                          child: Text(
+                                            selectedWarehouse?.warehouseName ??
+                                                'Select Warehouse',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.grey.shade700,
+                                            ),
+                                            overflow: TextOverflow.ellipsis,
+                                            maxLines: 1,
                                           ),
                                         ),
+                                        const SizedBox(width: 8),
                                         if (isLoadingWarehouses)
                                           SizedBox(
                                             width: 20,
@@ -739,11 +908,46 @@ class _ProductsPageState extends State<ProductsPage> {
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       child: Row(
                         children: [
-                          _buildChip('All Items', true),
-                          _buildChip('Consumables', false),
-                          _buildChip('Electronics', false),
-                          _buildChip('Accessories', false),
-                          _buildChip('Footings', false),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedCategory = null;
+                                _currentPage = 1;
+                                _hasMore = true;
+                                _allProducts.clear();
+                                _fetchProducts(
+                                  currentUserResponse?.message.company.name,
+                                  _searchQuery,
+                                  _selectedCategory,
+                                );
+                              });
+                            },
+                            child: _buildChip(
+                              'All Items',
+                              _selectedCategory == null,
+                            ),
+                          ),
+                          ..._categories.map((category) {
+                            return GestureDetector(
+                              onTap: () {
+                                setState(() {
+                                  _selectedCategory = category.name;
+                                  _currentPage = 1;
+                                  _hasMore = true;
+                                  _allProducts.clear();
+                                  _fetchProducts(
+                                    currentUserResponse?.message.company.name,
+                                    _searchQuery,
+                                    _selectedCategory,
+                                  );
+                                });
+                              },
+                              child: _buildChip(
+                                category.name,
+                                _selectedCategory == category.name,
+                              ),
+                            );
+                          }),
                         ],
                       ),
                     ),
@@ -902,7 +1106,7 @@ class _ProductsPageState extends State<ProductsPage> {
               ),
               SizedBox(height: 8),
               Text(
-                _productsError!,
+                "Retry please, to fetch  new products",
                 textAlign: TextAlign.center,
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
               ),
@@ -1082,7 +1286,8 @@ class _ProductsPageState extends State<ProductsPage> {
         ),
         backgroundColor: selected ? Colors.blue : Colors.white,
         side: BorderSide(color: selected ? Colors.blue : Colors.grey.shade300),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
       ),
     );
   }

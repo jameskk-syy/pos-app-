@@ -1,18 +1,24 @@
-import 'package:pos/domain/requests/create_product.dart';
-import 'package:pos/domain/requests/stock_request.dart';
-import 'package:pos/domain/responses/create_product_response.dart';
-import 'package:pos/domain/responses/item_brand.dart';
+import 'package:pos/domain/requests/products/create_product.dart';
+import 'package:pos/domain/requests/inventory/stock_request.dart';
+import 'package:pos/domain/responses/products/create_product_response.dart';
+import 'package:pos/domain/responses/products/item_brand.dart';
 import 'package:pos/domain/responses/price_list_response.dart';
-import 'package:pos/domain/responses/item_group.dart';
-import 'package:pos/domain/responses/item_list.dart';
-import 'package:pos/domain/responses/product_response.dart';
-import 'package:pos/domain/responses/stock_reco.dart';
+import 'package:pos/domain/responses/products/item_group.dart';
+import 'package:pos/domain/responses/products/item_list.dart';
+import 'package:pos/domain/responses/products/product_response.dart';
+import 'package:pos/domain/responses/inventory/stock_reco.dart';
 import 'package:pos/domain/responses/uom_response.dart';
+import 'package:pos/domain/models/invoice_list_model.dart';
+import 'package:pos/domain/models/pos_opening_entry_model.dart';
+import 'package:pos/domain/responses/products/product_price_response.dart';
 
 abstract class ProductsRepo {
   Future<ProductResponseSimple> getAllProducts(
     String company, {
     String? searchTerm,
+    String? itemGroup,
+    String? brand,
+    String? warehouse,
     int page = 1,
     int pageSize = 20,
   });
@@ -66,7 +72,7 @@ abstract class ProductsRepo {
   Future<StockResponse> addItemToStock(StockRequest stockRequest);
   Future<void> addBarcode(String itemCode, String barcode);
   Future<void> updateProduct(CreateProductRequest request);
-  Future<void> disableProduct(String itemCode);
+  Future<String> disableProduct(String itemCode);
   Future<void> enableProduct(String itemCode);
   Future<void> setProductPrice({
     required String itemCode,
@@ -79,5 +85,45 @@ abstract class ProductsRepo {
     required String itemCode,
     required int warrantyPeriod,
     required String warrantyPeriodUnit,
+  });
+  Future<ProductPriceResponse> getProductPrice({
+    required String itemCode,
+    required String company,
+    String? priceList,
+  });
+  Future<ProductItem> searchProductByBarcode({
+    required String barcode,
+    required String posProfile,
+  });
+
+  Future<InvoiceListResponse> listSalesInvoices({
+    required String company,
+    int limit = 20,
+    int offset = 0,
+    String? customer,
+    String? fromDate,
+    String? toDate,
+    String? status,
+  });
+
+  Future<InvoiceListResponse> listPosInvoices({
+    required String company,
+    int limit = 20,
+    int offset = 0,
+    String? customer,
+    String? fromDate,
+    String? toDate,
+    String? status,
+  });
+
+  Future<PosOpeningEntryResponse> listPosOpeningEntries({
+    required String company,
+    int limit = 20,
+    int offset = 0,
+  });
+
+  Future<ClosePosOpeningEntryResponse> closePosOpeningEntry({
+    required String posOpeningEntry,
+    bool doNotSubmit = false,
   });
 }

@@ -3,15 +3,16 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:pos/domain/requests/dashboard_request.dart';
-import 'package:pos/domain/responses/dashboard_response.dart';
-import 'package:pos/domain/responses/get_current_user.dart';
+import 'package:pos/domain/requests/sales/dashboard_request.dart';
+import 'package:pos/domain/responses/sales/dashboard_response.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
 import 'package:pos/presentation/dashboard/bloc/dashboard_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/presentation/usersBloc/bloc/staff_bloc.dart';
 import 'package:pos/utils/themes/app_colors.dart';
-import 'package:pos/widgets/sales_card.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:pos/widgets/sales/sales_card.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -37,8 +38,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   Future<CurrentUserResponse?> _getSavedCurrentUser() async {
-    final prefs = await SharedPreferences.getInstance();
-    final userString = prefs.getString('current_user');
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
     if (userString == null) return null;
     return CurrentUserResponse.fromJson(jsonDecode(userString));
   }

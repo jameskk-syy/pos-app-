@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:pos/screens/iintroduction_screen.dart';
+import 'package:pos/screens/sales/iintroduction_screen.dart';
+import 'package:pos/screens/sales/dashboard.dart';
 // import 'package:pos/screens/auth/register_company_details.dart';
 import 'package:pos/utils/themes/app_colors.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'home_screen.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/screens/sales/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -48,21 +50,18 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(
       const Duration(milliseconds: 3000),
     ); // wait for animation
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('access_token');
-    final onboarded = prefs.getBool('ON_BOARDING') ?? true;
-    // final accessToken = prefs.getString('access_token');
-    // final companyRegistered = prefs.getBool('company_registered') ?? false;
+    final storage = getIt<StorageService>();
+    final onboarded = await storage.getBool('ON_BOARDING') ?? true;
+    final accessToken = await storage.getString('access_token');
 
     if (!mounted) return;
 
-    // if (accessToken != null && !companyRegistered) {
-    //   // User is registered/logged in but company registration is pending
-    //   Navigator.of(context).pushReplacement(
-    //     MaterialPageRoute(builder: (_) => const RegisterCompanyDetails()),
-    //   );
-    //   return;
-    // }
+    if (accessToken != null && accessToken.isNotEmpty) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardPage()),
+      );
+      return;
+    }
 
     Navigator.of(context).pushReplacement(
       MaterialPageRoute(

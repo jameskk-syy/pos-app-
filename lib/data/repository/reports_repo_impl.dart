@@ -1,14 +1,16 @@
-import 'package:pos/data/datasource/user_remote_datasource.dart';
+import 'package:pos/data/datasource/reports_remote_datasource.dart';
 import 'package:pos/domain/models/reports/inventory_reports_model.dart';
+import 'package:pos/domain/models/reports/inventory_summary_model.dart';
 import 'package:pos/domain/models/reports/performance_metrics_model.dart';
 import 'package:pos/domain/models/reports/stock_movement_model.dart';
 import 'package:pos/domain/models/reports/aging_stock_model.dart';
+import 'package:pos/domain/models/reports/accounting_reports_model.dart';
 import 'package:pos/domain/models/reports/sales_analytics_model.dart';
 import 'package:pos/domain/repository/reports_repo.dart';
 import 'package:pos/domain/requests/report_request.dart';
 
 class ReportsRepoImpl implements ReportsRepo {
-  final RemoteDataSource remoteDataSource;
+  final ReportsRemoteDataSource remoteDataSource;
 
   ReportsRepoImpl({required this.remoteDataSource});
 
@@ -80,5 +82,63 @@ class ReportsRepoImpl implements ReportsRepo {
     ReportRequest request,
   ) async {
     return await remoteDataSource.getInventoryExpiryReport(request);
+  }
+
+  @override
+  Future<InventoryCostMethodResponse> getInventoryCostMethodComparisonReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getInventoryCostMethodComparisonReport(
+      request,
+    );
+  }
+
+  @override
+  Future<InventoryValueTrendsResponse> getInventoryValueTrendsReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getInventoryValueTrendsReport(request);
+  }
+
+  @override
+  Future<InventoryMovementPatternsResponse> getInventoryMovementPatternsReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getInventoryMovementPatternsReport(request);
+  }
+
+  @override
+  Future<InventoryTransferEfficiencyResponse>
+  getInventoryTransferEfficiencyReport(ReportRequest request) async {
+    return await remoteDataSource.getInventoryTransferEfficiencyReport(request);
+  }
+
+  @override
+  Future<InventoryObsolescenceRiskResponse> getInventoryObsolescenceRiskReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getInventoryObsolescenceRiskReport(request);
+  }
+
+  @override
+  Future<InventoryAgingRecommendationResponse>
+  getInventoryAgingRecommendationsReport(ReportRequest request) async {
+    return await remoteDataSource.getInventoryAgingRecommendationsReport(
+      request,
+    );
+  }
+
+  @override
+  Future<ProfitAndLossResponse> getProfitAndLossReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getProfitAndLossReport(request);
+  }
+
+  @override
+  Future<InventorySummaryResponse> getInventorySummaryReport(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getInventorySummaryReport(request);
   }
 }

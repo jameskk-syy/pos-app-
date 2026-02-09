@@ -1,22 +1,22 @@
-import 'package:pos/data/datasource/user_remote_datasource.dart';
+import 'package:pos/data/datasource/purchase_remote_datasource.dart';
 import 'package:pos/domain/repository/suppliers_repo.dart';
-import 'package:pos/domain/requests/create_supplier_group_request.dart';
-import 'package:pos/domain/requests/create_supplier_request.dart';
-import 'package:pos/domain/requests/update_supplier_request.dart';
-import 'package:pos/domain/responses/create_supplier_group_response.dart';
-import 'package:pos/domain/responses/create_supplier_response.dart';
-import 'package:pos/domain/responses/supplier_group_response.dart';
-import 'package:pos/domain/responses/suppliers_response.dart';
+import 'package:pos/domain/requests/suppliers/create_supplier_group_request.dart';
+import 'package:pos/domain/requests/suppliers/create_supplier_request.dart';
+import 'package:pos/domain/requests/suppliers/update_supplier_request.dart';
+import 'package:pos/domain/responses/suppliers/create_supplier_group_response.dart';
+import 'package:pos/domain/responses/suppliers/create_supplier_response.dart';
+import 'package:pos/domain/responses/suppliers/supplier_group_response.dart';
+import 'package:pos/domain/responses/suppliers/suppliers_response.dart';
 
 class SuppliersRepoImpl implements SuppliersRepo {
-  final RemoteDataSource remoteDataSource;
+  final PurchaseRemoteDataSource purchaseRemoteDataSource;
 
-  SuppliersRepoImpl({required this.remoteDataSource});
+  SuppliersRepoImpl({required this.purchaseRemoteDataSource});
 
   @override
   Future<SupplierGroupResponse> getSupplierGroups() async {
     try {
-      final response = await remoteDataSource.getSupplierGroups();
+      final response = await purchaseRemoteDataSource.getSupplierGroups();
       return response;
     } catch (e) {
       rethrow;
@@ -28,7 +28,7 @@ class SuppliersRepoImpl implements SuppliersRepo {
     CreateSupplierRequest request,
   ) async {
     try {
-      final response = await remoteDataSource.createSupplier(request);
+      final response = await purchaseRemoteDataSource.createSupplier(request);
       return response;
     } catch (e) {
       rethrow;
@@ -40,7 +40,7 @@ class SuppliersRepoImpl implements SuppliersRepo {
     UpdateSupplierRequest request,
   ) async {
     try {
-      final response = await remoteDataSource.updateSupplier(request);
+      final response = await purchaseRemoteDataSource.updateSupplier(request);
       return response;
     } catch (e) {
       rethrow;
@@ -59,7 +59,7 @@ class SuppliersRepoImpl implements SuppliersRepo {
     bool? disabled,
   }) async {
     try {
-      final response = await remoteDataSource.getSuppliers(
+      final response = await purchaseRemoteDataSource.getSuppliers(
         searchTerm: searchTerm,
         supplierGroup: supplierGroup,
         company: company,
@@ -80,7 +80,9 @@ class SuppliersRepoImpl implements SuppliersRepo {
     CreateSupplierGroupRequest request,
   ) async {
     try {
-      final response = await remoteDataSource.createSupplierGroup(request);
+      final response = await purchaseRemoteDataSource.createSupplierGroup(
+        request,
+      );
       return response;
     } catch (e) {
       rethrow;

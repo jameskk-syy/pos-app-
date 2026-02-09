@@ -1,5 +1,5 @@
 import 'package:equatable/equatable.dart';
-import 'package:pos/domain/responses/item_brand.dart';
+import 'package:pos/domain/responses/products/item_brand.dart';
 
 abstract class BrandsState extends Equatable {
   const BrandsState();

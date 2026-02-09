@@ -8,6 +8,7 @@ class GetAllProducts extends ProductsEvent {
   final String? searchTerm;
   final String? itemGroup;
   final String? brand;
+  final String? warehouse;
   final bool? isSalesItem;
   final bool? disabled;
   final int? page;
@@ -18,6 +19,7 @@ class GetAllProducts extends ProductsEvent {
     this.searchTerm,
     this.itemGroup,
     this.brand,
+    this.warehouse,
     this.isSalesItem,
     this.disabled,
     this.page = 1,
@@ -67,4 +69,11 @@ class EnableProductEvent extends ProductsEvent {
   final String itemCode;
 
   EnableProductEvent({required this.itemCode});
+}
+
+class SearchProductByBarcode extends ProductsEvent {
+  final String barcode;
+  final String posProfile;
+
+  SearchProductByBarcode({required this.barcode, required this.posProfile});
 }
