@@ -16,6 +16,8 @@ class WebViewSignUpScreen extends StatefulWidget {
 class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
   late final WebViewController _controller;
   bool _isLoading = true;
+  bool _isPolling = false;
+  bool _isNavigating = false;
 
   @override
   void initState() {
@@ -42,6 +44,10 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
           },
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
+            if (request.url.contains('/login')) {
+              _navigateNext(); 
+              return NavigationDecision.prevent;
+            }
             if (request.url.contains('/dashboard') ||
                 request.url.contains('/success')) {
               _handleSuccess(request.url);
@@ -65,6 +71,8 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
   }
 
   void _handleSuccess(String data) async {
+    if (_isPolling || _isNavigating) return;
+
     try {
       final Map<String, dynamic> response = jsonDecode(data);
       final String? siteUrl = response['siteUrl'];
@@ -90,6 +98,9 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
   }
 
   Future<void> _pollTenantStatus(String tenantId) async {
+    if (_isPolling) return;
+    _isPolling = true;
+
     setState(() {
       _isLoading = true;
     });
@@ -97,7 +108,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
     final dio = Dio();
     bool isProvisioned = false;
 
-    while (!isProvisioned && mounted) {
+    while (!isProvisioned && mounted && !_isNavigating) {
       try {
         final response = await dio.get(
           'https://api.saas.techsavanna.technology/api/v1/tenants/$tenantId/status',
@@ -107,6 +118,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
         if (response.statusCode == 200) {
           final data = response.data;
           int progress = 0;
+
           try {
             final rawProgress = data['progressPercent'];
             if (rawProgress is int) {
@@ -122,20 +134,28 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
 
           if (progress >= 100) {
             isProvisioned = true;
+            _isPolling = false;
             if (mounted) {
               _navigateNext();
             }
           } else {
             await Future.delayed(const Duration(seconds: 2));
           }
+        } else {
+          await Future.delayed(const Duration(seconds: 2));
         }
       } catch (e) {
         await Future.delayed(const Duration(seconds: 5));
       }
     }
+
+    _isPolling = false;
   }
 
   Future<void> _navigateNext() async {
+    if (_isNavigating) return;
+    _isNavigating = true;
+
     if (mounted) {
       Navigator.pushReplacement(
         context,
@@ -157,7 +177,8 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
       body: Stack(
         children: [
           WebViewWidget(controller: _controller),
-          if (_isLoading) const Center(child: CircularProgressIndicator()),
+          if (_isLoading)
+            const Center(child: CircularProgressIndicator()),
         ],
       ),
     );
