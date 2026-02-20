@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pos/screens/sales/iintroduction_screen.dart';
-import 'package:pos/screens/sales/dashboard.dart';
+//import 'package:pos/screens/sales/dashboard.dart';
+import 'package:pos/screens/auth/lock_screen.dart';
 // import 'package:pos/screens/auth/register_company_details.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
@@ -50,16 +51,31 @@ class _SplashScreenState extends State<SplashScreen>
     await Future.delayed(
       const Duration(milliseconds: 3000),
     ); // wait for animation
+
+    if (!mounted) return;
+
     final storage = getIt<StorageService>();
     final onboarded = await storage.getBool('ON_BOARDING') ?? true;
     final accessToken = await storage.getString('access_token');
+    final encryptedPassword = await storage.getEncryptedPassword();
 
     if (!mounted) return;
 
     if (accessToken != null && accessToken.isNotEmpty) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardPage()),
-      );
+      if (encryptedPassword != null && encryptedPassword.isNotEmpty) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const LockScreen()),
+        );
+      } else {
+        // Token exists but no password -> Force logout for security
+        await storage.remove('access_token');
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (_) => const IntroScreen(), // Or SignInScreen directly
+          ),
+        );
+      }
       return;
     }
 
@@ -99,7 +115,7 @@ class _SplashScreenState extends State<SplashScreen>
             child: Opacity(
               opacity: backgroundOpacity,
               child: SvgPicture.asset(
-                'assets/svgs/splash.svgs',
+                'assets/svgs/splash.svg',
                 fit: BoxFit.cover,
               ),
             ),

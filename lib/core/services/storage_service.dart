@@ -37,6 +37,19 @@ class StorageService {
     await _storage.delete(key: key);
   }
 
+  Future<void> saveEncryptedPassword(String password) async {
+    // FlutterSecureStorage encrypts by default
+    await _storage.write(key: 'encrypted_password', value: password);
+  }
+
+  Future<String?> getEncryptedPassword() async {
+    return await _storage.read(key: 'encrypted_password');
+  }
+
+  Future<void> removeEncryptedPassword() async {
+    await _storage.delete(key: 'encrypted_password');
+  }
+
   Future<void> clear() async {
     await _storage.deleteAll();
   }

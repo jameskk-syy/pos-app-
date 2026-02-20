@@ -6,10 +6,14 @@ import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/domain/requests/users/login.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
-import 'package:pos/screens/auth/register_user.dart';
+//import 'package:pos/screens/auth/register_user.dart';
+import 'package:pos/screens/auth/webview_sign_up.dart';
 // import 'package:pos/screens/auth/reset_password.dart';
 import 'package:pos/screens/sales/dashboard.dart';
+import 'package:pos/screens/users/bussiness_type.dart';
 import 'package:pos/utils/themes/app_colors.dart';
+import 'package:pos/core/services/connectivity_service.dart';
+import 'package:pos/screens/auth/otp.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -19,9 +23,7 @@ class SignInScreen extends StatefulWidget {
 }
 
 class _SignInScreenState extends State<SignInScreen> {
-  bool rememberMe = false;
   bool obscure = true;
-
   final TextEditingController emailCtrl = TextEditingController();
   final TextEditingController passwordCtrl = TextEditingController();
 
@@ -56,10 +58,23 @@ class _SignInScreenState extends State<SignInScreen> {
                   content: Text("Login successful"),
                 ),
               );
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => DashboardPage()),
-              );
+              final storage = getIt<StorageService>();
+
+              storage.getBool('is_seeded').then((isSeeded) {
+                if (context.mounted) {
+                  if (isSeeded == true) {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => DashboardPage()),
+                    );
+                  } else {
+                    Navigator.pushReplacement(
+                      context,
+                      MaterialPageRoute(builder: (_) => BussinessTypePage()),
+                    );
+                  }
+                }
+              });
             } else if (state is LoginUserFailure) {
               ScaffoldMessenger.of(
                 context,
@@ -140,20 +155,6 @@ class _SignInScreenState extends State<SignInScreen> {
 
                         Row(
                           children: [
-                            Checkbox(
-                              value: rememberMe,
-                              onChanged: (v) => setState(() => rememberMe = v!),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            Text(
-                              "Remember Me",
-                              style: TextStyle(
-                                color: Colors.black54,
-                                fontSize: isTablet ? 15 : 14,
-                              ),
-                            ),
                             const Spacer(),
                             TextButton(
                               onPressed: () {
@@ -280,7 +281,8 @@ class _SignInScreenState extends State<SignInScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (_) => const SignUpScreen(),
+                                      builder: (_) =>
+                                          const WebViewSignUpScreen(),
                                     ),
                                   );
                                 }

@@ -352,10 +352,10 @@ class _WarehouseFormState extends State<WarehouseForm> {
         _buildBasicInfoFields(context, isMobile),
         SizedBox(height: isMobile ? 24 : 32),
 
-        _buildSectionTitle(context, 'Address Information'),
-        SizedBox(height: isMobile ? 16 : 20),
-        _buildAddressFields(context, isMobile),
-        SizedBox(height: isMobile ? 24 : 32),
+        // _buildSectionTitle(context, 'Address Information'),
+        // SizedBox(height: isMobile ? 16 : 20),
+        // _buildAddressFields(context, isMobile),
+        // SizedBox(height: isMobile ? 24 : 32),
 
         _buildSectionTitle(context, 'Contact Information'),
         SizedBox(height: isMobile ? 16 : 20),

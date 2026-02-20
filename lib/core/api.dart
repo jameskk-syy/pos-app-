@@ -26,15 +26,28 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-          if (_isAuthFreeEndpoint(options.path)) {
-            return handler.next(options);
+          final storage = getIt<StorageService>();
+          final baseUrl = await storage.getString('base_url');
+
+          if (baseUrl != null && baseUrl.isNotEmpty) {
+            // Ensure trailing slash and correct path structure
+            String newBase = baseUrl;
+            if (!newBase.endsWith('/')) {
+              newBase += '/';
+            }
+            if (!newBase.contains('/api/method/')) {
+              newBase += 'api/method/';
+            }
+
+            options.baseUrl = newBase;
           }
 
-          final storage = getIt<StorageService>();
-          final token = await storage.getString('access_token');
+          if (!_isAuthFreeEndpoint(options.path)) {
+            final token = await storage.getString('access_token');
 
-          if (token != null && token.isNotEmpty) {
-            options.headers['Authorization'] = 'Bearer $token';
+            if (token != null && token.isNotEmpty) {
+              options.headers['Authorization'] = 'Bearer $token';
+            }
           }
 
           return handler.next(options);

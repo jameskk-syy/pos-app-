@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:pos/screens/auth/login.dart';
-import 'package:pos/screens/auth/register_user.dart';
+import 'package:pos/screens/auth/webview_sign_up.dart';
+import 'package:pos/screens/auth/subdomain_login.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 
 class IntroScreen extends StatefulWidget {
@@ -197,12 +197,15 @@ class _IntroScreenState extends State<IntroScreen> {
                                   height: buttonHeight,
                                   child: ElevatedButton(
                                     onPressed: () {
-                                      Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context2) => SignUpScreen(),
-                                        ),
-                                      );
+                                      if (context.mounted) {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const WebViewSignUpScreen(),
+                                          ),
+                                        );
+                                      }
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: AppColors.blue,
@@ -233,7 +236,8 @@ class _IntroScreenState extends State<IntroScreen> {
                                       Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context2) => SignInScreen(),
+                                          builder: (context2) =>
+                                              const SubdomainLoginScreen(),
                                         ),
                                       );
                                     },

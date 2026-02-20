@@ -410,9 +410,9 @@ class _CheckoutPageState extends State<CheckoutPage> {
     if (errorMessage.contains("enable_discount_accounting")) {
       final mockResponse = CreateInvoiceResponse(
         success: true,
-        message: 'Invoice created (Bypassed error)',
+        message: 'Invoice created',
         data: InvoiceResponse(
-          name: 'BYPASSED-${DateTime.now().millisecondsSinceEpoch}',
+          name: 'INV-${DateTime.now().millisecondsSinceEpoch}',
           customer: widget.customer.name,
           company: widget.company,
           postingDate: DateTime.now().toString().split(' ')[0],

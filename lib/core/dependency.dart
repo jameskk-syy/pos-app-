@@ -72,6 +72,10 @@ import 'package:pos/presentation/price_list/bloc/price_list_bloc.dart';
 import 'package:pos/presentation/warranties/bloc/warranties_bloc.dart';
 import 'package:pos/presentation/invoices/bloc/invoices_bloc.dart';
 import 'package:pos/presentation/sales/bloc/pos_opening_entries_bloc.dart';
+import 'package:pos/data/datasource/subdomain_remote_datasource.dart';
+import 'package:pos/domain/repository/subdomain_repository.dart';
+import 'package:pos/data/repository/subdomain_repository_impl.dart';
+import 'package:pos/presentation/subdomainBloc/subdomain_bloc.dart';
 
 final getIt = GetIt.instance;
 
@@ -253,4 +257,15 @@ void setUp() {
   getIt.registerFactory(() => GrnBloc(purchaseRepo: getIt()));
   getIt.registerFactory(() => InvoicesBloc(productsRepo: getIt()));
   getIt.registerFactory(() => PosOpeningEntriesBloc(productsRepo: getIt()));
+
+  // Subdomain
+  getIt.registerLazySingleton<SubdomainRemoteDataSource>(
+    () => SubdomainRemoteDataSource(getIt<Dio>()),
+  );
+  getIt.registerLazySingleton<SubdomainRepository>(
+    () => SubdomainRepositoryImpl(
+      remoteDataSource: getIt<SubdomainRemoteDataSource>(),
+    ),
+  );
+  getIt.registerFactory(() => SubdomainBloc(subdomainRepository: getIt()));
 }

@@ -6,6 +6,7 @@ import 'package:pos/screens/products/product_list.dart';
 import 'package:pos/screens/units/units_page.dart';
 import 'package:pos/screens/warranties/warranties_page.dart';
 import 'package:pos/widgets/inventory/inventory_card.dart';
+import 'package:pos/screens/users/bussiness_type.dart';
 
 class ProductsDashboard extends StatelessWidget {
   const ProductsDashboard({super.key});
@@ -115,6 +116,20 @@ class ProductsDashboard extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (context) => const PriceListsPage(),
                     ),
+                  );
+                },
+              ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: const Color(0xFFE3F2FD),
+                iconColor: Colors.indigo,
+                icon: Icons.add_business_outlined,
+                title: "Seed Products",
+                subtitle: "Initialize default products",
+                onTap: () {
+                   Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => BussinessTypePage()),
                   );
                 },
               ),

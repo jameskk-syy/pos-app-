@@ -15,3 +15,15 @@ class ChangePassword extends LoginEvent {
 
   ChangePassword({required this.oldPassword, required this.newPassword});
 }
+
+class VerifyEmailCode extends LoginEvent {
+  final String email;
+  final String code;
+
+  VerifyEmailCode({required this.email, required this.code});
+}
+class SendOtp extends LoginEvent {
+  final String email;
+
+  SendOtp({required this.email});
+}

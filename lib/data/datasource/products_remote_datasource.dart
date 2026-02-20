@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
-// import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/requests/products/create_product.dart';
 import 'package:pos/domain/responses/industries_list_response.dart';
@@ -319,6 +318,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
     String itemGroupName,
     String? parentItemGroup,
   ) async {
+    // debugPrint("Creating item group: $parentItemGroup");
     try {
       final response = await dio.post(
         'techsavanna_pos.api.product_api.create_item_group',

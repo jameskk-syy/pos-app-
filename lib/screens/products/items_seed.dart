@@ -539,6 +539,9 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
             cartItemsMap.clear();
           });
           _saveCartToPrefs();
+          
+          final storage = getIt<StorageService>();
+          storage.setBool('is_seeded', true);
 
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

@@ -21,6 +21,8 @@ import 'package:pos/domain/responses/users/assign_roles_response.dart';
 import 'package:pos/domain/responses/users/create_provisioning_account.dart';
 import 'package:pos/domain/responses/users/create_role_response.dart';
 import 'package:pos/domain/responses/users/login_response.dart';
+import 'package:pos/domain/requests/users/send_otp_request.dart';
+import 'package:pos/domain/responses/users/send_otp_response.dart';
 import 'package:pos/domain/responses/sales/pos_create_response.dart';
 import 'package:pos/domain/responses/users/register_company_response.dart';
 import 'package:pos/domain/responses/users/role_permissions_response.dart';
@@ -51,9 +53,9 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
   Future<Message> registerUser(RegisterRequest registerRequest) async {
     try {
-      debugPrint('REGISTER PAYLOAD => ${registerRequest.toJson()}');
+      // debugPrint('REGISTER PAYLOAD => ${registerRequest.toJson()}');
 
-      debugPrint('REGISTER PAYLOAD => ${registerRequest.toJson()}');
+      // debugPrint('REGISTER PAYLOAD => ${registerRequest.toJson()}');
 
       final response = await dio.post(
         'techsavanna_pos.api.auth_api.register_user',
@@ -65,9 +67,9 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       );
 
       final data = response.data;
-      debugPrint('--- REGISTER RESPONSE START ---');
-      debugPrint(const JsonEncoder.withIndent('  ').convert(data));
-      debugPrint('--- REGISTER RESPONSE END ---');
+      // debugPrint('--- REGISTER RESPONSE START ---');
+      // debugPrint(const JsonEncoder.withIndent('  ').convert(data));
+      // debugPrint('--- REGISTER RESPONSE END ---');
 
       if (data == null) {
         throw Exception('Server returned empty response');
@@ -97,7 +99,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       if (accessToken != null) {
         await storageService.setString('access_token', accessToken.toString());
-        debugPrint('ACCESS TOKEN SAVED: $accessToken');
+        // debugPrint('ACCESS TOKEN SAVED: $accessToken');
       }
       if (refreshToken != null) {
         await storageService.setString(
@@ -108,10 +110,10 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       return Message.fromJson(message);
     } on DioException catch (e) {
-      debugPrint('DIO ERROR in registerUser: ${getErrorMessage(e)}');
+      // debugPrint('DIO ERROR in registerUser: ${getErrorMessage(e)}');
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint('GENERAL ERROR in registerUser => $e');
+      // debugPrint('GENERAL ERROR in registerUser => $e');
       throw Exception(e.toString());
     }
   }
@@ -141,29 +143,29 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<LoginResponse> login(LoginRequest request) async {
-    debugPrint("DEBUG: Login attempt for ${request.email}");
+    // debugPrint("DEBUG: Login attempt for ${request.email}");
     final requestBody = {
       'identifier': request.email,
       'password': request.password,
     };
     try {
-      debugPrint("DEBUG: Posting to loginuser endpoint...");
+      // debugPrint("DEBUG: Posting to loginuser endpoint...");
       final response = await dio.post(
         'techsavanna_pos.api.auth_api.loginuser',
         data: requestBody,
       );
 
       final data = response.data;
-      debugPrint("DEBUG: Login status code: ${response.data}");
+      // debugPrint("DEBUG: Login status code: ${response.data}");
 
       if (data == null || data['message'] == null) {
-        debugPrint("DEBUG: Login failed - Invalid response structure");
+        // debugPrint("DEBUG: Login failed - Invalid response structure");
         throw Exception('Invalid response from server');
       }
 
       final messageMap = data['message'];
       if (messageMap is! Map<String, dynamic>) {
-        debugPrint("DEBUG: Login failed - message is not a Map");
+        // debugPrint("DEBUG: Login failed - message is not a Map");
         throw Exception('Unexpected response structure: message is not a Map');
       }
 
@@ -182,22 +184,83 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
         loginResponse.message.accessToken,
       );
 
-      debugPrint("DEBUG: Login successful, calling getCurrentUser...");
+      // debugPrint("DEBUG: Login successful, calling getCurrentUser...");
       await getCurrentUser();
-      debugPrint(
-        'DEBUG: USER DATA SAVED: ${loginResponse.message.user.toJson()}',
-      );
-      debugPrint(
-        'DEBUG: ACCESS TOKEN SAVED: ${loginResponse.message.accessToken}',
-      );
+      // debugPrint(
+      //   'DEBUG: USER DATA SAVED: ${loginResponse.message.user.toJson()}',
+      // );
+      // debugPrint(
+      //   'DEBUG: ACCESS TOKEN SAVED: ${loginResponse.message.accessToken}',
+      // );
 
       return loginResponse;
     } on DioException catch (e) {
-      debugPrint("DEBUG: DioException during login: ${e.message}");
+      // debugPrint("DEBUG: DioException during login: ${e.message}");
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint("DEBUG: General error during login: $e");
+      //debugPrint("DEBUG: General error during login: $e");
       throw Exception(e.toString());
+    }
+  }
+
+  Future<SendOtpResponse> sendOtpEmail(SendOtpRequest request) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.auth.send_otp_email',
+        data: request.toJson(),
+      );
+
+      final data = response.data;
+
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format');
+      }
+
+      final sendOtpResponse = SendOtpResponse.fromJson(data);
+
+      if (sendOtpResponse.success == false) {
+        throw Exception(
+          sendOtpResponse.error ??
+              sendOtpResponse.message ??
+              'Failed to send OTP',
+        );
+      }
+
+      return sendOtpResponse;
+    } on DioException catch (e) {
+     // debugPrint("DEBUG: DioException during sendOtpEmail: ${e.message}");
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      //debugPrint("DEBUG: General error during sendOtpEmail: $e");
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<Map<String, dynamic>> verifyEmailCode(
+    String email,
+    String code,
+  ) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.auth.verify_otp_email',
+        data: {'email': email, 'code': code},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Response is not a valid JSON object');
+      }
+
+      return data;
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      rethrow;
     }
   }
 
@@ -222,7 +285,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response format');
       }
     } on DioException catch (e) {
-      debugPrint("Change Password Error: ${e.message}");
+      // debugPrint("Change Password Error: ${e.message}");
       throw Exception(getErrorMessage(e));
     } catch (e) {
       rethrow;
@@ -230,7 +293,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<CurrentUserResponse> getCurrentUser() async {
-    debugPrint("DEBUG: calling getCurrentUser...");
+    // debugPrint("DEBUG: calling getCurrentUser...");
 
     try {
       final response = await dio.get(
@@ -238,18 +301,18 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       );
 
       final data = response.data;
-      debugPrint("DEBUG: getCurrentUser response: $data");
+      // debugPrint("DEBUG: getCurrentUser response: $data");
 
       if (data == null || data['message'] == null) {
-        debugPrint("DEBUG: getCurrentUser failed - Invalid response");
+        // debugPrint("DEBUG: getCurrentUser failed - Invalid response");
         throw Exception('Invalid response from server');
       }
 
       final currentUser = CurrentUserResponse.fromJson(data);
 
-      debugPrint(
-        "DEBUG: current user parsed successfully: ${currentUser.message.user.fullName}",
-      );
+      // debugPrint(
+      //   "DEBUG: current user parsed successfully: ${currentUser.message.user.fullName}",
+      // );
 
       await storageService.setString(
         'current_user',
@@ -258,10 +321,10 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       return currentUser;
     } on DioException catch (e) {
-      debugPrint("DEBUG: DioException during getCurrentUser: ${e.message}");
+      // debugPrint("DEBUG: DioException during getCurrentUser: ${e.message}");
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint("DEBUG: General error during getCurrentUser: $e");
+      // debugPrint("DEBUG: General error during getCurrentUser: $e");
       throw Exception(e.toString());
     }
   }
@@ -346,7 +409,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     int size = 20,
     String? search,
   }) async {
-    debugPrint('Fetching role with page: $page, size: $size, search: $search');
+    // debugPrint('Fetching role with page: $page, size: $size, search: $search');
 
     try {
       final Map<String, dynamic> queryParams = {"page": page, "size": size};
@@ -357,7 +420,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
         'techsavanna_pos.api.role_api.list_roles',
         queryParameters: queryParams,
       );
-      debugPrint(response.toString());
+      // debugPrint(response.toString());
 
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Server returned ${response.statusCode}');
@@ -409,7 +472,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<GetRoleDetailsResponse> getRoleDetails(String roleName) async {
-    debugPrint('Fetching details for role: $roleName');
+    // debugPrint('Fetching details for role: $roleName');
     try {
       final formData = FormData.fromMap({'role_name': roleName});
       final response = await dio.post(
@@ -435,7 +498,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<CreateRoleResponse> disableRole(String roleName) async {
-    debugPrint('Disabling role: $roleName');
+    // debugPrint('Disabling role: $roleName');
     try {
       final formData = FormData.fromMap({'role_name': roleName});
       final response = await dio.post(
@@ -461,7 +524,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<CreateRoleResponse> enableRole(String roleName) async {
-    debugPrint('Enabling role: $roleName');
+    // debugPrint('Enabling role: $roleName');
     try {
       final formData = FormData.fromMap({'role_name': roleName});
       final response = await dio.post(
@@ -489,7 +552,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   Future<StaffUsersResponse> createStaffUser(
     StaffUserRequest createStaffRequest,
   ) async {
-    debugPrint('Creating staff user: ${createStaffRequest.email}');
+    // debugPrint('Creating staff user: ${createStaffRequest.email}');
 
     try {
       final response = await dio.post(
@@ -521,7 +584,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     int limit = 20,
     int offset = 0,
   }) async {
-    debugPrint("getting staff users with limit: $limit, offset: $offset");
+    // debugPrint("getting staff users with limit: $limit, offset: $offset");
     try {
       final queryParams = {'enabled_only': false};
       final response = await dio.get(
@@ -546,7 +609,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   Future<AssignRolesResponse> assignRolesToStaff(
     AssignRolesRequest request,
   ) async {
-    debugPrint("Assign Roles Response: ${request.toJson().toString()}");
+    // debugPrint("Assign Roles Response: ${request.toJson().toString()}");
     try {
       final response = await dio.post(
         'techsavanna_pos.api.staff_api.assign_roles_to_staff',
@@ -604,7 +667,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<RolesResponse> getRolesList() async {
-    debugPrint("Getting roles list");
+    // debugPrint("Getting roles list");
     try {
       final response = await dio.get(
         'techsavanna_pos.api.staff_api.get_all_roles',
@@ -620,7 +683,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     } on DioException catch (e) {
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint("Error: $e");
+      // debugPrint("Error: $e");
       throw Exception(e.toString());
     }
   }
@@ -647,13 +710,13 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
   Future<void> clearUserData() async {
     await storageService.remove('userData');
-    debugPrint('USER DATA CLEARED');
+    // debugPrint('USER DATA CLEARED');
   }
 
   Future<CompanyProfileResponse> createPosProfile(
     CompanyProfileRequest request,
   ) async {
-    debugPrint("Creating POS Profile...");
+    // debugPrint("Creating POS Profile...");
     try {
       final response = await dio.post(
         'techsavanna_pos.api.onboarding_api.create_pos_profile',
@@ -681,7 +744,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   Future<AssignWarehousesResponse> assignStaffToWarehouse(
     AssignWarehousesRequest request,
   ) async {
-    debugPrint("Assign Staff Request: ${request.toJson()}");
+    // debugPrint("Assign Staff Request: ${request.toJson()}");
     try {
       final response = await dio.post(
         'techsavanna_pos.api.warehouse_api.assign_warehouses_to_staff',
@@ -709,13 +772,13 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     String warehouseName,
   ) async {
     try {
-      debugPrint('Fetching staff for warehouse: $warehouseName');
+      // debugPrint('Fetching staff for warehouse: $warehouseName');
       final response = await dio.post(
         'techsavanna_pos.api.warehouse_api.get_warehouse_staff',
         data: {'warehouse': warehouseName},
       );
 
-      debugPrint('GetWarehouseStaff Response: ${response.data}');
+      // debugPrint('GetWarehouseStaff Response: ${response.data}');
 
       if (response.statusCode != 200) {
         throw Exception('Server returned ${response.statusCode}');
@@ -728,10 +791,10 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       return ws.GetWarehouseStaffResponse.fromJson(data);
     } on DioException catch (e) {
-      debugPrint('DIO ERROR in getWarehouseStaff: ${getErrorMessage(e)}');
+      // debugPrint('DIO ERROR in getWarehouseStaff: ${getErrorMessage(e)}');
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint('ERROR in getWarehouseStaff: $e');
+      // debugPrint('ERROR in getWarehouseStaff: $e');
       throw Exception(e.toString());
     }
   }
@@ -766,7 +829,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   Future<ProvisionalAccountResponse> createAccountProvisioning(
     ProvisionalAccountRequest provisioningAccounts,
   ) async {
-    debugPrint('Creating accounts: ${provisioningAccounts.company}');
+    // debugPrint('Creating accounts: ${provisioningAccounts.company}');
 
     try {
       final response = await dio.post(
@@ -797,9 +860,9 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<CompanyResponse> registerCompany(CompanyRequest companyRequest) async {
-    debugPrint('--- user_remote_datasource: registerCompany START ---');
+    // debugPrint('--- user_remote_datasource: registerCompany START ---');
     try {
-      debugPrint('REGISTER PAYLOAD => ${companyRequest.toJson()}');
+      // debugPrint('REGISTER PAYLOAD => ${companyRequest.toJson()}');
 
       final response = await dio.post(
         'techsavanna_pos.api.onboarding_api.create_company',
@@ -812,7 +875,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response from server');
       }
 
-      debugPrint('--- user_remote_datasource: registerCompany START ---');
+      // debugPrint('--- user_remote_datasource: registerCompany START ---');
       await storageService.setString('companyData', jsonEncode(data));
       final request = ProvisionalAccountRequest(
         company: companyRequest.companyName,
@@ -827,16 +890,16 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     } on DioException catch (e) {
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      debugPrint('GENERAL ERROR => $e');
+      // debugPrint('GENERAL ERROR => $e');
       throw Exception(e.toString());
     }
   }
 
   Future<void> _createDefaultWarehouse(CompanyRequest companyRequest) async {
     try {
-      debugPrint(
-        'Creating default warehouse for company: ${companyRequest.companyName}',
-      );
+      // debugPrint(
+      //   'Creating default warehouse for company: ${companyRequest.companyName}',
+      // );
 
       final warehouseRequest = CreateWarehouseRequest(
         warehouseName: '${companyRequest.companyName} - Main Warehouse',
@@ -856,24 +919,24 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       final response = await inventoryRemoteDataSource.createWarehouse(
         warehouseRequest,
       );
-      debugPrint(
-        'Default warehouse created successfully: ${response.toJson()}',
-      );
+      // debugPrint(
+      //   'Default warehouse created successfully: ${response.toJson()}',
+      // );
 
       /*
       if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('Default warehouse created successfully');
+        // debugPrint('Default warehouse created successfully');
       } else {
-        debugPrint(
-          'Warehouse creation returned status: ${response.statusCode}',
-        );
+        // debugPrint(
+        //   'Warehouse creation returned status: ${response.statusCode}',
+        // );
       }
       */
     } catch (e) {
-      debugPrint('Warning: Failed to create default warehouse: $e');
-      debugPrint(
-        'Company registration will continue despite warehouse creation failure',
-      );
+      // debugPrint('Warning: Failed to create default warehouse: $e');
+      // debugPrint(
+      //   'Company registration will continue despite warehouse creation failure',
+      // );
     }
   }
 

@@ -35,14 +35,16 @@ class LoginMessage {
 
   factory LoginMessage.fromJson(Map<String, dynamic> json) {
     return LoginMessage(
-      user: User.fromJson(json['user']),
-      apiKey: json['api_key'],
-      accessToken: json['access_token'] ?? '',
-      tokenType: json['token_type'] ?? 'Bearer',
-      expiresIn: json['expires_in'] ?? 0,
-      expiresAt: json['expires_at'] ?? '',
-      refreshToken: json['refresh_token'] ?? '',
-      message: json['message'] ?? '',
+      user: User.fromJson(json['user'] as Map<String, dynamic>? ?? {}),
+      apiKey: json['api_key']?.toString(),
+      accessToken: json['access_token']?.toString() ?? '',
+      tokenType: json['token_type']?.toString() ?? 'Bearer',
+      expiresIn: json['expires_in'] is int
+          ? json['expires_in'] as int
+          : int.tryParse(json['expires_in']?.toString() ?? '') ?? 0,
+      expiresAt: json['expires_at']?.toString() ?? '',
+      refreshToken: json['refresh_token']?.toString() ?? '',
+      message: json['message']?.toString() ?? '',
     );
   }
 
