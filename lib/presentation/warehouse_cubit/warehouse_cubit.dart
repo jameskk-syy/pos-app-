@@ -1,5 +1,5 @@
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
+// import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/responses/sales/store_response.dart';
 import 'package:pos/core/dependency.dart';
@@ -60,7 +60,7 @@ class WarehouseCubit extends Cubit<WarehouseState> {
       );
       await selectWarehouse(warehouse);
     } catch (e) {
-      debugPrint('Error selecting default warehouse: $e');
+      //debugPrint('Error selecting default warehouse: $e');
     }
   }
 }

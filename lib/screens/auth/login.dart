@@ -9,10 +9,7 @@ import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 //import 'package:pos/screens/auth/register_user.dart';
 import 'package:pos/screens/auth/webview_sign_up.dart';
 // import 'package:pos/screens/auth/reset_password.dart';
-import 'package:pos/screens/sales/dashboard.dart';
-import 'package:pos/screens/users/bussiness_type.dart';
 import 'package:pos/utils/themes/app_colors.dart';
-import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/screens/auth/otp.dart';
 
 class SignInScreen extends StatefulWidget {
@@ -30,6 +27,11 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _isTablet(BuildContext context) {
     final shortestSide = MediaQuery.of(context).size.shortestSide;
     return shortestSide >= 600;
+  }
+
+  @override
+  void initState() {
+    super.initState();
   }
 
   @override
@@ -58,23 +60,15 @@ class _SignInScreenState extends State<SignInScreen> {
                   content: Text("Login successful"),
                 ),
               );
-              final storage = getIt<StorageService>();
-
-              storage.getBool('is_seeded').then((isSeeded) {
-                if (context.mounted) {
-                  if (isSeeded == true) {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => DashboardPage()),
-                    );
-                  } else {
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(builder: (_) => BussinessTypePage()),
-                    );
-                  }
-                }
-              });
+              if (context.mounted) {
+                Navigator.pushReplacement(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        OtpScreen(title: "login", email: emailCtrl.text),
+                  ),
+                );
+              }
             } else if (state is LoginUserFailure) {
               ScaffoldMessenger.of(
                 context,

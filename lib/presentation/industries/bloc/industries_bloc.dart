@@ -29,7 +29,7 @@ class IndustriesBloc extends Bloc<IndustriesEvent, IndustriesState> {
       final response = await industriesRepo.getIndustriesList();
       emit(IndustriesSuccess(response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(IndustriesFailure(e.toString()));
     }
   }
@@ -38,25 +38,25 @@ class IndustriesBloc extends Bloc<IndustriesEvent, IndustriesState> {
     SeedProducts event,
     Emitter<IndustriesState> emit,
   ) async {
-    debugPrint(event.industry);
+    //debugPrint(event.industry);
     emit(IndustriesLoading());
     try {
       final response = await industriesRepo.seedProducts(event.industry);
       emit(IndustriesSeedProductSuccess(response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(IndustriesFailure(e.toString()));
     }
   }
 
   Future<void> _seedItem(SeedItems event, Emitter<IndustriesState> emit) async {
-     debugPrint(event.createOrderRequest.toString());
+     //debugPrint(event.createOrderRequest.toString());
     emit(IndustriesLoading());
     try {
       final response = await industriesRepo.seedItems(event.createOrderRequest);
       emit(IndustriesSeedItemState(createOrderResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(IndustriesFailure(e.toString()));
     }
   }

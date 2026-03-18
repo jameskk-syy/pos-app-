@@ -968,77 +968,186 @@ class _RegisterStaffState extends State<RegisterStaff> {
 
   Future<void> _showMultiSelectRolesDialog(List<String> availableRoles) async {
     final List<String> tempSelectedRoles = List.from(_selectedRoles);
+    final TextEditingController rolesSearchController = TextEditingController();
 
     await showDialog(
       context: context,
       builder: (context) {
         final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
         final isMobile = screenWidth < 600;
 
         return StatefulBuilder(
-          builder: (context, setState) {
-            return AlertDialog(
-              shape: const RoundedRectangleBorder(
-                borderRadius: BorderRadius.zero,
+          builder: (context, setDialogState) {
+            // Filtered list based on search query
+            final query = rolesSearchController.text.toLowerCase();
+            final filteredRoles = query.isEmpty
+                ? availableRoles
+                : availableRoles
+                      .where((role) => role.toLowerCase().contains(query))
+                      .toList();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
               ),
               insetPadding: isMobile
                   ? const EdgeInsets.symmetric(horizontal: 16, vertical: 24)
-                  : const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-              title: const Text('Select Staff Roles'),
-              content: SizedBox(
-                width: isMobile ? screenWidth : 500,
-                child: SingleChildScrollView(
-                  child: ListBody(
-                    children: availableRoles.map((role) {
-                      return CheckboxListTile(
-                        value: tempSelectedRoles.contains(role),
-                        title: Text(role),
-                        activeColor: Colors.blue,
-                        onChanged: (checked) {
-                          setState(() {
-                            if (checked == true) {
-                              tempSelectedRoles.add(role);
-                            } else {
-                              tempSelectedRoles.remove(role);
-                            }
-                          });
-                        },
-                      );
-                    }).toList(),
-                  ),
+                  : const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? screenWidth : 520,
+                  maxHeight: screenHeight * (isMobile ? 0.75 : 0.65),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // ── Header ──────────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Select Staff Roles',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 20),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // ── Search field ─────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: TextField(
+                        controller: rolesSearchController,
+                        autofocus: false,
+                        decoration: InputDecoration(
+                          hintText: 'Search roles...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: rolesSearchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    rolesSearchController.clear();
+                                    setDialogState(() {});
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    // ── Roles list ───────────────────────────────────────────
+                    Expanded(
+                      child: filteredRoles.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No roles found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: filteredRoles.length,
+                              itemBuilder: (_, index) {
+                                final role = filteredRoles[index];
+                                final isChecked = tempSelectedRoles.contains(
+                                  role,
+                                );
+                                return CheckboxListTile(
+                                  value: isChecked,
+                                  title: Text(
+                                    role,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isChecked
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  activeColor: Colors.blue,
+                                  controlAffinity:
+                                      ListTileControlAffinity.leading,
+                                  onChanged: (checked) {
+                                    setDialogState(() {
+                                      if (checked == true) {
+                                        tempSelectedRoles.add(role);
+                                      } else {
+                                        tempSelectedRoles.remove(role);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                    const Divider(height: 1),
+                    // ── Actions ──────────────────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedRoles = tempSelectedRoles;
+                              });
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(context).pop();
-                  },
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    this.setState(() {
-                      _selectedRoles = tempSelectedRoles;
-                    });
-                    Navigator.of(context).pop();
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
-                  ),
-                  child: const Text(
-                    'Confirm',
-                    style: TextStyle(color: Colors.white),
-                  ),
-                ),
-              ],
             );
           },
         );
       },
     );
+
+    rolesSearchController.dispose();
   }
 
   void _createStaffUser(BuildContext context) {

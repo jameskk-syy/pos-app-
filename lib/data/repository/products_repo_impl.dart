@@ -16,6 +16,7 @@ import 'package:pos/domain/responses/uom_response.dart';
 import 'package:pos/domain/models/invoice_list_model.dart';
 import 'package:pos/domain/models/pos_opening_entry_model.dart';
 import 'package:pos/domain/responses/products/product_price_response.dart';
+import 'package:pos/domain/responses/bulk_upload.dart';
 import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/data/datasource/local_datasource.dart';
 
@@ -465,6 +466,21 @@ class ProductsRepoImpl implements ProductsRepo {
     return await salesRemoteDataSource.closePosOpeningEntry(
       posOpeningEntry: posOpeningEntry,
       doNotSubmit: doNotSubmit,
+    );
+  }
+
+  @override
+  Future<ProcessResponse> bulkUploadProducts({
+    required String filePath,
+    required String warehouse,
+    required String company,
+    required String industry,
+  }) async {
+    return await productsRemoteDataSource.bulkUploadProducts(
+      filePath: filePath,
+      warehouse: warehouse,
+      company: company,
+      industry: industry,
     );
   }
 }

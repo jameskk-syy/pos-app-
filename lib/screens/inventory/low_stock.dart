@@ -8,6 +8,7 @@ import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/screens/inventory/material_receipt.dart';
 
 class LowStockAlertPage extends StatelessWidget {
   const LowStockAlertPage({super.key});
@@ -74,6 +75,8 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
   }
 
   void _refreshData() {
+    if (_thresholdValue == null) return;
+
     context.read<InventoryBloc>().add(
       GetLowStock(
         warehouse: _selectedWarehouse,
@@ -84,33 +87,42 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
   }
 
   void _showItemDetailsDialog(BuildContext context, dynamic item) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bool isMobile = screenWidth < 600;
+
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return Dialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: Container(
-            constraints: const BoxConstraints(maxWidth: 500),
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+          insetPadding: isMobile
+              ? const EdgeInsets.symmetric(horizontal: 12, vertical: 24)
+              : const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isMobile ? screenWidth * 0.95 : 1200,
+              maxHeight: screenHeight * (isMobile ? 0.85 : 0.85),
+            ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 // Header
                 Container(
                   padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.blue,
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(16),
-                      topRight: Radius.circular(16),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(
+                      bottom: BorderSide(color: Color(0xFFE2E8F0)),
                     ),
+                    borderRadius: BorderRadius.zero,
                   ),
                   child: Row(
                     children: [
                       const Icon(
                         Icons.inventory_2,
-                        color: Colors.white,
+                        color: Colors.black,
                         size: 28,
                       ),
                       const SizedBox(width: 12),
@@ -118,14 +130,14 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                         child: Text(
                           'Item Details',
                           style: const TextStyle(
-                            color: Colors.white,
+                            color: Colors.black,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                       ),
                       IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
+                        icon: const Icon(Icons.close, color: Colors.black),
                         onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
@@ -191,12 +203,24 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                           ElevatedButton.icon(
                             onPressed: () {
                               Navigator.of(context).pop();
-                              // Add your create receipt logic here
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const MaterialReceiptPage(),
+                                ),
+                              );
                             },
-                            icon: const Icon(Icons.add),
-                            label: const Text('Create Receipt'),
+                            icon: const Icon(Icons.add, color: Colors.white),
+                            label: const Text(
+                              'Create Receipt',
+                              style: TextStyle(color: Colors.white),
+                            ),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: Colors.blue,
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: BorderRadius.zero,
+                              ),
+                              elevation: 0,
                             ),
                           ),
                         ],
@@ -327,6 +351,7 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                                 hint: "Threshold",
                                 icon: Icons.numbers,
                                 controller: _thresholdController,
+                                isSmall: isSmall,
                                 onChanged: (value) {
                                   _refreshData();
                                 },
@@ -336,8 +361,9 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                             Expanded(
                               child: _dropdownField(
                                 hint: "Warehouse",
-                                value: _selectedWarehouse,
+                                selectedValue: _selectedWarehouse,
                                 warehouses: _warehouses,
+                                isSmall: isSmall,
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedWarehouse = value;
@@ -356,6 +382,7 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                                 hint: "Threshold",
                                 icon: Icons.numbers,
                                 controller: _thresholdController,
+                                isSmall: isSmall,
                                 onChanged: (value) {
                                   // The value is already handled by the controller listener
                                 },
@@ -365,8 +392,9 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
                             Expanded(
                               child: _dropdownField(
                                 hint: "Warehouse",
-                                value: _selectedWarehouse,
+                                selectedValue: _selectedWarehouse,
                                 warehouses: _warehouses,
+                                isSmall: isSmall,
                                 onChanged: (value) {
                                   setState(() {
                                     _selectedWarehouse = value;
@@ -417,6 +445,23 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
     // Responsive sizing inside table
     final double baseFontSize = isSmall ? 12.0 : 14.0;
     final double headerFontSize = isSmall ? 13.0 : 15.0;
+
+    if (_thresholdValue == null) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.filter_list, size: 48, color: Colors.grey),
+            SizedBox(height: 16),
+            Text(
+              'Enter a threshold to view low stock items',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (state is LowStockLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -566,18 +611,22 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
     required String hint,
     IconData? icon,
     required TextEditingController controller,
+    required bool isSmall,
     required Function(String) onChanged,
   }) {
+    final double fontSize = isSmall ? 13.0 : 15.0;
     return TextField(
       controller: controller,
+      style: TextStyle(fontSize: fontSize),
       decoration: InputDecoration(
         border: OutlineInputBorder(
           borderSide: const BorderSide(color: Colors.black),
           borderRadius: BorderRadius.circular(8),
         ),
         hintText: hint,
-        prefixIcon: icon != null ? Icon(icon) : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12),
+        hintStyle: TextStyle(fontSize: fontSize),
+        prefixIcon: icon != null ? Icon(icon, size: isSmall ? 18 : 22) : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       ),
       keyboardType: TextInputType.number,
       onChanged: onChanged,
@@ -586,21 +635,34 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
 
   Widget _dropdownField({
     required String hint,
-    required String? value,
+    required String? selectedValue,
     required List<Warehouse> warehouses,
+    required bool isSmall,
     required Function(String?) onChanged,
   }) {
+    final double fontSize = isSmall ? 13.0 : 15.0;
     return DropdownButtonFormField<String>(
-      initialValue: value,
+      isExpanded: true,
+      initialValue: selectedValue,
+      style: TextStyle(fontSize: fontSize, color: Colors.black),
       decoration: InputDecoration(
         hintText: hint,
+        hintStyle: TextStyle(fontSize: fontSize),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         border: OutlineInputBorder(
           borderSide: const BorderSide(color: Colors.black),
           borderRadius: BorderRadius.circular(8),
         ),
       ),
       items: [
-        const DropdownMenuItem(value: null, child: Text("All Warehouses")),
+        DropdownMenuItem(
+          value: null,
+          child: Text(
+            "All Warehouses",
+            style: TextStyle(fontSize: fontSize),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
         ...warehouses.where((warehouse) => warehouse.disabled == 0).map((
           warehouse,
         ) {
@@ -608,7 +670,8 @@ class _LowStockAlertPageContentState extends State<_LowStockAlertPageContent> {
             value: warehouse.name,
             child: Text(
               warehouse.warehouseName,
-              style: TextStyle(fontSize: 12),
+              style: TextStyle(fontSize: fontSize),
+              overflow: TextOverflow.ellipsis,
             ),
           );
         }),

@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
+import 'package:excel/excel.dart' as excel hide Border;
 import 'package:dio/dio.dart';
+//import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/requests/products/create_product.dart';
 import 'package:pos/domain/responses/industries_list_response.dart';
@@ -20,89 +23,7 @@ import 'package:pos/core/services/storage_service.dart';
 class ProductsRemoteDataSource extends BaseRemoteDataSource {
   final StorageService storageService;
   ProductsRemoteDataSource(super.dio, this.storageService);
-  String _getErrorMessage(DioException e) {
-    //debugPrint("Parsing error response: ${e.response?.data}");
-    final data = e.response?.data;
-    if (data is Map<String, dynamic>) {
-      var serverMessages = data['_server_messages'];
-      if (serverMessages is String) {
-        try {
-          serverMessages = jsonDecode(serverMessages);
-        } catch (_) {}
-      }
-
-      if (serverMessages is List && serverMessages.isNotEmpty) {
-        String? bestMessage;
-
-        for (var msgEntry in serverMessages) {
-          try {
-            Map<String, dynamic>? msgMap;
-            if (msgEntry is String) {
-              final decoded = jsonDecode(msgEntry);
-              if (decoded is Map<String, dynamic>) msgMap = decoded;
-            } else if (msgEntry is Map<String, dynamic>) {
-              msgMap = msgEntry;
-            }
-
-            if (msgMap != null && msgMap.containsKey('message')) {
-              String msg = msgMap['message'].toString();
-              msg = msg.replaceAll(RegExp(r'<[^>]*>'), '');
-
-              bool isStockError =
-                  msg.toLowerCase().contains('units of') ||
-                  msg.toLowerCase().contains('needed in');
-
-              if (isStockError) {
-                if (msg.contains('units of')) {
-                  msg = msg.split('units of').last;
-                }
-                if (msg.contains(':')) {
-                  msg = msg.split(':').last;
-                }
-                return msg.trim();
-              }
-
-              if (!msg.contains('CharacterLengthExceededError') &&
-                  !msg.contains('Error Log') &&
-                  !msg.contains('will get truncated')) {
-                bestMessage ??= msg;
-              }
-            }
-          } catch (_) {}
-        }
-        if (bestMessage != null) return bestMessage.trim();
-      }
-
-      final messageObj = data['message'];
-      if (messageObj is Map<String, dynamic>) {
-        if (messageObj['message'] != null) {
-          return _cleanTechnicalError(messageObj['message'].toString());
-        }
-        if (messageObj['error'] != null) {
-          return _cleanTechnicalError(messageObj['error'].toString());
-        }
-      }
-
-      String fallback =
-          (data['exception']?.toString() ??
-          data['message']?.toString() ??
-          data['error']?.toString() ??
-          e.message ??
-          'Unknown error occurred');
-
-      return _cleanTechnicalError(fallback);
-    }
-    return e.message ?? 'Unknown error occurred';
-  }
-
-  String _cleanTechnicalError(String error) {
-    return error
-        .replaceAll(RegExp(r'<[^>]*>'), '')
-        .replaceAll(RegExp(r'frappe\.exceptions\.\w+:'), '')
-        .replaceAll(RegExp(r'Error Log \w+:'), '')
-        .replaceAll("'Title'", '')
-        .trim();
-  }
+  // Removed private _getErrorMessage as it's redundant with BaseRemoteDataSource.getErrorMessage
 
   Future<void> createUom(String company, String uomName) async {
     //debugPrint(company + uomName);
@@ -122,7 +43,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response from server');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -156,7 +77,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response from server');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       //debugPrint(e.toString());
       throw Exception(e.toString());
@@ -181,7 +102,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response from server');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -224,7 +145,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
 
       return UOMResponse.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint('Unexpected error: $e');
       // debugPrint('Stack trace: $stackTrace');
@@ -252,7 +173,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -277,7 +198,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -305,7 +226,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       return BrandResponse.fromJson(data);
     } on DioException catch (e) {
       // debugPrint('Dio Error: ${e.type} - ${e.message}');
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       rethrow;
     }
@@ -341,7 +262,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -377,7 +298,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -396,6 +317,8 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
 
       final data = response.data;
+
+      //debugPrint('item groups: $data');
 
       if (data == null) {
         throw Exception('Empty response from server');
@@ -452,7 +375,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
 
       return ItemGroupResponse.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint('Unexpected error: $e');
       // debugPrint('Stack trace: $stackTrace');
@@ -486,7 +409,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       return PriceListResponse.fromJson(data['message']);
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -525,7 +448,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -564,7 +487,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -600,7 +523,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
 
       return CreateProductResponse.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -618,7 +541,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Server returned ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -703,7 +626,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       if (e.response?.statusCode == 404) {
         throw Exception('Product not found for barcode: $barcode');
       }
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -881,7 +804,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
 
       return ProductResponseSimple.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint('Unexpected error: $e');
       // debugPrint('Stack trace: $stackTrace');
@@ -901,7 +824,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Server returned ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -933,7 +856,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Server returned ${response.statusCode}');
       }
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       throw Exception(e.toString());
     }
@@ -967,7 +890,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       }
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -1003,7 +926,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       return ProductPriceResponse.fromJson(data);
     } on DioException catch (e) {
       // debugPrint(e.response?.data?.toString());
-      throw Exception(_getErrorMessage(e));
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
       throw Exception(e.toString());
@@ -1055,7 +978,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
           'Unable to connect to server. Please check your internet.',
         );
       } else if (e.response != null) {
-        throw Exception(_getErrorMessage(e));
+        throw Exception(getErrorMessage(e));
       } else {
         throw Exception('Network error: ${e.message}');
       }
@@ -1129,7 +1052,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
           'Unable to connect to server. Please check your internet.',
         );
       } else if (e.response != null) {
-        throw Exception(_getErrorMessage(e));
+        throw Exception(getErrorMessage(e));
       } else {
         throw Exception('Network error: ${e.message}');
       }
@@ -1144,12 +1067,129 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         'techsavanna_pos.api.product_seeding.create_seed_item',
         data: request.toJson(),
       );
+      // debugPrint("seedingItems ${request.toJson()}");
       if (response.statusCode != 200 && response.statusCode != 201) {
         throw Exception('Server returned ${response.statusCode}');
       }
       return CreateOrderResponse.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(_getErrorMessage(e));
+     // debugPrint("seedingItems ${e.toString()}");
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      //debugPrint("seedingItems ${e.toString()}");
+      rethrow;
+    }
+  }
+
+  Future<ProcessResponse> bulkUploadProducts({
+    required String filePath,
+    required String warehouse,
+    required String company,
+    required String industry,
+  }) async {
+    try {
+      // Parse Excel file locally into items list
+      final bytes = await File(filePath).readAsBytes();
+      final excelFile = excel.Excel.decodeBytes(bytes);
+      final sheet = excelFile.tables.values.first;
+
+      final items = <Map<String, dynamic>>[];
+      for (int i = 1; i < sheet.maxRows; i++) {
+        final row = sheet.row(i);
+        final itemCode = row[0]?.value?.toString().trim() ?? '';
+        if (itemCode.isEmpty) continue;
+
+        final itemName = row[1]?.value?.toString().trim() ?? '';
+        final itemPrice =
+            double.tryParse(row[2]?.value?.toString().trim() ?? '') ?? 0.0;
+        final buyingPrice =
+            double.tryParse(row[3]?.value?.toString().trim() ?? '') ?? 0.0;
+        final itemGroup = row[4]?.value?.toString().trim() ?? 'All Item Groups';
+        final uom = row[5]?.value?.toString().trim() ?? 'Nos';
+        final qty = int.tryParse(row[6]?.value?.toString().trim() ?? '') ?? 0;
+
+        items.add({
+          'item_code': itemCode,
+          'item_name': itemName,
+          'item_price': itemPrice,
+          'item_group': itemGroup,
+          'uom': uom,
+          'buying_price': buyingPrice,
+          'qty': qty,
+          'warehouse': warehouse,
+          'basic_rate': buyingPrice,
+        });
+      }
+
+      if (items.isEmpty) {
+        throw Exception('No valid rows found in the Excel file.');
+      }
+
+      final payload = {
+        'price_list': 'Standard Selling',
+        'buying_price_list': 'Standard Buying',
+        'warehouse': warehouse,
+        'company': company,
+        'industry': industry,
+        'items': items,
+      };
+
+      final response = await dio.post(
+        'techsavanna_pos.api.product_seeding.create_seed_item',
+        data: payload,
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Response is not a valid JSON object');
+      }
+
+      // Try to parse as ProcessResponse (handles both wrapped and flat shapes)
+      if (data.containsKey('message')) {
+        final msg = data['message'];
+        if (msg is Map<String, dynamic>) {
+          return ProcessResponse.fromJson(data);
+        }
+      }
+      if (data.containsKey('status')) {
+        return ProcessResponse.fromJson({'message': data});
+      }
+
+      // Synthetic success if the API returns a different shape
+      final created = items.length;
+      return ProcessResponse(
+        status: 'success',
+        created: created,
+        skipped: 0,
+        failed: 0,
+        ignoredIndustries: [],
+        failedItems: [],
+        totalProcessed: created,
+      );
+    } on DioException catch (e) {
+      if (e.type == DioExceptionType.connectionTimeout ||
+          e.type == DioExceptionType.receiveTimeout ||
+          e.type == DioExceptionType.sendTimeout) {
+        throw Exception('Request timeout. Please check your connection.');
+      } else if (e.type == DioExceptionType.connectionError) {
+        throw Exception(
+          'Unable to connect to server. Please check your internet.',
+        );
+      } else if (e.response != null) {
+        final errorData = e.response?.data;
+        if (errorData is Map<String, dynamic>) {
+          final msg = errorData['message'] ?? errorData['error'];
+          if (msg != null) throw Exception(msg.toString());
+        }
+        throw Exception(getErrorMessage(e));
+      } else {
+        throw Exception('Network error: ${e.message}');
+      }
     } catch (e) {
       rethrow;
     }

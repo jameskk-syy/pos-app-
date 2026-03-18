@@ -5,6 +5,8 @@ import 'package:pos/data/repository/reports_repo_impl.dart';
 import 'package:pos/domain/repository/reports_repo.dart';
 import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/services/biometric_service.dart';
+import 'package:pos/core/services/security_service.dart';
 import 'package:pos/data/datasource/local_datasource.dart';
 import 'package:pos/data/datasource/user_remote_datasource.dart';
 import 'package:pos/data/datasource/auth_remote_datasource.dart';
@@ -15,6 +17,7 @@ import 'package:pos/data/datasource/products_remote_datasource.dart';
 import 'package:pos/data/datasource/purchase_remote_datasource.dart';
 import 'package:pos/data/datasource/store_remote_datasource.dart';
 import 'package:pos/data/datasource/reports_remote_datasource.dart';
+import 'package:pos/data/datasource/audit_remote_datasource.dart';
 import 'package:pos/data/repository/authenticating_user_impl.dart';
 import 'package:pos/data/repository/crm_repo_impl.dart';
 import 'package:pos/data/repository/dasboard_repo_impl.dart';
@@ -29,6 +32,7 @@ import 'package:pos/data/repository/sales_repository_impl.dart';
 import 'package:pos/data/repository/store_repo_impl.dart';
 import 'package:pos/data/repository/suppliers_repo_impl.dart';
 import 'package:pos/data/repository/user_list_repo_impl.dart';
+import 'package:pos/data/repository/audit_repository_impl.dart';
 import 'package:pos/data/repository/user_register_repo_impl.dart';
 import 'package:pos/domain/repository/abstract_sales_repository.dart';
 import 'package:pos/domain/repository/authenticating_user_repo.dart';
@@ -43,12 +47,14 @@ import 'package:pos/domain/repository/register_company_repo.dart';
 import 'package:pos/domain/repository/register_user_repo.dart';
 import 'package:pos/domain/repository/role_repo.dart';
 import 'package:pos/domain/repository/store_repo.dart';
+import 'package:pos/domain/repository/audit_repository.dart';
 import 'package:pos/domain/repository/suppliers_repo.dart';
 import 'package:pos/domain/repository/users_repo.dart';
 import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/presentation/dashboard/bloc/dashboard_bloc.dart';
 import 'package:pos/presentation/industries/bloc/industries_bloc.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
+import 'package:pos/presentation/audit/bloc/audit_bloc.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 import 'package:pos/presentation/posProfile/bloc/pos_profile_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
@@ -94,6 +100,8 @@ void setUp() {
   getIt.registerLazySingleton<ConnectivityService>(() => ConnectivityService());
   getIt.registerLazySingleton<StorageService>(() => StorageService());
   getIt.registerLazySingleton<LocalDataSource>(() => LocalDataSource());
+  getIt.registerLazySingleton<SecurityService>(() => SecurityService());
+  getIt.registerLazySingleton<BiometricService>(() => BiometricService());
 
   // Repositories
   getIt.registerLazySingleton<RegisterRepository>(
@@ -154,6 +162,10 @@ void setUp() {
 
   getIt.registerLazySingleton<ReportsRemoteDataSource>(
     () => ReportsRemoteDataSource(getIt<Dio>()),
+  );
+
+  getIt.registerLazySingleton<AuditRemoteDataSource>(
+    () => AuditRemoteDataSource(getIt<Dio>()),
   );
 
   getIt.registerLazySingleton<ProductsRepo>(
@@ -221,6 +233,10 @@ void setUp() {
     () => ReportsRepoImpl(remoteDataSource: getIt<ReportsRemoteDataSource>()),
   );
 
+  getIt.registerLazySingleton<AuditRepository>(
+    () => AuditRepositoryImpl(remoteDataSource: getIt<AuditRemoteDataSource>()),
+  );
+
   // Blocs
   getIt.registerFactory(() => RegisterBloc(registerRepository: getIt()));
   getIt.registerFactory(() => LoginBloc(authenticateUserRepo: getIt()));
@@ -257,6 +273,7 @@ void setUp() {
   getIt.registerFactory(() => GrnBloc(purchaseRepo: getIt()));
   getIt.registerFactory(() => InvoicesBloc(productsRepo: getIt()));
   getIt.registerFactory(() => PosOpeningEntriesBloc(productsRepo: getIt()));
+  getIt.registerFactory(() => AuditBloc(auditRepository: getIt()));
 
   // Subdomain
   getIt.registerLazySingleton<SubdomainRemoteDataSource>(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/services/biometric_service.dart';
 import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/sales/dashboard.dart';
 import 'package:pos/utils/themes/app_colors.dart';
@@ -19,19 +20,41 @@ class _LockScreenState extends State<LockScreen> {
   bool _isLoading = false;
   bool _obscureText = true;
   String? _storedPassword;
+  bool _isBiometricAvailable = false;
+  final _biometricService = getIt<BiometricService>();
 
   @override
   void initState() {
     super.initState();
     _loadStoredPassword();
+    _checkBiometrics();
+  }
+
+  Future<void> _checkBiometrics() async {
+    final available = await _biometricService.isBiometricAvailable();
+    setState(() => _isBiometricAvailable = available);
+    if (available) {
+      // Small delay to ensure screen is rendered before showing system prompt
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (mounted) _authenticateWithBiometrics();
+      });
+    }
+  }
+
+  Future<void> _authenticateWithBiometrics() async {
+    final authenticated = await _biometricService.authenticate();
+    if (authenticated && _storedPassword != null) {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardPage()),
+        );
+      }
+    }
   }
 
   Future<void> _loadStoredPassword() async {
     final storage = getIt<StorageService>();
     _storedPassword = await storage.getEncryptedPassword();
-    // Double check logic: if no password, we should probably logout,
-    // but the main.dart logic handles the initial check.
-    // This is just to have it ready for comparison.
   }
 
   Future<void> _unlock() async {
@@ -122,35 +145,60 @@ class _LockScreenState extends State<LockScreen> {
                 ),
               ),
               const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _unlock,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          "Unlock",
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+              Row(
+                children: [
+                  Expanded(
+                    child: SizedBox(
+                      height: 52,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _unlock,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.blue,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                ),
+                        child: _isLoading
+                            ? const SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                "Unlock",
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                      ),
+                    ),
+                  ),
+                  if (_isBiometricAvailable) ...[
+                    const SizedBox(width: 12),
+                    GestureDetector(
+                      onTap: _isLoading ? null : _authenticateWithBiometrics,
+                      child: Container(
+                        height: 52,
+                        width: 52,
+                        decoration: BoxDecoration(
+                          color: AppColors.blue.withAlpha(10),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.blue),
+                        ),
+                        child: const Icon(
+                          Icons.fingerprint,
+                          color: AppColors.blue,
+                          size: 30,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               const SizedBox(height: 20),
               TextButton(

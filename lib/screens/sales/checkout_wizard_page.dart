@@ -11,6 +11,7 @@ import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/utils/cart_manager.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 
 class CheckoutWizardPage extends StatefulWidget {
   final double total;
@@ -47,6 +48,7 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
   late CustomerRequest _searchRequest;
 
   final TextEditingController _amountPaidController = TextEditingController();
+  final TextEditingController _mpesaPhoneController = TextEditingController();
   double _changeAmount = 0.0;
 
   @override
@@ -339,9 +341,14 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
         posProfile: currentUserResponse!.message.posProfile.name,
         payments: [
           InvoicePayment(
-            modeOfPayment: selectedPayment,
+            modeOfPayment: _isMPesa(selectedPayment)
+                ? 'mpesa'
+                : selectedPayment,
             amount: widget.total,
             baseAmount: widget.total,
+            mpesaNumber: _isMPesa(selectedPayment)
+                ? _mpesaPhoneController.text
+                : null,
           ),
         ],
         doNotSubmit: false,
@@ -398,6 +405,7 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
     _customerSearchController.dispose();
     _amountPaidController.removeListener(_calculateChange);
     _amountPaidController.dispose();
+    _mpesaPhoneController.dispose();
     super.dispose();
   }
 
@@ -1094,6 +1102,41 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
               ],
             ),
           ),
+          if (_isMPesa(selectedPayment)) ...[
+            const SizedBox(height: 20),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.grey[300]!),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'M-Pesa Phone Number',
+                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                  const SizedBox(height: 10),
+                  TextField(
+                    controller: _mpesaPhoneController,
+                    keyboardType: TextInputType.phone,
+                    inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                    decoration: const InputDecoration(
+                      hintText: 'Enter phone number (e.g., 0712345678)',
+                      prefixIcon: Icon(Icons.phone_android, size: 20),
+                      border: OutlineInputBorder(),
+                    ),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
           const SizedBox(height: 20),
           Container(
             padding: const EdgeInsets.all(12),
@@ -1857,6 +1900,22 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
       return;
     }
 
+    if (_currentStep == 2 && _isMPesa(selectedPayment)) {
+      final phone = _mpesaPhoneController.text.trim();
+      if (phone.length != 10 && phone.length != 12) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Please enter a valid MPesa number (10 or 12 digits)',
+              style: TextStyle(fontSize: 13),
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+    }
+
     if (_currentStep == 2) {
       if (_isCreditPayment()) {
         final customer = _selectedCustomer;
@@ -1904,6 +1963,10 @@ class _CheckoutWizardPageState extends State<CheckoutWizardPage> {
     } catch (_) {
       return false;
     }
+  }
+
+  bool _isMPesa(String name) {
+    return name.toLowerCase().replaceAll('-', '').contains('mpesa');
   }
 
   String _formatPaymentName(String name) {

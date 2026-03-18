@@ -20,6 +20,7 @@ import 'package:pos/screens/users/role.dart';
 import 'package:pos/screens/sales/settings.dart';
 import 'package:pos/screens/sales/store_dashboard.dart';
 import 'package:pos/screens/suppliers/suppliers_dashboard.dart';
+import 'package:pos/screens/audit/audit_trail_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
@@ -178,6 +179,12 @@ class _DashboardPageState extends State<DashboardPage> {
       'roles': [UserRole.systemManager],
       'pageIndex': 11,
     },
+    {
+      'icon': Icons.history,
+      'title': 'Audit Trail',
+      'roles': [UserRole.auditor, UserRole.systemManager],
+      'pageIndex': 15,
+    },
 
     {
       'icon': Icons.logout,
@@ -223,6 +230,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _ResponsiveWrapper(child: const InvoicesPage()),
       _ResponsiveWrapper(child: const PosOpeningEntriesPage()),
       _ResponsiveWrapper(child: const SalesDashboard()),
+      _ResponsiveWrapper(child: const AuditTrailScreen()),
     ];
   }
 
@@ -660,6 +668,17 @@ class _DashboardPageState extends State<DashboardPage> {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const ReportsDashboardPage(),
+                      ),
+                    );
+                    return;
+                  }
+
+                  if (item['title'] == 'Audit Trail') {
+                    if (isModal) Navigator.pop(context);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AuditTrailScreen(),
                       ),
                     );
                     return;

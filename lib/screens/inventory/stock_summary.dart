@@ -113,88 +113,188 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
   }
 
   void _showItemDetails(StockSummaryItem item) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bool isMobile = screenWidth < 600;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          item.itemName,
-          style: TextStyle(
-            fontSize: isMobile ? 16 : 18,
-            fontWeight: FontWeight.bold,
+      builder: (context) => Dialog(
+        // Square corners as requested
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        insetPadding: isMobile
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? screenWidth * 0.95 : 1200,
+            maxHeight: screenHeight * (isMobile ? 0.80 : 0.85),
           ),
-        ),
-        content: SingleChildScrollView(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _detailRow("Item Code:", item.itemCode, context),
-              _detailRow("Item Group:", item.itemGroup, context),
-              _detailRow("Warehouse:", item.warehouse, context),
-              SizedBox(height: isMobile ? 12 : 16),
-              Text(
-                "Stock Details:",
-                style: TextStyle(
-                  fontSize: isMobile ? 13 : 14,
-                  fontWeight: FontWeight.bold,
+              // ── Header ────────────────────────────────────────────────────
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 20,
+                  vertical: isMobile ? 14 : 16,
+                ),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.zero,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        item.itemName,
+                        style: TextStyle(
+                          fontSize: isMobile ? 15 : 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 2,
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, size: 20),
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
                 ),
               ),
-              _detailRow(
-                "Actual QTY:",
-                "${item.actualQty.toStringAsFixed(2)} ${item.stockUom}",
-                context,
-              ),
-              _detailRow(
-                "Reserved QTY:",
-                "${item.reservedQty.toStringAsFixed(2)} ${item.stockUom}",
-                context,
-              ),
-              _detailRow(
-                "Ordered QTY:",
-                "${item.orderedQty.toStringAsFixed(2)} ${item.stockUom}",
-                context,
-              ),
-              _detailRow(
-                "Projected QTY:",
-                "${item.projectedQty.toStringAsFixed(2)} ${item.stockUom}",
-                context,
-              ),
-              SizedBox(height: isMobile ? 12 : 16),
-              Text(
-                "Financial Details:",
-                style: TextStyle(
-                  fontSize: isMobile ? 13 : 14,
-                  fontWeight: FontWeight.bold,
+
+              // ── Content ───────────────────────────────────────────────────
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isMobile ? 16 : 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Item info
+                      _detailRow("Item Code:", item.itemCode, context),
+                      _detailRow("Item Group:", item.itemGroup, context),
+                      _detailRow("Warehouse:", item.warehouse, context),
+                      SizedBox(height: isMobile ? 14 : 18),
+
+                      // Stock Details section
+                      Text(
+                        "Stock Details",
+                        style: TextStyle(
+                          fontSize: isMobile ? 13 : 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: EdgeInsets.all(isMobile ? 12 : 14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            _detailRow(
+                              "Actual QTY:",
+                              "${item.actualQty.toStringAsFixed(2)} ${item.stockUom}",
+                              context,
+                            ),
+                            _detailRow(
+                              "Reserved QTY:",
+                              "${item.reservedQty.toStringAsFixed(2)} ${item.stockUom}",
+                              context,
+                            ),
+                            _detailRow(
+                              "Ordered QTY:",
+                              "${item.orderedQty.toStringAsFixed(2)} ${item.stockUom}",
+                              context,
+                            ),
+                            _detailRow(
+                              "Projected QTY:",
+                              "${item.projectedQty.toStringAsFixed(2)} ${item.stockUom}",
+                              context,
+                            ),
+                          ],
+                        ),
+                      ),
+                      SizedBox(height: isMobile ? 14 : 18),
+
+                      // Financial Details section
+                      Text(
+                        "Financial Details",
+                        style: TextStyle(
+                          fontSize: isMobile ? 13 : 14,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: EdgeInsets.all(isMobile ? 12 : 14),
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade50,
+                          borderRadius: BorderRadius.zero,
+                          border: Border.all(color: Colors.grey.shade200),
+                        ),
+                        child: Column(
+                          children: [
+                            _detailRow(
+                              "Stock Value:",
+                              "\$${item.stockValue.toStringAsFixed(2)}",
+                              context,
+                            ),
+                            _detailRow(
+                              "Valuation Rate:",
+                              "\$${item.valuationRate.toStringAsFixed(2)}",
+                              context,
+                            ),
+                            _detailRow(
+                              "Unit of Measure:",
+                              item.stockUom,
+                              context,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-              _detailRow(
-                "Stock Value:",
-                "\$${item.stockValue.toStringAsFixed(2)}",
-                context,
+
+              // ── Actions ───────────────────────────────────────────────────
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isMobile ? 16 : 20,
+                  vertical: isMobile ? 10 : 12,
+                ),
+                decoration: BoxDecoration(
+                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                ),
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      "Close",
+                      style: TextStyle(
+                        fontSize: isMobile ? 14 : 15,
+                        color: const Color(0xFF2563EB),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
               ),
-              _detailRow(
-                "Valuation Rate:",
-                "\$${item.valuationRate.toStringAsFixed(2)}",
-                context,
-              ),
-              _detailRow("Unit of Measure:", item.stockUom, context),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Close",
-              style: TextStyle(
-                fontSize: isMobile ? 14 : 16,
-                color: const Color(0xFF2563EB),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

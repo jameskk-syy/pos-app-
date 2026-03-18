@@ -40,7 +40,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
       );
       emit(StaffRolesAssignSuccess(response: response));
     } catch (e) {
-      debugPrint(e.toString());
+      // debugPrint(e.toString());
       emit(StaffStateFailure(error: e.toString()));
     }
   }
@@ -50,12 +50,12 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     Emitter<StaffState> emit,
   ) async {
     emit(StaffStateLoading());
-    debugPrint(event.updateRequest.toJson().toString());
+    //debugPrint(event.updateRequest.toJson().toString());
     try {
       final response = await userListRepo.updateStaffUser(event.updateRequest);
       emit(StaffUpdateSuccess(response: response));
     } catch (e) {
-      debugPrint(e.toString());
+     // debugPrint(e.toString());
       emit(StaffStateFailure(error: e.toString()));
     }
   }
@@ -71,7 +71,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
       );
       emit(StaffStateSuccess(staffUser: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //(e.toString());
       emit(StaffStateFailure(error: e.toString()));
     }
   }
@@ -85,7 +85,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
       final response = await userListRepo.getRoleResponse();
       emit(StaffRoleList(response: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
     }
   }
 
@@ -112,7 +112,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
         ),
       );
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(StaffStateFailure(error: e.toString()));
     }
   }
@@ -121,20 +121,20 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     GetWarehouseStaff event,
     Emitter<StaffState> emit,
   ) async {
-    debugPrint(
-      'StaffBloc: Fetching warehouse staff for ${event.warehouseName}',
-    );
+    // debugPrint(
+    //   'StaffBloc: Fetching warehouse staff for ${event.warehouseName}',
+    // );
     emit(StaffStateLoading());
     try {
       final response = await userListRepo.getWarehouseStaff(
         event.warehouseName,
       );
-      debugPrint(
-        'StaffBloc: Successfully loaded ${response.message.data.length} staff members',
-      );
+      // debugPrint(
+      //   'StaffBloc: Successfully loaded ${response.message.data.length} staff members',
+      // );
       emit(WarehouseStaffLoaded(response: response));
     } catch (e) {
-      debugPrint('StaffBloc ERROR in _getWarehouseStaff: $e');
+      //debugPrint('StaffBloc ERROR in _getWarehouseStaff: $e');
       emit(StaffStateFailure(error: e.toString()));
     }
   }
@@ -157,7 +157,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
         emit(StaffStateFailure(error: "Failed to remove staff"));
       }
     } catch (e) {
-      debugPrint(e.toString());
+     // debugPrint(e.toString());
       emit(StaffStateFailure(error: e.toString()));
     }
   }

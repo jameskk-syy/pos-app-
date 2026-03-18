@@ -17,12 +17,11 @@ class StockLevelDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final isTablet = width >= 600;
-    final dialogWidth = isTablet ? 800.0 : width * 0.95;
+    final isDesktop = width >= 1200;
+    final dialogWidth = isDesktop ? 1200.0 : (isTablet ? 900.0 : width * 0.95);
 
     return Dialog(
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.zero,
-      ), // Square corners as requested
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       insetPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
       child: Container(
         width: dialogWidth,
@@ -35,7 +34,11 @@ class StockLevelDetailDialog extends StatelessWidget {
             // Header
             Container(
               padding: const EdgeInsets.all(20),
-              color: Colors.blue.shade50,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                borderRadius: BorderRadius.zero,
+              ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -44,7 +47,7 @@ class StockLevelDetailDialog extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.blue,
+                      color: Colors.black,
                     ),
                   ),
                   IconButton(
@@ -94,7 +97,9 @@ class StockLevelDetailDialog extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
+                color: Colors.white,
                 border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                borderRadius: BorderRadius.zero,
               ),
               child: Row(
                 children: [

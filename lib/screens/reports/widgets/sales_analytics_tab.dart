@@ -80,7 +80,7 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
               }
             }
           } catch (e) {
-            debugPrint('Error parsing warehouses: $e');
+           // debugPrint('Error parsing warehouses: $e');
           }
 
           // Item Groups
@@ -101,7 +101,7 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
               }
             }
           } catch (e) {
-            debugPrint('Error parsing item groups: $e');
+           // debugPrint('Error parsing item groups: $e');
           }
 
           // Customers
@@ -122,12 +122,12 @@ class _SalesAnalyticsTabState extends State<SalesAnalyticsTab> {
               }
             }
           } catch (e) {
-            debugPrint('Error parsing customers: $e');
+            //debugPrint('Error parsing customers: $e');
           }
         });
       }
     } catch (e) {
-      debugPrint('Error fetching filter options: $e');
+      //debugPrint('Error fetching filter options: $e');
     }
   }
 

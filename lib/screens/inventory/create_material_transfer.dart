@@ -80,6 +80,16 @@ class _CreateTransferFormState extends State<CreateTransferForm> {
             if (state is StoreStateSuccess) {
               setState(() {
                 _stores = state.storeGetResponse.message.data;
+                // Set default warehouse if available and none selected
+                if (_selectedSourceStore == null && _stores.isNotEmpty) {
+                  try {
+                    _selectedSourceStore = _stores.firstWhere(
+                      (store) => store.isDefault,
+                    );
+                  } catch (e) {
+                    // No default warehouse found, leave as null
+                  }
+                }
               });
             }
           },

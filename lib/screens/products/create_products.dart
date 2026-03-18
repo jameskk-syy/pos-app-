@@ -172,6 +172,336 @@ class _AddProductPageState extends State<AddProductPage> {
     super.dispose();
   }
 
+  // ─── Searchable picker bottom sheet ──────────────────────────────────────
+
+  /// Opens a bottom sheet with a search field and a filterable list.
+  /// Returns the selected value or null if dismissed.
+  Future<T?> _showSearchableBottomSheet<T>({
+    required BuildContext context,
+    required String title,
+    required List<T> items,
+    required String Function(T) displayLabel,
+    required T? currentValue,
+  }) async {
+    final searchController = TextEditingController();
+    List<T> filtered = List.from(items);
+
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              builder: (_, scrollController) {
+                return Column(
+                  children: [
+                    // Handle bar
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    // Search field
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    setModalState(() {
+                                      filtered = List.from(items);
+                                    });
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (query) {
+                          setModalState(() {
+                            filtered = items
+                                .where(
+                                  (item) => displayLabel(
+                                    item,
+                                  ).toLowerCase().contains(query.toLowerCase()),
+                                )
+                                .toList();
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    // List
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No results found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              controller: scrollController,
+                              itemCount: filtered.length,
+                              itemBuilder: (_, index) {
+                                final item = filtered[index];
+                                final label = displayLabel(item);
+                                final isSelected =
+                                    currentValue != null &&
+                                    displayLabel(currentValue) == label;
+                                return ListTile(
+                                  title: Text(
+                                    label,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      color: isSelected
+                                          ? const Color(0xFF2563EB)
+                                          : Colors.black87,
+                                    ),
+                                  ),
+                                  trailing: isSelected
+                                      ? const Icon(
+                                          Icons.check,
+                                          color: Color(0xFF2563EB),
+                                          size: 18,
+                                        )
+                                      : null,
+                                  onTap: () => Navigator.pop(ctx, item),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // ─── Picker field widget ──────────────────────────────────────────────────
+
+  /// A tappable field that looks like the existing dropdowns but opens the
+  /// searchable bottom-sheet on tap.
+  Widget _buildPickerField({
+    required String hint,
+    required String? selectedLabel,
+    required VoidCallback onTap,
+    String? Function(String?)? validator,
+  }) {
+    return FormField<String>(
+      initialValue: selectedLabel,
+      validator: validator,
+      builder: (fieldState) {
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            GestureDetector(
+              onTap: onTap,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 16,
+                ),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: fieldState.hasError ? Colors.red : Colors.grey[300]!,
+                  ),
+                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        selectedLabel ?? hint,
+                        overflow: TextOverflow.ellipsis,
+                        maxLines: 1,
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: selectedLabel != null
+                              ? Colors.black87
+                              : Colors.grey[500],
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: Colors.grey[600],
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            if (fieldState.hasError) ...[
+              const SizedBox(height: 4),
+              Padding(
+                padding: const EdgeInsets.only(left: 12),
+                child: Text(
+                  fieldState.errorText!,
+                  style: const TextStyle(fontSize: 12, color: Colors.red),
+                ),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // ─── Dropdown builders ────────────────────────────────────────────────────
+
+  Widget _buildItemGroupDropdown() {
+    final selectedGroup = itemGroups
+        .where((g) => g.name == _selectedItemGroup)
+        .firstOrNull;
+
+    return _buildPickerField(
+      hint: itemGroups.isEmpty ? 'No groups available' : 'Select group',
+      selectedLabel: selectedGroup?.itemGroupName,
+      validator: (_) {
+        if (_selectedItemGroup == null || _selectedItemGroup!.isEmpty) {
+          return 'Item group is required';
+        }
+        return null;
+      },
+      onTap: () async {
+        final result = await _showSearchableBottomSheet<ItemGroup>(
+          context: context,
+          title: 'Select Item Group',
+          items: itemGroups,
+          displayLabel: (g) => g.itemGroupName,
+          currentValue: selectedGroup,
+        );
+        if (result != null) {
+          setState(() => _selectedItemGroup = result.name);
+          _formKey.currentState?.validate();
+        }
+      },
+    );
+  }
+
+  Widget _buildUomDropdown() {
+    final selectedUom = uoms.where((u) => u.name == _selectedUom).firstOrNull;
+
+    return _buildPickerField(
+      hint: uoms.isEmpty ? 'No UOMs available' : 'Choose a unit',
+      selectedLabel: selectedUom?.uomName,
+      validator: (_) {
+        if (_selectedUom == null || _selectedUom!.isEmpty) {
+          return 'Unit of measure is required';
+        }
+        return null;
+      },
+      onTap: () async {
+        final result = await _showSearchableBottomSheet<UOM>(
+          context: context,
+          title: 'Select Unit of Measure',
+          items: uoms,
+          displayLabel: (u) => u.uomName,
+          currentValue: selectedUom,
+        );
+        if (result != null) {
+          setState(() => _selectedUom = result.name);
+          _formKey.currentState?.validate();
+        }
+      },
+    );
+  }
+
+  Widget _buildBrandDropdown() {
+    // Build a list that always starts with a "None" sentinel
+    final brandItems = [
+      Brand(name: 'None', brandName: 'None'),
+      ...brands.where((b) => b.brandName.isNotEmpty && b.brandName != 'None'),
+    ];
+
+    final selectedBrand = brandItems
+        .where((b) => b.brandName == (_selectedBrand ?? 'None'))
+        .firstOrNull;
+
+    return _buildPickerField(
+      hint: brands.isEmpty ? 'No brands available' : 'Select brand',
+      selectedLabel: selectedBrand?.brandName,
+      onTap: () async {
+        final result = await _showSearchableBottomSheet<Brand>(
+          context: context,
+          title: 'Select Brand',
+          items: brandItems,
+          displayLabel: (b) => b.brandName,
+          currentValue: selectedBrand,
+        );
+        if (result != null) {
+          setState(() => _selectedBrand = result.brandName);
+        }
+      },
+    );
+  }
+
+  // ─── Two-column row helper ─────────────────────────────────────────────────
+
+  Widget _buildTwoColumnRow({required Widget left, required Widget right}) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: left),
+        const SizedBox(width: 16),
+        Expanded(child: right),
+      ],
+    );
+  }
+
+  // ─── Screens ──────────────────────────────────────────────────────────────
+
   @override
   Widget build(BuildContext context) {
     return BlocConsumer<ProductsBloc, ProductsState>(
@@ -195,12 +525,10 @@ class _AddProductPageState extends State<AddProductPage> {
             _checkDataLoaded();
           });
         } else if (state is ProductsCreateStateSuccess) {
-          // Product created successfully
           setState(() {
             _isCreatingProduct = false;
           });
 
-          // Show success message
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('Product created successfully!'),
@@ -209,11 +537,7 @@ class _AddProductPageState extends State<AddProductPage> {
             ),
           );
 
-          // Clear form fields
           _clearForm();
-
-          // Optionally navigate back or refresh product list
-          // context.read<ProductsBloc>().add(GetAllProducts());
           Navigator.pop(context, true);
         } else if (state is ProductsStateFailure) {
           setState(() {
@@ -231,7 +555,6 @@ class _AddProductPageState extends State<AddProductPage> {
         }
       },
       builder: (context, state) {
-        // Handle loading/error states
         if (_isLoadingData && errorMessage == null) {
           return _buildLoadingScreen();
         }
@@ -317,153 +640,95 @@ class _AddProductPageState extends State<AddProductPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // First row: Item Code and Item Name
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
-                        controller: _itemCodeController,
-                        readOnly: false,
-                        label: 'Item Code',
-                        hintText: 'Input code',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
-                        controller: _itemNameController,
-                        label: 'Item Name*',
-                        hintText: 'Enter item name',
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Item name is required';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+            // Row 1: Item Code & Item Name
+            _buildTwoColumnRow(
+              left: _buildTextField(
+                controller: _itemCodeController,
+                readOnly: false,
+                label: 'Item Code',
+                hintText: 'Input code',
+              ),
+              right: _buildTextField(
+                controller: _itemNameController,
+                label: 'Item Name*',
+                hintText: 'Enter item name',
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Item name is required';
+                  }
+                  return null;
+                },
+              ),
             ),
             const SizedBox(height: 24),
 
-            // Second row: Item Group and Unit of Measure
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle('Item Group*'),
-                      const SizedBox(height: 8),
-                      _buildItemGroupDropdown(),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle('Unit of Measure*'),
-                      const SizedBox(height: 8),
-                      _buildUomDropdown(),
-                    ],
-                  ),
-                ),
-              ],
+            // Row 2: Item Group & Unit of Measure
+            _buildTwoColumnRow(
+              left: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Item Group*'),
+                  const SizedBox(height: 8),
+                  _buildItemGroupDropdown(),
+                ],
+              ),
+              right: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Unit of Measure*'),
+                  const SizedBox(height: 8),
+                  _buildUomDropdown(),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
 
-            // Third row: Standard Rate and Brand
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
-                        controller: _standardRateController,
-                        label: 'Standard Rate*',
-                        hintText: '0.00',
-                        keyboardType: TextInputType.numberWithOptions(
-                          decimal: true,
-                        ),
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'Standard rate is required';
-                          }
-                          if (double.tryParse(value) == null) {
-                            return 'Enter a valid number';
-                          }
-                          return null;
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSectionTitle('Brand'),
-                      const SizedBox(height: 8),
-                      _buildBrandDropdown(),
-                    ],
-                  ),
-                ),
-              ],
+            // Row 3: Standard Rate & Brand
+            _buildTwoColumnRow(
+              left: _buildTextField(
+                controller: _standardRateController,
+                label: 'Standard Rate*',
+                hintText: '0.00',
+                keyboardType: TextInputType.numberWithOptions(decimal: true),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Standard rate is required';
+                  }
+                  if (double.tryParse(value) == null) {
+                    return 'Enter a valid number';
+                  }
+                  return null;
+                },
+              ),
+              right: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSectionTitle('Brand'),
+                  const SizedBox(height: 8),
+                  _buildBrandDropdown(),
+                ],
+              ),
             ),
             const SizedBox(height: 24),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
-                        controller: _descriptionController,
-                        label: 'Description',
-                        hintText: 'Give a description',
-                        maxLines: 3,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildTextField(
-                        controller: _barcodeController,
-                        label: 'Barcode',
-                        hintText: 'Input barcode',
-                        keyboardType: TextInputType.number,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.digitsOnly,
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
+
+            // Row 4: Description & Barcode
+            _buildTwoColumnRow(
+              left: _buildTextField(
+                controller: _descriptionController,
+                label: 'Description',
+                hintText: 'Give a description',
+                maxLines: 3,
+              ),
+              right: _buildTextField(
+                controller: _barcodeController,
+                label: 'Barcode',
+                hintText: 'Input barcode',
+                keyboardType: TextInputType.number,
+                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+              ),
             ),
             const SizedBox(height: 24),
+
             _buildProductTypeSwitches(),
             const SizedBox(height: 32),
 
@@ -506,106 +771,6 @@ class _AddProductPageState extends State<AddProductPage> {
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildItemGroupDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedItemGroup,
-      decoration: InputDecoration(
-        hintText: itemGroups.isEmpty ? 'No groups available' : 'Select group',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
-        isDense: true,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Item group is required';
-        }
-        return null;
-      },
-      isExpanded: true,
-      style: const TextStyle(fontSize: 14, overflow: TextOverflow.ellipsis),
-      items: itemGroups.map((item) {
-        return DropdownMenuItem<String>(
-          value: item.name,
-          child: Text(
-            item.itemGroupName,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
-          ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedItemGroup = value;
-        });
-      },
-    );
-  }
-
-  Widget _buildUomDropdown() {
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedUom,
-      decoration: InputDecoration(
-        hintText: uoms.isEmpty ? 'No UOMs available' : 'Choose a unit',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
-        isDense: true,
-      ),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Unit of measure is required';
-        }
-        return null;
-      },
-      isExpanded: true,
-      style: const TextStyle(fontSize: 14, overflow: TextOverflow.ellipsis),
-      items: uoms.map((uom) {
-        return DropdownMenuItem<String>(
-          value: uom.name,
-          child: Text(
-            uom.uomName,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
-          ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedUom = value;
-        });
-      },
     );
   }
 
@@ -669,60 +834,6 @@ class _AddProductPageState extends State<AddProductPage> {
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildBrandDropdown() {
-    List<String> brandNames = ['None'];
-    for (var brand in brands) {
-      if (brand.brandName.isNotEmpty && brand.brandName != 'None') {
-        brandNames.add(brand.brandName);
-      }
-    }
-    if (_selectedBrand != null && !brandNames.contains(_selectedBrand)) {
-      brandNames.add(_selectedBrand!);
-    }
-
-    return DropdownButtonFormField<String>(
-      initialValue: _selectedBrand ?? 'None',
-      decoration: InputDecoration(
-        hintText: brands.isEmpty ? 'No brands available' : 'Select brand',
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: BorderSide(color: Colors.grey[300]!),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: Color(0xFF2563EB), width: 2),
-        ),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 16,
-        ),
-        isDense: true,
-      ),
-      isExpanded: true,
-      style: const TextStyle(fontSize: 14, overflow: TextOverflow.ellipsis),
-      items: brandNames.map((name) {
-        return DropdownMenuItem<String>(
-          value: name,
-          child: Text(
-            name,
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
-          ),
-        );
-      }).toList(),
-      onChanged: (value) {
-        setState(() {
-          _selectedBrand = value;
-        });
-      },
     );
   }
 

@@ -273,6 +273,7 @@ class _StockReconciliationMultiPageState
     }
   }
 
+  /* Original _getRoleForStatus commented out as requested
   StockTakeRole? _getRoleForStatus(String status) {
     if (currentUserResponse == null) return null;
     final roles = currentUserResponse!.message.roles;
@@ -291,12 +292,14 @@ class _StockReconciliationMultiPageState
     }
     return null;
   }
+  */
 
   void _showActionMenu(
     BuildContext context,
     StockReconciliation reconciliation,
   ) {
-    final role = _getRoleForStatus(reconciliation.workflowStatus);
+    // Original workflow/role check commented out as requested
+    // final role = _getRoleForStatus(reconciliation.workflowStatus);
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -315,6 +318,56 @@ class _StockReconciliationMultiPageState
                 _showViewDetailsDialog(context, reconciliation);
               },
             ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.add_box, color: Colors.green),
+              title: const Text('Add Stock Take (Sales)'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StockTakePage(
+                      reconciliationName: reconciliation.name,
+                      role: StockTakeRole.salesPerson,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_box, color: Colors.orange),
+              title: const Text('Add Stock Take (Quality/Controller)'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StockTakePage(
+                      reconciliationName: reconciliation.name,
+                      role: StockTakeRole.stockController,
+                    ),
+                  ),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_box, color: Colors.purple),
+              title: const Text('Submit Reconciliation (Manager)'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => StockTakePage(
+                      reconciliationName: reconciliation.name,
+                      role: StockTakeRole.stockManager,
+                    ),
+                  ),
+                );
+              },
+            ),
+            /* Original logic commented out
             if (role != null) ...[
               const Divider(),
               ListTile(
@@ -338,6 +391,7 @@ class _StockReconciliationMultiPageState
                 },
               ),
             ],
+            */
           ],
         ),
       ),

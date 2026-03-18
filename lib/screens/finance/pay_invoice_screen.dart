@@ -81,7 +81,7 @@ class _PayInvoiceScreenState extends State<PayInvoiceScreen> {
       final request = PayPurchaseInvoiceRequest(
         invoiceNo: _invoiceNoController.text,
         paidAmount: double.tryParse(_amountController.text) ?? 0.0,
-        modeOfPayment: _modeOfPayment,
+        modeOfPayment: _isMPesa(_modeOfPayment) ? 'mpesa' : _modeOfPayment,
         postingDate: _postingDateController.text,
         referenceNo: _referenceNoController.text,
         referenceDate: _referenceDateController.text,
@@ -224,5 +224,9 @@ class _PayInvoiceScreenState extends State<PayInvoiceScreen> {
         ),
       ),
     );
+  }
+
+  bool _isMPesa(String name) {
+    return name.toLowerCase().replaceAll('-', '').contains('mpesa');
   }
 }

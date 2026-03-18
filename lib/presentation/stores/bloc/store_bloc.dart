@@ -32,7 +32,7 @@ class StoreBloc extends Bloc<StoreEvent, StoreState> {
       );
       emit(StoreStateSuccess(storeGetResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(StoreStateFailure(error: e.toString()));
     }
   }

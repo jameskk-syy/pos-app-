@@ -208,7 +208,10 @@ class _RegisterCompanyDetailsState extends State<RegisterCompanyDetails> {
               );
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(builder: (_) => const BussinessTypePage()),
+                MaterialPageRoute(
+                  builder: (_) =>
+                      const BussinessTypePage(showBackButton: false),
+                ),
               );
             }
           },

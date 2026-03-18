@@ -44,35 +44,35 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       emit(RoleStateSuccess(roleResponse: response));
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
     }
   }
 
   Future<void> _createRole(CreateRole event, Emitter<RoleState> emit) async {
-    debugPrint("calling ${event.createRoleRequest.toJson()}");
+    //debugPrint("calling ${event.createRoleRequest.toJson()}");
     emit(RoleStateLoading());
     try {
       await roleRepo.createRoles(event.createRoleRequest);
       emit(RoleStateCreateRoleSuccess());
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("hcdhacdh ${e.toString()}");
+      //debugPrint("hcdhacdh ${e.toString()}");
     }
   }
 
   Future<void> _updateRole(UpdateRole event, Emitter<RoleState> emit) async {
-    debugPrint("RoleBloc: handling UpdateRole event");
-    debugPrint("updating ${event.updateRoleRequest.toJson()}");
+    //debugPrint("RoleBloc: handling UpdateRole event");
+    //debugPrint("updating ${event.updateRoleRequest.toJson()}");
     emit(RoleStateLoading());
     try {
-      debugPrint("RoleBloc: calling roleRepo.updateRole");
+      //debugPrint("RoleBloc: calling roleRepo.updateRole");
       await roleRepo.updateRole(event.updateRoleRequest);
-      debugPrint("RoleBloc: updateRole success");
+      //debugPrint("RoleBloc: updateRole success");
       emit(RoleStateUpdateRoleSuccess());
     } catch (e) {
-      debugPrint("RoleBloc: updateRole error: $e");
+      //debugPrint("RoleBloc: updateRole error: $e");
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("Update error: ${e.toString()}");
+      //debugPrint("Update error: ${e.toString()}");
     }
   }
 
@@ -86,7 +86,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       emit(RolePermissionsLoaded(response: response));
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("GetRolePermissions error: ${e.toString()}");
+      //debugPrint("GetRolePermissions error: ${e.toString()}");
     }
   }
 
@@ -100,7 +100,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       emit(ModulesLoaded(response: response));
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("FetchModules error: ${e.toString()}");
+      //debugPrint("FetchModules error: ${e.toString()}");
     }
   }
 
@@ -114,7 +114,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       emit(DoctypesLoaded(response: response));
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("FetchDoctypes error: ${e.toString()}");
+      //debugPrint("FetchDoctypes error: ${e.toString()}");
     }
   }
 
@@ -132,7 +132,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       }
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("AssignRolePermissions error: ${e.toString()}");
+      //debugPrint("AssignRolePermissions error: ${e.toString()}");
     }
   }
 
@@ -150,7 +150,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       }
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("GetRoleDetails error: ${e.toString()}");
+      //debugPrint("GetRoleDetails error: ${e.toString()}");
     }
   }
 
@@ -169,7 +169,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       }
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("DisableRole error: ${e.toString()}");
+      //debugPrint("DisableRole error: ${e.toString()}");
     }
   }
 
@@ -184,7 +184,7 @@ class RoleBloc extends Bloc<RoleEvent, RoleState> {
       }
     } catch (e) {
       emit(RoleStateFailure(error: e.toString()));
-      debugPrint("EnableRole error: ${e.toString()}");
+      //debugPrint("EnableRole error: ${e.toString()}");
     }
   }
 }

@@ -11,12 +11,14 @@ class WarehouseDetailDialog extends StatelessWidget {
     required this.onEdit,
   });
 
-  bool _isMobile(BuildContext context) => MediaQuery.of(context).size.width < 600;
-  bool _isTablet(BuildContext context) => 
-      MediaQuery.of(context).size.width >= 600 && 
+  bool _isMobile(BuildContext context) =>
+      MediaQuery.of(context).size.width < 600;
+  bool _isTablet(BuildContext context) =>
+      MediaQuery.of(context).size.width >= 600 &&
       MediaQuery.of(context).size.width < 900;
 
-  double _getResponsiveFontSize(BuildContext context, {
+  double _getResponsiveFontSize(
+    BuildContext context, {
     required double mobile,
     required double tablet,
     required double desktop,
@@ -30,14 +32,13 @@ class WarehouseDetailDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     final isMobile = _isMobile(context);
     final isTablet = _isTablet(context);
-    
+
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
       child: Container(
+        padding: EdgeInsets.zero,
         constraints: BoxConstraints(
-          maxWidth: isMobile ? double.infinity : (isTablet ? 500 : 600),
+          maxWidth: isMobile ? double.infinity : (isTablet ? 900 : 1200),
           maxHeight: MediaQuery.of(context).size.height * 0.85,
         ),
         child: Column(
@@ -47,17 +48,15 @@ class WarehouseDetailDialog extends StatelessWidget {
             Container(
               padding: EdgeInsets.all(isMobile ? 16 : 20),
               decoration: const BoxDecoration(
-                color: Colors.blue,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(16),
-                  topRight: Radius.circular(16),
-                ),
+                color: Colors.white,
+                border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                borderRadius: BorderRadius.zero,
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.warehouse_outlined,
-                    color: Colors.white,
+                    color: Colors.black,
                     size: isMobile ? 24 : 28,
                   ),
                   SizedBox(width: isMobile ? 10 : 12),
@@ -75,7 +74,7 @@ class WarehouseDetailDialog extends StatelessWidget {
                               desktop: 20,
                             ),
                             fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                            color: Colors.black,
                           ),
                         ),
                         if (warehouse.warehouseType != null)
@@ -88,7 +87,7 @@ class WarehouseDetailDialog extends StatelessWidget {
                                 tablet: 14,
                                 desktop: 14,
                               ),
-                              color: Colors.white70,
+                              color: Colors.black87,
                             ),
                           ),
                       ],
@@ -96,7 +95,7 @@ class WarehouseDetailDialog extends StatelessWidget {
                   ),
                   IconButton(
                     onPressed: () => Navigator.pop(context),
-                    icon: const Icon(Icons.close, color: Colors.white),
+                    icon: const Icon(Icons.close, color: Colors.black),
                     iconSize: isMobile ? 20 : 24,
                   ),
                 ],
@@ -111,9 +110,9 @@ class WarehouseDetailDialog extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       // Status Badges
-                      if (warehouse.isDefault || 
-                          warehouse.disabled == 1 || 
-                          warehouse.isGroup == 1 || 
+                      if (warehouse.isDefault ||
+                          warehouse.disabled == 1 ||
+                          warehouse.isGroup == 1 ||
                           warehouse.isMainDepot)
                         Padding(
                           padding: EdgeInsets.only(bottom: isMobile ? 16 : 24),
@@ -158,35 +157,30 @@ class WarehouseDetailDialog extends StatelessWidget {
                         ),
 
                       // Basic Information
-                      _buildDetailSection(
-                        context,
-                        'Basic Information',
-                        [
+                      _buildDetailSection(context, 'Basic Information', [
+                        _buildDetailRow(
+                          context,
+                          'Warehouse ID',
+                          warehouse.name,
+                          Icons.tag,
+                          isMobile,
+                        ),
+                        _buildDetailRow(
+                          context,
+                          'Company',
+                          warehouse.company,
+                          Icons.business_outlined,
+                          isMobile,
+                        ),
+                        if (warehouse.parentWarehouse != null)
                           _buildDetailRow(
                             context,
-                            'Warehouse ID',
-                            warehouse.name,
-                            Icons.tag,
+                            'Parent Warehouse',
+                            warehouse.parentWarehouse!,
+                            Icons.account_tree_outlined,
                             isMobile,
                           ),
-                          _buildDetailRow(
-                            context,
-                            'Company',
-                            warehouse.company,
-                            Icons.business_outlined,
-                            isMobile,
-                          ),
-                          if (warehouse.parentWarehouse != null)
-                            _buildDetailRow(
-                              context,
-                              'Parent Warehouse',
-                              warehouse.parentWarehouse!,
-                              Icons.account_tree_outlined,
-                              isMobile,
-                            ),
-                        ],
-                        isMobile,
-                      ),
+                      ], isMobile),
                       SizedBox(height: isMobile ? 16 : 24),
 
                       // Address Information
@@ -250,37 +244,32 @@ class WarehouseDetailDialog extends StatelessWidget {
                       if (warehouse.phoneNo != null ||
                           warehouse.mobileNo != null ||
                           warehouse.emailId != null)
-                        _buildDetailSection(
-                          context,
-                          'Contact Information',
-                          [
-                            if (warehouse.phoneNo != null)
-                              _buildDetailRow(
-                                context,
-                                'Phone Number',
-                                warehouse.phoneNo!,
-                                Icons.phone_outlined,
-                                isMobile,
-                              ),
-                            if (warehouse.mobileNo != null)
-                              _buildDetailRow(
-                                context,
-                                'Mobile Number',
-                                warehouse.mobileNo!,
-                                Icons.phone_android_outlined,
-                                isMobile,
-                              ),
-                            if (warehouse.emailId != null)
-                              _buildDetailRow(
-                                context,
-                                'Email',
-                                warehouse.emailId!,
-                                Icons.email_outlined,
-                                isMobile,
-                              ),
-                          ],
-                          isMobile,
-                        ),
+                        _buildDetailSection(context, 'Contact Information', [
+                          if (warehouse.phoneNo != null)
+                            _buildDetailRow(
+                              context,
+                              'Phone Number',
+                              warehouse.phoneNo!,
+                              Icons.phone_outlined,
+                              isMobile,
+                            ),
+                          if (warehouse.mobileNo != null)
+                            _buildDetailRow(
+                              context,
+                              'Mobile Number',
+                              warehouse.mobileNo!,
+                              Icons.phone_android_outlined,
+                              isMobile,
+                            ),
+                          if (warehouse.emailId != null)
+                            _buildDetailRow(
+                              context,
+                              'Email',
+                              warehouse.emailId!,
+                              Icons.email_outlined,
+                              isMobile,
+                            ),
+                        ], isMobile),
                     ],
                   ),
                 ),
@@ -291,10 +280,7 @@ class WarehouseDetailDialog extends StatelessWidget {
               padding: EdgeInsets.all(isMobile ? 16 : 20),
               decoration: BoxDecoration(
                 color: Colors.grey[100],
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(16),
-                  bottomRight: Radius.circular(16),
-                ),
+                borderRadius: BorderRadius.zero,
               ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.end,
@@ -314,7 +300,6 @@ class WarehouseDetailDialog extends StatelessWidget {
                       onPressed: () => Navigator.pop(context),
                       child: const Text('Close'),
                     ),
- 
                 ],
               ),
             ),

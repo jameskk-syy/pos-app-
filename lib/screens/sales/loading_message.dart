@@ -7,10 +7,7 @@ import 'package:pos/utils/themes/app_colors.dart';
 class LoadingMessage extends StatefulWidget {
   final List<String>? messages;
 
-  const LoadingMessage({
-    super.key,
-    this.messages,
-  });
+  const LoadingMessage({super.key, this.messages});
 
   @override
   State<LoadingMessage> createState() => _LoadingMessageState();
@@ -42,26 +39,25 @@ class _LoadingMessageState extends State<LoadingMessage>
       duration: const Duration(milliseconds: 1200),
     );
 
-    _logoScale = Tween<double>(begin: 0.85, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _logoScale = Tween<double>(
+      begin: 0.85,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
 
-    _logoOpacity = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
+    _logoOpacity = Tween<double>(
+      begin: 0,
+      end: 1,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
 
     _controller.forward();
 
     if (_messages.length > 1) {
-      _textTimer = Timer.periodic(
-        const Duration(seconds: 4),
-        (_) {
-          if (!mounted) return;
-          setState(() {
-            _currentIndex = (_currentIndex + 1) % _messages.length;
-          });
-        },
-      );
+      _textTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+        if (!mounted) return;
+        setState(() {
+          _currentIndex = (_currentIndex + 1) % _messages.length;
+        });
+      });
     }
     WidgetsBinding.instance.addPostFrameCallback((_) {
       Future.delayed(const Duration(seconds: 3), () {
@@ -69,7 +65,9 @@ class _LoadingMessageState extends State<LoadingMessage>
 
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (_) => const BussinessTypePage()),
+          MaterialPageRoute(
+            builder: (_) => const BussinessTypePage(showBackButton: false),
+          ),
         );
       });
     });

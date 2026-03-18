@@ -28,7 +28,7 @@ class _CategoryFormDialogState extends State<CategoryFormDialog> {
     super.initState();
     if (widget.category != null) {
       _nameController.text = widget.category!.itemGroupName;
-      _selectedParent = widget.category!.parentItemGroup.isEmpty
+      _selectedParent = widget.category!.parentItemGroup!.isEmpty
           ? null
           : widget.category!.parentItemGroup;
     }

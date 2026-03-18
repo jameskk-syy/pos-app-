@@ -42,7 +42,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       );
       emit(BarcodeSearchSuccess(product: product));
     } catch (e) {
-      debugPrint("Barcode search error: ${e.toString()}");
+      //debugPrint("Barcode search error: ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -66,7 +66,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       );
       emit(ProductsStateSuccess(productResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -80,7 +80,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.addItemToStock(event.stockRequest);
       emit(AddItemToStockSuccess(stockResponse: response));
     } catch (e) {
-      debugPrint('Add item to stock error: ${e.toString()}');
+      //debugPrint('Add item to stock error: ${e.toString()}');
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -94,7 +94,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.getItemGroup();
       emit(ProductsItemGroupsStateSuccess(itemGroupResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -108,7 +108,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.getUnitOfmeasure();
       emit(ProductsUomStateSuccess(uomResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -118,12 +118,12 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
     Emitter<ProductsState> emit,
   ) async {
     emit(ProductsStateLoading());
-    debugPrint(event.createProductRequest.itemCode);
+    //debugPrint(event.createProductRequest.itemCode);
     try {
       await productsRepo.createProduct(event.createProductRequest);
       emit(ProductsCreateStateSuccess());
     } catch (e) {
-      debugPrint("dsjghfh ${e.toString()}");
+      //debugPrint("dsjghfh ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -137,7 +137,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.getProductItems(event.company);
       emit(ItemsStateSuccess(stockItemResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -151,7 +151,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final response = await productsRepo.getBrand();
       emit(ProductsBrandStateSuccess(brandResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -165,7 +165,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       await productsRepo.updateProduct(event.updateProductRequest);
       emit(ProductsUpdateStateSuccess());
     } catch (e) {
-      debugPrint("Update product error: ${e.toString()}");
+      //debugPrint("Update product error: ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -179,7 +179,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       final message = await productsRepo.disableProduct(event.itemCode);
       emit(ProductsUpdateStateSuccess(message: message));
     } catch (e) {
-      debugPrint("Disable product error: ${e.toString()}");
+      //debugPrint("Disable product error: ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));
     }
   }
@@ -193,7 +193,7 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
       await productsRepo.enableProduct(event.itemCode);
       emit(ProductsUpdateStateSuccess());
     } catch (e) {
-      debugPrint("Enable product error: ${e.toString()}");
+      //debugPrint("Enable product error: ${e.toString()}");
       emit(ProductsStateFailure(error: e.toString()));
     }
   }

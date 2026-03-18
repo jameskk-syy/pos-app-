@@ -35,7 +35,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
     GetLoyaltyHistory event,
     Emitter<CrmState> emit,
   ) async {
-    debugPrint("Getting loyalty history for customer: ${event.customerId}");
+    //debugPrint("Getting loyalty history for customer: ${event.customerId}");
     emit(LoyaltyHistoryLoading());
     try {
       final request = LoyaltyHistoryRequest(
@@ -52,7 +52,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
         ),
       );
     } catch (e) {
-      debugPrint('Error getting loyalty history: $e');
+      //debugPrint('Error getting loyalty history: $e');
       emit(LoyaltyHistoryError(error: e.toString()));
     }
   }
@@ -61,7 +61,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
     GetLoyaltyBalance event,
     Emitter<CrmState> emit,
   ) async {
-    debugPrint("Getting loyalty balance for customer: ${event.customerId}");
+    //debugPrint("Getting loyalty balance for customer: ${event.customerId}");
     emit(LoyaltyLoading());
     try {
       final response = await crmRepo.getLoyaltyBalance(
@@ -71,15 +71,15 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
       );
       emit(LoyaltyBalanceLoaded(balanceResponse: response));
     } catch (e) {
-      debugPrint('Error getting loyalty balance: $e');
+      //debugPrint('Error getting loyalty balance: $e');
       emit(LoyaltyError(error: e.toString()));
     }
   }
 
   Future<void> _redeemPoints(RedeemPoints event, Emitter<CrmState> emit) async {
-    debugPrint(
-      "Redeeming ${event.pointsToRedeem} points for customer: ${event.customerId}",
-    );
+    //debugPrint(
+    //  "Redeeming ${event.pointsToRedeem} points for customer: ${event.customerId}",
+    //);
     emit(LoyaltyLoading());
     try {
       final request = RedeemPointsRequest(
@@ -89,7 +89,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
       final response = await crmRepo.redeemPoints(request);
       emit(PointsRedeemSuccess(redeemResponse: response));
     } catch (e) {
-      debugPrint('Error redeeming points: $e');
+      //debugPrint('Error redeeming points: $e');
       emit(LoyaltyError(error: e.toString()));
     }
   }
@@ -98,13 +98,13 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
     AssignLoyaltyProgram event,
     Emitter<CrmState> emit,
   ) async {
-    debugPrint("Assigning loyalty program");
+    //debugPrint("Assigning loyalty program");
     emit(AssignLoyaltyProgramLoading());
     try {
       final response = await crmRepo.assignLoyaltyProgram(event.request);
       emit(AssignLoyaltyProgramSuccess(response: response));
     } catch (e) {
-      debugPrint('Error assigning loyalty program: $e');
+      //debugPrint('Error assigning loyalty program: $e');
       emit(AssignLoyaltyProgramError(error: e.toString()));
     }
   }
@@ -122,7 +122,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
       emit(UpdateCustomerSuccess(response: response));
     } catch (e) {
       emit(CrmStateFailure(error: e.toString()));
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
     }
   }
 
@@ -135,7 +135,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
       final response = await crmRepo.getAllCustomers(event.custmoerRequest);
       emit(CrmStateSuccess(customerResponse: response));
     } catch (e) {
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
       emit(CrmStateFailure(error: e.toString()));
     }
   }
@@ -157,21 +157,21 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
     CreateCustomer event,
     Emitter<CrmState> emit,
   ) async {
-    debugPrint("clicking");
+    //debugPrint("clicking");
     emit(CrmStateLoading());
     try {
       await crmRepo.createCustomer(event.completeCustomerequest);
       emit(CrmStateSuccessful());
     } catch (e) {
       emit(CrmStateFailure(error: e.toString()));
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
     }
   }
 
   Future<void> _earnPoints(EarnPoints event, Emitter<CrmState> emit) async {
-    debugPrint(
-      "Earning points for customer: ${event.customerId}, amount: ${event.purchaseAmount}",
-    );
+    //debugPrint(
+     // "Earning points for customer: ${event.customerId}, amount: ${event.purchaseAmount}",
+    //);
     emit(EarnPointsLoading());
     try {
       final request = EarnLoyaltyPointsRequest(
@@ -181,7 +181,7 @@ class CrmBloc extends Bloc<CrmEvent, CrmState> {
       final response = await crmRepo.earnLoyaltyPoints(request);
       emit(EarnPointsSuccess(response: response));
     } catch (e) {
-      debugPrint('Error earning points: $e');
+      //debugPrint('Error earning points: $e');
       emit(EarnPointsError(error: e.toString()));
     }
   }

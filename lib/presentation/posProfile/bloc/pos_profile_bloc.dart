@@ -24,7 +24,7 @@ class PosProfileBloc extends Bloc<PosProfileEvent, PosProfileState> {
       emit(PosProfileStateSuccess());
     } catch (e) {
       emit(PosProfileStateFailure(error: e.toString()));
-      debugPrint(e.toString());
+      //debugPrint(e.toString());
     }
   }
 }

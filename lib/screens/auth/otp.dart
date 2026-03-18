@@ -74,12 +74,17 @@ class OtpScreen extends StatelessWidget {
                     if (isSeeded == true) {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => DashboardPage()),
+                        MaterialPageRoute(
+                          builder: (_) => const DashboardPage(),
+                        ),
                       );
                     } else {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => BussinessTypePage()),
+                        MaterialPageRoute(
+                          builder: (_) =>
+                              const BussinessTypePage(showBackButton: false),
+                        ),
                       );
                     }
                   }

@@ -55,14 +55,18 @@ class StockReconciliationDetail {
         postingDate: json["posting_date"],
         postingTime: json["posting_time"],
         purpose: json["purpose"],
-        docstatus: json["docstatus"],
+        docstatus: json["docstatus"] ?? 0,
         workflowStatus: json["workflow_state"] ?? json["workflow_status"] ?? '',
-        stockTakingRecords: (json["stock_taking_records"] as List)
-            .map((item) => StockTakingRecord.fromJson(item))
-            .toList(),
-        items: (json["items"] as List)
-            .map((item) => ReconciliationItem.fromJson(item))
-            .toList(),
+        stockTakingRecords:
+            (json["stock_taking_records"] as List?)
+                ?.map((item) => StockTakingRecord.fromJson(item))
+                .toList() ??
+            [],
+        items:
+            (json["items"] as List?)
+                ?.map((item) => ReconciliationItem.fromJson(item))
+                .toList() ??
+            [],
       );
 }
 
@@ -105,19 +109,20 @@ class StockTakingRecord {
 
   factory StockTakingRecord.fromJson(Map<String, dynamic> json) =>
       StockTakingRecord(
-        itemCode: json["item_code"],
-        warehouse: json["warehouse"],
-        finalQty: (json["final_qty"] as num).toDouble(),
-        currentQty: (json["current_qty"] as num).toDouble(),
-        salesPersonQty: (json["sales_person_qty"] as num).toDouble(),
+        itemCode: json["item_code"] ?? '',
+        warehouse: json["warehouse"] ?? '',
+        finalQty: (json["final_qty"] as num?)?.toDouble() ?? 0.0,
+        currentQty: (json["current_qty"] as num?)?.toDouble() ?? 0.0,
+        salesPersonQty: (json["sales_person_qty"] as num?)?.toDouble() ?? 0.0,
         salesPersonComment: json["sales_person_comment"],
         salesPersonName: json["sales_person_name"],
         salesPersonDate: json["sales_person_date"],
-        stockControllerQty: (json["stock_controller_qty"] as num).toDouble(),
+        stockControllerQty:
+            (json["stock_controller_qty"] as num?)?.toDouble() ?? 0.0,
         stockControllerComment: json["stock_controller_comment"],
         stockControllerName: json["stock_controller_name"],
         stockControllerDate: json["stock_controller_date"],
-        stockManagerQty: (json["stock_manager_qty"] as num).toDouble(),
+        stockManagerQty: (json["stock_manager_qty"] as num?)?.toDouble() ?? 0.0,
         stockManagerComment: json["stock_manager_comment"],
         stockManagerName: json["stock_manager_name"],
         stockManagerDate: json["stock_manager_date"],
@@ -139,9 +144,9 @@ class ReconciliationItem {
 
   factory ReconciliationItem.fromJson(Map<String, dynamic> json) =>
       ReconciliationItem(
-        itemCode: json["item_code"],
-        warehouse: json["warehouse"],
-        qty: (json["qty"] as num).toDouble(),
-        currentQty: (json["current_qty"] as num).toDouble(),
+        itemCode: json["item_code"] ?? '',
+        warehouse: json["warehouse"] ?? '',
+        qty: (json["qty"] as num?)?.toDouble() ?? 0.0,
+        currentQty: (json["current_qty"] as num?)?.toDouble() ?? 0.0,
       );
 }

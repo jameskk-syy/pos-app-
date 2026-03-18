@@ -84,44 +84,18 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
     context.read<InventoryBloc>().add(
       GetStockLedger(
         company: currentUserResponse!.message.company.companyName,
-        warehouse: selectedWarehouse ?? _getDefaultWarehouseName(),
-        voucherType: selectedVoucherType,
+        warehouse: selectedWarehouse,
+        voucherType: selectedVoucherType == "" ? null : selectedVoucherType,
         limit: 20,
         offset: 0,
       ),
     );
   }
 
-  String _getDefaultWarehouseName() {
-    if (currentUserResponse == null) return "VBU";
-
-    final defaultWarehouseFromUser =
-        currentUserResponse!.message.defaultWarehouse;
-    if (warehouseNames.contains(defaultWarehouseFromUser)) {
-      return defaultWarehouseFromUser;
-    }
-    final matchingWarehouse = warehouseList.firstWhere(
-      (wh) => wh.name == defaultWarehouseFromUser,
-      orElse: () => Warehouse(
-        name: '',
-        warehouseName: '',
-        company: '',
-        isGroup: 0,
-        disabled: 0,
-        isMainDepot: false,
-        isDefault: false,
-      ),
-    );
-
-    return matchingWarehouse.warehouseName.isNotEmpty
-        ? matchingWarehouse.warehouseName
-        : (warehouseNames.isNotEmpty ? warehouseNames.first : "VBU - VB");
-  }
-
   void _resetFilters() {
     setState(() {
       selectedVoucherType = voucherTypes.first;
-      selectedWarehouse = _getDefaultWarehouseName();
+      selectedWarehouse = null;
       fromDate = null;
       toDate = null;
       selectedStatus = statusOptions.first;
@@ -328,58 +302,131 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
   }
 
   void _showEntryDetails(StockLedgerEntry entry, BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final screenHeight = MediaQuery.of(context).size.height;
+    final bool isMobile = screenWidth < 600;
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          "Stock Entry Details",
-          style: TextStyle(fontSize: isMobile ? 16 : 18, color: Colors.black),
-        ),
-        content: SingleChildScrollView(
+      builder: (context) => Dialog(
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+        insetPadding: isMobile
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 24)
+            : const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? screenWidth * 0.95 : 1200,
+            maxHeight: screenHeight * (isMobile ? 0.85 : 0.85),
+          ),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _detailRow("Voucher No:", entry.voucherNo, context),
-              _detailRow("Item Code:", entry.itemCode, context),
-              _detailRow("Warehouse:", entry.warehouse, context),
-              _detailRow("Voucher Type:", entry.voucherType, context),
-              _detailRow("Posting Date:", entry.postingDate, context),
-              _detailRow("Posting Time:", entry.postingTime, context),
-              _detailRow("Actual Qty:", entry.actualQty.toString(), context),
-              _detailRow(
-                "Qty After Transaction:",
-                entry.qtyAfterTransaction.toString(),
-                context,
+              // Header
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  color: Colors.white,
+                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.receipt_long,
+                      color: Colors.black,
+                      size: 28,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        "Stock Entry Details",
+                        style: TextStyle(
+                          fontSize: isMobile ? 18 : 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: Colors.black),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ],
+                ),
               ),
-              _detailRow(
-                "Valuation Rate:",
-                entry.valuationRate.toString(),
-                context,
+              // Content
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _detailRow("Voucher No:", entry.voucherNo, context),
+                      const SizedBox(height: 8),
+                      _detailRow("Item Code:", entry.itemCode, context),
+                      const SizedBox(height: 8),
+                      _detailRow("Warehouse:", entry.warehouse, context),
+                      const SizedBox(height: 8),
+                      _detailRow("Voucher Type:", entry.voucherType, context),
+                      const Divider(height: 32),
+                      _detailRow("Posting Date:", entry.postingDate, context),
+                      const SizedBox(height: 8),
+                      _detailRow("Posting Time:", entry.postingTime, context),
+                      const SizedBox(height: 8),
+                      _detailRow(
+                        "Actual Qty:",
+                        entry.actualQty.toString(),
+                        context,
+                      ),
+                      const SizedBox(height: 8),
+                      _detailRow(
+                        "Qty After Transaction:",
+                        entry.qtyAfterTransaction.toString(),
+                        context,
+                      ),
+                      const Divider(height: 32),
+                      _detailRow(
+                        "Valuation Rate:",
+                        entry.valuationRate.toString(),
+                        context,
+                      ),
+                      const SizedBox(height: 8),
+                      _detailRow(
+                        "Stock Value:",
+                        entry.stockValue.toString(),
+                        context,
+                      ),
+                      const SizedBox(height: 8),
+                      _detailRow(
+                        "Status:",
+                        entry.isCancelled == 1 ? "Cancelled" : "Active",
+                        context,
+                      ),
+                    ],
+                  ),
+                ),
               ),
-              _detailRow("Stock Value:", entry.stockValue.toString(), context),
-              _detailRow(
-                "Status:",
-                entry.isCancelled == 1 ? "Cancelled" : "Active",
-                context,
+              // Footer
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[100],
+                  borderRadius: BorderRadius.zero,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: const Text("Close"),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              "Close",
-              style: TextStyle(
-                fontSize: isMobile ? 14 : 16,
-                color: const Color(0xFF2563EB),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -445,10 +492,10 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
 
                 warehouseNames = warehouseList.map((wh) => wh.name).toList();
 
-                // Set default warehouse if not set
-                if (selectedWarehouse == null ||
+                // Ensure selectedWarehouse is still valid if not null
+                if (selectedWarehouse != null &&
                     !warehouseNames.contains(selectedWarehouse)) {
-                  selectedWarehouse = _getDefaultWarehouseName();
+                  selectedWarehouse = null;
                 }
               });
             }
@@ -615,18 +662,30 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
                                         "Warehouse",
                                         context,
                                       ),
-                                      items: warehouseNames.map((whName) {
-                                        return DropdownMenuItem<String?>(
-                                          value: whName,
+                                      items: [
+                                        const DropdownMenuItem<String?>(
+                                          value: null,
                                           child: Text(
-                                            whName,
+                                            "All Warehouses",
                                             style: TextStyle(
-                                              fontSize: isMobile ? 13 : 14,
+                                              fontSize: 13,
                                               color: Colors.black,
                                             ),
                                           ),
-                                        );
-                                      }).toList(),
+                                        ),
+                                        ...warehouseNames.map((whName) {
+                                          return DropdownMenuItem<String?>(
+                                            value: whName,
+                                            child: Text(
+                                              whName,
+                                              style: TextStyle(
+                                                fontSize: 13,
+                                                color: Colors.black,
+                                              ),
+                                            ),
+                                          );
+                                        }),
+                                      ],
                                       onChanged: (value) {
                                         setState(() {
                                           selectedWarehouse = value;
@@ -974,8 +1033,7 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
                       GetStockLedger(
                         company:
                             currentUserResponse!.message.company.companyName,
-                        warehouse:
-                            selectedWarehouse ?? _getDefaultWarehouseName(),
+                        warehouse: selectedWarehouse,
                         voucherType: selectedVoucherType,
                         limit: 20,
                         offset: 0,
@@ -1001,15 +1059,13 @@ class _StockLedgerDetailsPageState extends State<StockLedgerDetailsPage> {
                 ),
                 SizedBox(width: isMobile ? 12 : 16),
 
-                // Next Button - Blue with no border
                 ElevatedButton(
                   onPressed: () {
                     context.read<InventoryBloc>().add(
                       GetStockLedger(
                         company:
                             currentUserResponse!.message.company.companyName,
-                        warehouse:
-                            selectedWarehouse ?? _getDefaultWarehouseName(),
+                        warehouse: selectedWarehouse,
                         voucherType: selectedVoucherType,
                         limit: 20,
                         offset: response.data.length,

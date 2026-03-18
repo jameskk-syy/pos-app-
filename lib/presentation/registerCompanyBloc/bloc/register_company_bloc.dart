@@ -22,10 +22,10 @@ class RegisterCompanyBloc
     emit(RegisterCompanyLoading());
 
     try {
-      final response = await registerCompanyRepo.registerCompany(
+       await registerCompanyRepo.registerCompany(
         event.companyRequest,
       );
-      debugPrint('REGISTER RESPONSE => $response');
+      //debugPrint('REGISTER RESPONSE => $response');
       emit(RegisterCompanySuccess());
     } catch (e) {
       emit(RegisterCompanyFailure(error: e.toString()));
