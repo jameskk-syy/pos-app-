@@ -90,16 +90,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(GetLoyaltyProgramsLoading());
-    debugPrint("Fetching loyalty programs...");
+    //debugPrint("Fetching loyalty programs...");
 
     try {
       final response = await inventoryRepo.getLoyaltyPrograms(event.request);
       emit(GetLoyaltyProgramsLoaded(response));
-      debugPrint(
-        "Loyalty programs fetched: ${response.message.totalPrograms} programs",
-      );
+      //debugPrint(
+      //  "Loyalty programs fetched: ${response.message.totalPrograms} programs",
+      //);
     } catch (e) {
-      debugPrint("Error fetching loyalty programs: $e");
+      //debugPrint("Error fetching loyalty programs: $e");
       emit(GetLoyaltyProgramsError(_cleanError(e)));
     }
   }
@@ -109,16 +109,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateLoyaltyProgramLoading());
-    debugPrint("Creating loyalty program: ${event.request.loyaltyProgramName}");
+    //debugPrint("Creating loyalty program: ${event.request.loyaltyProgramName}");
 
     try {
       final response = await inventoryRepo.createLoyaltyProgram(event.request);
       emit(CreateLoyaltyProgramSuccess(response));
-      debugPrint(
-        "Loyalty program created successfully: ${response.message.loyaltyProgram.name}",
-      );
+      //debugPrint(
+       // "Loyalty program created successfully: ${response.message.loyaltyProgram.name}",
+     // );
     } catch (e) {
-      debugPrint("Error creating loyalty program: $e");
+      //debugPrint("Error creating loyalty program: $e");
       emit(CreateLoyaltyProgramError(_cleanError(e)));
     }
   }
@@ -128,16 +128,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateDiscountRuleLoading());
-    debugPrint("Creating inventory discount rule...");
+    //debugPrint("Creating inventory discount rule...");
 
     try {
       final response = await inventoryRepo.createDiscountRule(event.request);
       emit(CreateDiscountRuleSuccess(response));
-      debugPrint(
-        "Discount rule created successfully: ${response.message.data.name}",
-      );
+      //debugPrint(
+       // "Discount rule created successfully: ${response.message.data.name}",
+     // );
     } catch (e) {
-      debugPrint("Error creating discount rule: $e");
+      //debugPrint("Error creating discount rule: $e");
       emit(CreateDiscountRuleError(_cleanError(e)));
     }
   }
@@ -147,16 +147,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(UpdateDiscountRuleLoading());
-    debugPrint("Updating inventory discount rule: ${event.request.name}...");
+    //debugPrint("Updating inventory discount rule: ${event.request.name}...");
 
     try {
       final response = await inventoryRepo.updateDiscountRule(event.request);
       emit(UpdateDiscountRuleSuccess(response));
-      debugPrint(
-        "Discount rule updated successfully: ${response.message.data.name}",
-      );
+      //debugPrint(
+       // "Discount rule updated successfully: ${response.message.data.name}",
+      //);
     } catch (e) {
-      debugPrint("Error updating discount rule: $e");
+      //debugPrint("Error updating discount rule: $e");
       emit(UpdateDiscountRuleError(_cleanError(e)));
     }
   }
@@ -166,16 +166,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(DisableDiscountRuleLoading());
-    debugPrint("Disabling inventory discount rule: ${event.request.name}...");
+    //debugPrint("Disabling inventory discount rule: ${event.request.name}...");
 
     try {
       final response = await inventoryRepo.disableDiscountRule(event.request);
       emit(DisableDiscountRuleSuccess(response));
-      debugPrint(
-        "Discount rule disabled successfully: ${response.message.data.name}",
-      );
+      //debugPrint(
+       // "Discount rule disabled successfully: ${response.message.data.name}",
+      //);
     } catch (e) {
-      debugPrint("Error disabling discount rule: $e");
+      //debugPrint("Error disabling discount rule: $e");
       emit(DisableDiscountRuleError(_cleanError(e)));
     }
   }
@@ -185,16 +185,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(EnableDiscountRuleLoading());
-    debugPrint("Enabling inventory discount rule: ${event.request.name}...");
+    //debugPrint("Enabling inventory discount rule: ${event.request.name}...");
 
     try {
       final response = await inventoryRepo.enableDiscountRule(event.request);
       emit(EnableDiscountRuleSuccess(response));
-      debugPrint(
-        "Discount rule enabled successfully: ${response.message.data.name}",
-      );
+      //debugPrint(
+      //  "Discount rule enabled successfully: ${response.message.data.name}",
+      //);
     } catch (e) {
-      debugPrint("Error enabling discount rule: $e");
+      //debugPrint("Error enabling discount rule: $e");
       emit(EnableDiscountRuleError(_cleanError(e)));
     }
   }
@@ -204,18 +204,18 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(GetInventoryDiscountRulesLoading());
-    debugPrint("Getting inventory discount rules...");
+    //debugPrint("Getting inventory discount rules...");
 
     try {
       final response = await inventoryRepo.getInventoryDiscountRules(
         event.request,
       );
       emit(GetInventoryDiscountRulesLoaded(response));
-      debugPrint(
-        "Inventory discount rules fetched: ${response.message.data.rules.length} items",
-      );
+      //debugPrint(
+        //"Inventory discount rules fetched: ${response.message.data.rules.length} items",
+      //);
     } catch (e) {
-      debugPrint("Error getting inventory discount rules: $e");
+      //debugPrint("Error getting inventory discount rules: $e");
       emit(GetInventoryDiscountRulesError(_cleanError(e)));
     }
   }
@@ -225,7 +225,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(AddStockTakeLoading());
-    debugPrint("Adding stock take: ${event.request.reconciliationName}");
+    //debugPrint("Adding stock take: ${event.request.reconciliationName}");
 
     try {
       final response = await inventoryRepo.addStockTake(
@@ -233,11 +233,11 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
         role: event.role,
       );
       emit(AddStockTakeSuccess(response));
-      debugPrint(
-        "Stock take added successfully: ${response.message.data.reconciliationName} - ${response.message.data.workflowStatus}",
-      );
+      //debugPrint(
+       // "Stock take added successfully: ${response.message.data.reconciliationName} - ${response.message.data.workflowStatus}",
+      //);
     } catch (e) {
-      debugPrint("Error adding stock take: $e");
+      //debugPrint("Error adding stock take: $e");
       emit(AddStockTakeError(_cleanError(e)));
     }
   }
@@ -247,20 +247,20 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(GetStockReconciliationLoading());
-    debugPrint(
-      "Getting stock reconciliation: ${event.request.reconciliationName}",
-    );
+    //debugPrint(
+    //  "Getting stock reconciliation: ${event.request.reconciliationName}",
+    //);
 
     try {
       final response = await inventoryRepo.getStockReconciliation(
         event.request,
       );
       emit(GetStockReconciliationLoaded(response));
-      debugPrint(
-        "Stock reconciliation fetched: ${response.message.data.name} - ${response.message.data.workflowStatus}",
-      );
+      //debugPrint(
+       // "Stock reconciliation fetched: ${response.message.data.name} - ${response.message.data.workflowStatus}",
+      //);
     } catch (e) {
-      debugPrint("Error getting stock reconciliation: $e");
+      //debugPrint("Error getting stock reconciliation: $e");
       emit(GetStockReconciliationError(_cleanError(e)));
     }
   }
@@ -270,18 +270,18 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateStockReconciliationLoading());
-    debugPrint("Creating stock reconciliation...");
+    //debugPrint("Creating stock reconciliation...");
 
     try {
       final response = await inventoryRepo.createStockReconciliation(
         event.request,
       );
       emit(CreateStockReconciliationSuccess(response));
-      debugPrint(
-        "Stock reconciliation created successfully: ${response.message.data.name} - ${response.message.data.workflowStatus}",
-      );
+      //debugPrint(
+       // "Stock reconciliation created successfully: ${response.message.data.name} - ${response.message.data.workflowStatus}",
+      //);
     } catch (e) {
-      debugPrint("Error creating stock reconciliation: $e");
+      //debugPrint("Error creating stock reconciliation: $e");
       emit(CreateStockReconciliationError(_cleanError(e)));
     }
   }
@@ -291,18 +291,18 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(StockReconciliationsLoading());
-    debugPrint("Fetching stock reconciliations...");
+    //debugPrint("Fetching stock reconciliations...");
 
     try {
       final response = await inventoryRepo.getStockReconciliations(
         request: event.request,
       );
       emit(StockReconciliationsLoaded(response));
-      debugPrint(
-        "Stock reconciliations fetched: ${response.message.data.reconciliations.length} items (${response.message.data.totalCount} total)",
-      );
+      //debugPrint(
+      //  "Stock reconciliations fetched: ${response.message.data.reconciliations.length} items (${response.message.data.totalCount} total)",
+      //);
     } catch (e) {
-      debugPrint("Error fetching stock reconciliations: $e");
+      //debugPrint("Error fetching stock reconciliations: $e");
       emit(StockReconciliationsError(_cleanError(e)));
     }
   }
@@ -312,16 +312,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(ReceiveStockLoading());
-    debugPrint("Receiving stock: ${event.request.requestId}");
+    //debugPrint("Receiving stock: ${event.request.requestId}");
 
     try {
       final response = await inventoryRepo.receiveStock(event.request);
       emit(ReceiveStockSuccess(response));
-      debugPrint(
-        "Stock received successfully: ${response.data?.stockEntry} - ${response.data?.status}",
-      );
+      //debugPrint(
+      //  "Stock received successfully: ${response.data?.stockEntry} - ${response.data?.status}",
+     // );
     } catch (e) {
-      debugPrint("Error receiving stock: $e");
+      //debugPrint("Error receiving stock: $e");
       emit(ReceiveStockError(_cleanError(e)));
     }
   }
@@ -331,18 +331,18 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(StockTransferRequestLoading());
-    debugPrint("Fetching stock transfer request: ${event.requestId}");
+    //debugPrint("Fetching stock transfer request: ${event.requestId}");
 
     try {
       final response = await inventoryRepo.getStockTransferRequest(
         event.requestId,
       );
       emit(StockTransferRequestLoaded(response));
-      debugPrint(
-        "Stock transfer request fetched: ${response.message.data} - ${response.message.data.status}",
-      );
+      //debugPrint(
+       // "Stock transfer request fetched: ${response.message.data} - ${response.message.data.status}",
+      //);
     } catch (e) {
-      debugPrint("Error fetching stock transfer request: $e");
+      //debugPrint("Error fetching stock transfer request: $e");
       emit(StockTransferRequestError(_cleanError(e)));
     }
   }
@@ -352,16 +352,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(DispatchStockTransferLoading());
-    debugPrint("Dispatching stock transfer: ${event.request.requestId}");
+    //debugPrint("Dispatching stock transfer: ${event.request.requestId}");
 
     try {
       final response = await inventoryRepo.dispatchStockTransfer(event.request);
       emit(DispatchStockTransferSuccess(response));
-      debugPrint(
-        "Stock dispatched successfully: ${response.message.data.stockEntry} - ${response.message.data.status}",
-      );
+      //debugPrint(
+     //"Stock dispatched successfully: ${response.message.data.stockEntry} - ${response.message.data.status}",
+     // );
     } catch (e) {
-      debugPrint("Error dispatching stock transfer: $e");
+      //debugPrint("Error dispatching stock transfer: $e");
       emit(DispatchStockTransferError(_cleanError(e)));
     }
   }
@@ -371,16 +371,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(SubmitStockTransferLoading());
-    debugPrint("Submitting stock transfer request: ${event.request.requestId}");
+    //debugPrint("Submitting stock transfer request: ${event.request.requestId}");
 
     try {
       final response = await inventoryRepo.submitStockTransfer(event.request);
       emit(SubmitStockTransferSuccess(response));
-      debugPrint(
-        "Stock transfer submitted successfully: ${response.message.data.requestId} - ${response.message.data.status}",
-      );
+      //debugPrint(
+       // "Stock transfer submitted successfully: ${response.message.data.requestId} - ${response.message.data.status}",
+      //);
     } catch (e) {
-      debugPrint("Error submitting stock transfer: $e");
+      //debugPrint("Error submitting stock transfer: $e");
       emit(SubmitStockTransferError(_cleanError(e)));
     }
   }
@@ -390,16 +390,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(ApproveStockTransferLoading());
-    debugPrint("Approving stock transfer: ${event.request.requestId}");
+    //debugPrint("Approving stock transfer: ${event.request.requestId}");
 
     try {
       final response = await inventoryRepo.approveStockTransfer(event.request);
       emit(ApproveStockTransferSuccess(response));
-      debugPrint(
-        "Stock transfer approved: ${response.data.requestId} - ${response.data.approvalStatus}",
-      );
+      //debugPrint(
+       // "Stock transfer approved: ${response.data.requestId} - ${response.data.approvalStatus}",
+      // );
     } catch (e) {
-      debugPrint("Error approving stock transfer: $e");
+      //debugPrint("Error approving stock transfer: $e");
       emit(ApproveStockTransferError(_cleanError(e)));
     }
   }
@@ -409,18 +409,18 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(MaterialRequestsLoading());
-    debugPrint("Fetching material requests...");
+    //debugPrint("Fetching material requests...");
 
     try {
       final response = await inventoryRepo.getMaterialRequests(
         request: event.request,
       );
       emit(MaterialRequestsLoaded(response));
-      debugPrint(
-        "Material requests fetched: ${response.data.requests.length} items",
-      );
+      //debugPrint(
+       // "Material requests fetched: ${response.data.requests.length} items",
+     // );
     } catch (e) {
-      debugPrint("Error fetching material requests: $e");
+      //debugPrint("Error fetching material requests: $e");
       emit(MaterialRequestsError(_cleanError(e)));
     }
   }
@@ -430,16 +430,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateStockTransferLoading());
-    debugPrint("Creating stock transfer request...");
+    //debugPrint("Creating stock transfer request...");
 
     try {
       final response = await inventoryRepo.createStockTransfer(event.request);
       emit(CreateStockTransferSuccess(response));
-      debugPrint(
-        "Stock transfer request created: ${response.message.data.materialRequest}",
-      );
+      //debugPrint(
+       // "Stock transfer request created: ${response.message.data.materialRequest}",
+      // );
     } catch (e) {
-      debugPrint("Error creating stock transfer request: $e");
+      //debugPrint("Error creating stock transfer request: $e");
       emit(CreateStockTransferError(_cleanError(e)));
     }
   }
@@ -449,14 +449,14 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateMaterialIssueLoading());
-    debugPrint("Creating material issue...");
+    //debugPrint("Creating material issue...");
 
     try {
       final response = await inventoryRepo.createMaterialIssue(event.request);
       emit(CreateMaterialIssueSuccess(response));
-      debugPrint("Material issue created: ${response.data?.name}");
+      //debugPrint("Material issue created: ${response.data?.name}");
     } catch (e) {
-      debugPrint("Error creating material issue: $e");
+      //debugPrint("Error creating material issue: $e");
       emit(CreateMaterialIssueError(_cleanError(e)));
     }
   }
@@ -466,14 +466,14 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateMaterialReceiptLoading());
-    debugPrint("Creating material receipt...");
+    //debugPrint("Creating material receipt...");
 
     try {
       final response = await inventoryRepo.createMaterialReceipt(event.request);
       emit(CreateMaterialReceiptSuccess(response));
-      debugPrint("Material receipt created: ${response.data?.name}");
+      //debugPrint("Material receipt created: ${response.data?.name}");
     } catch (e) {
-      debugPrint("Error creating material receipt: $e");
+      //debugPrint("Error creating material receipt: $e");
       emit(CreateMaterialReceiptError(_cleanError(e)));
     }
   }
@@ -483,7 +483,7 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(StockEntriesLoading());
-    debugPrint("sxcbhajcgvhrgvfhj");
+    //debugPrint("sxcbhajcgvhrgvfhj");
     try {
       final request = StockEntriesRequest(
         company: event.company,
@@ -561,16 +561,16 @@ class InventoryBloc extends Bloc<InventoryEvent, InventoryState> {
     Emitter<InventoryState> emit,
   ) async {
     emit(CreateMaterialTransferLoading());
-    debugPrint("Creating material transfer...");
+    //debugPrint("Creating material transfer...");
 
     try {
       final response = await inventoryRepo.createMaterialTransfer(
         event.request,
       );
       emit(CreateMaterialTransferSuccess(response));
-      debugPrint("Material transfer created: ${response.data.name}");
+      //debugPrint("Material transfer created: ${response.data.name}");
     } catch (e) {
-      debugPrint("Error creating material transfer: $e");
+      //debugPrint("Error creating material transfer: $e");
       emit(CreateMaterialTransferError(_cleanError(e)));
     }
   }

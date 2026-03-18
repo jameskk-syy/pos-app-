@@ -11,6 +11,7 @@ import 'package:pos/domain/responses/uom_response.dart';
 import 'package:pos/domain/models/invoice_list_model.dart';
 import 'package:pos/domain/models/pos_opening_entry_model.dart';
 import 'package:pos/domain/responses/products/product_price_response.dart';
+import 'package:pos/domain/responses/bulk_upload.dart';
 
 abstract class ProductsRepo {
   Future<ProductResponseSimple> getAllProducts(
@@ -125,5 +126,12 @@ abstract class ProductsRepo {
   Future<ClosePosOpeningEntryResponse> closePosOpeningEntry({
     required String posOpeningEntry,
     bool doNotSubmit = false,
+  });
+
+  Future<ProcessResponse> bulkUploadProducts({
+    required String filePath,
+    required String warehouse,
+    required String company,
+    required String industry,
   });
 }

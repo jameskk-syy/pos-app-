@@ -262,6 +262,15 @@ class _StockReconciliationPageState extends State<StockReconciliationPage> {
           .map((w) => Warehouse.fromJson(w))
           .where((w) => w.disabled == 0 && w.isGroup == 0)
           .toList();
+
+      // Set default warehouse if available and none selected
+      if (selectedWarehouse == null && warehouses.isNotEmpty) {
+        try {
+          selectedWarehouse = warehouses.firstWhere((w) => w.isDefault).name;
+        } catch (e) {
+          // No default warehouse found, leave as null
+        }
+      }
     });
   }
 

@@ -7,10 +7,12 @@ import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/utils/themes/app_sizes.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/domain/repository/authenticating_user_repo.dart';
 import 'dart:convert';
 
 class BussinessTypePage extends StatefulWidget {
-  const BussinessTypePage({super.key});
+  final bool showBackButton;
+  const BussinessTypePage({super.key, this.showBackButton = true});
 
   @override
   State<BussinessTypePage> createState() => _BussinessTypePageState();
@@ -96,7 +98,8 @@ class _BussinessTypePageState extends State<BussinessTypePage> {
       if (currentUserJson != null) {
         final Map<String, dynamic> data = jsonDecode(currentUserJson);
         final industryCode = data['message']?['pos_industry']?['industry_code'];
-        if (industryCode != null) {
+        if (industryCode != null &&
+            industryCode.toString().toLowerCase() != "none") {
           setState(() {
             _selectedIndustryCode = industryCode.toString();
           });
@@ -121,10 +124,13 @@ class _BussinessTypePageState extends State<BussinessTypePage> {
       appBar: AppBar(
         backgroundColor: AppColors.white,
         elevation: 0,
-        leading: InkWell(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.chevron_left, size: 32),
-        ),
+        automaticallyImplyLeading: false,
+        leading: widget.showBackButton
+            ? InkWell(
+                onTap: () => Navigator.pop(context),
+                child: const Icon(Icons.chevron_left, size: 32),
+              )
+            : null,
         title: const Text(
           'Choose your store',
           style: TextStyle(fontWeight: FontWeight.w600),
@@ -255,9 +261,7 @@ class _BussinessTypePageState extends State<BussinessTypePage> {
                             industry.industryCode == _selectedIndustryCode;
 
                         return Opacity(
-                          opacity: (_selectedIndustryCode == null || isSelected)
-                              ? 1.0
-                              : 0.5,
+                          opacity: 1.0,
                           child: Container(
                             decoration: BoxDecoration(
                               color: bgColor,
@@ -271,18 +275,77 @@ class _BussinessTypePageState extends State<BussinessTypePage> {
                               borderRadius: BorderRadius.circular(14),
                               child: InkWell(
                                 borderRadius: BorderRadius.circular(14),
-                                onTap:
-                                    (_selectedIndustryCode == null ||
-                                        isSelected)
-                                    ? () {
-                                        industryType = industry.industryCode;
-                                        context.read<IndustriesBloc>().add(
-                                          SeedProducts(
-                                            industry: industry.industryCode,
+                                onTap: () async {
+                                  try {
+                                    final storage = getIt<StorageService>();
+                                    final authRepo =
+                                        getIt<AuthenticateUserRepo>();
+
+                                    // Check if current user has industry
+                                    final currentUserJson = await storage
+                                        .getString('current_user');
+                                    bool hasIndustry = false;
+                                    if (currentUserJson != null) {
+                                      final Map<String, dynamic> data =
+                                          jsonDecode(currentUserJson);
+                                      final existingIndustryCode =
+                                          data['message']?['pos_industry']?['industry_code'];
+                                      if (existingIndustryCode != null &&
+                                          existingIndustryCode
+                                                  .toString()
+                                                  .toLowerCase() !=
+                                              "none") {
+                                        hasIndustry = true;
+                                      }
+                                    }
+
+                                    if (!hasIndustry) {
+                                      // Show loading indicator
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(
+                                          context,
+                                        ).showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                              'Setting up industry...',
+                                            ),
+                                            duration: Duration(seconds: 2),
                                           ),
                                         );
                                       }
-                                    : null,
+
+                                      // Create industry for user
+                                      await authRepo.setUserIndustry(
+                                        industry.industryCode,
+                                      );
+
+                                      // Get current user again to update storage
+                                      await authRepo.getCurrentUser();
+                                    }
+
+                                    if (context.mounted) {
+                                      industryType = industry.industryCode;
+                                      context.read<IndustriesBloc>().add(
+                                        SeedProducts(
+                                          industry: industry.industryCode,
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            'Error setting industry: $e',
+                                          ),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                },
                                 child: Padding(
                                   padding: const EdgeInsets.all(16),
                                   child: Column(

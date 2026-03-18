@@ -108,7 +108,7 @@ class InventoryRepoImpl implements InventoryRepo {
   @override
   Future<StockLedgerResponse> getStockLedger({
     required String company,
-    required String warehouse,
+    String? warehouse,
     String? voucherType,
     int? limit,
     int? offset,

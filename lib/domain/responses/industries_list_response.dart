@@ -75,6 +75,18 @@ class Industry {
     );
   }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'name': name,
+      'industry_code': industryCode,
+      'industry_name': industryName,
+      'description': description,
+      'serving_location': servingLocation,
+      'is_active': isActive,
+      'sort_order': sortOrder,
+    };
+  }
+
   static int _parseToInt(dynamic value) {
     if (value == null) return 0;
     if (value is int) return value;

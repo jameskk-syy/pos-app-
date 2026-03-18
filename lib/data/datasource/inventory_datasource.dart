@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/models/stock_ledger_entry.dart';
 import 'package:pos/domain/requests/inventory/add_stock_take_request.dart';
@@ -373,7 +374,7 @@ class InventoryRemoteDataSource extends BaseRemoteDataSource {
 
   Future<StockLedgerResponse> getStockLedgerEntries({
     required String company,
-    required String warehouse,
+    String? warehouse,
     String? voucherType,
     int? limit,
     int? offset,
@@ -560,6 +561,8 @@ class InventoryRemoteDataSource extends BaseRemoteDataSource {
       if (response.statusCode != 200) {
         throw Exception('Server returned ${response.statusCode}');
       }
+
+      debugPrint('Response: ${response.data}');
 
       final data = response.data;
       if (data is! Map<String, dynamic>) {

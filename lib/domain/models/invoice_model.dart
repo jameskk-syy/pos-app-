@@ -111,11 +111,13 @@ class InvoicePayment {
   final String modeOfPayment;
   final double amount;
   final double baseAmount;
+  final String? mpesaNumber;
 
   InvoicePayment({
     required this.modeOfPayment,
     required this.amount,
     required this.baseAmount,
+    this.mpesaNumber,
   });
 
   Map<String, dynamic> toJson() {
@@ -123,6 +125,7 @@ class InvoicePayment {
       'mode_of_payment': modeOfPayment,
       'amount': amount,
       'base_amount': baseAmount,
+      if (mpesaNumber != null) 'mpesa_number': mpesaNumber,
     };
   }
 
@@ -131,6 +134,7 @@ class InvoicePayment {
       modeOfPayment: json['mode_of_payment'],
       amount: (json['amount'] as num).toDouble(),
       baseAmount: (json['base_amount'] as num).toDouble(),
+      mpesaNumber: json['mpesa_number'],
     );
   }
 }

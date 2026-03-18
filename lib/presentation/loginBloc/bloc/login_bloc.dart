@@ -32,14 +32,10 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
         event.code,
       );
 
-      String message = 'Email verified successfully';
       if (response['message'] != null) {
         if (response['message'] is String) {
-          message = response['message'];
         } else if (response['message'] is Map &&
-            response['message']['message'] != null) {
-          message = response['message']['message'].toString();
-        }
+            response['message']['message'] != null) {}
       }
 
       // If successful, we might want to ensure user data is ready or just proceed
@@ -54,22 +50,30 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   Future<void> _loginUser(LoginUser event, Emitter<LoginState> emit) async {
     emit(LoginUserLoading());
     try {
-      final response = await authenticateUserRepo.login(event.loginRequest);
-      debugPrint(response.toString());
+      await authenticateUserRepo.login(event.loginRequest);
+      //debugPrint(response.toString());
 
-      // Save encrypted password for App Lock
+      // Save encrypted password and email for App Lock & Biometrics
       final storageService = getIt<StorageService>();
       await storageService.saveEncryptedPassword(event.loginRequest.password);
+      await storageService.setString(
+        'last_login_email',
+        event.loginRequest.email,
+      );
 
       // Send OTP after successful credentials check
-      // await authenticateUserRepo.sendOtpEmail(
-      //   SendOtpRequest(email: event.loginRequest.email),
-      // );
-
+       await authenticateUserRepo.sendOtpEmail(
+        SendOtpRequest(email: event.loginRequest.email),
+      );
+     // debugPrint("otp  response is ${responseotp.toString()}");
       emit(LoginUserSuccess());
     } catch (e) {
-      emit(LoginUserFailure(error: e.toString()));
-      debugPrintStack(label: e.toString());
+      String error = e.toString();
+      if (error.startsWith('Exception: ')) {
+        error = error.replaceFirst('Exception: ', '');
+      }
+      emit(LoginUserFailure(error: error));
+     // debugPrintStack(label: e.toString());
     }
   }
 
@@ -97,11 +101,12 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
   }
 
   Future<void> _sendOtp(SendOtp event, Emitter<LoginState> emit) async {
-    // We could add a SendOtpLoading state if we wanted, but the UI already handles 60s timer
     try {
-      await authenticateUserRepo.sendOtpEmail(SendOtpRequest(email: event.email));
+      await authenticateUserRepo.sendOtpEmail(
+        SendOtpRequest(email: event.email),
+      );
     } catch (e) {
-      debugPrint("Resend OTP failed: $e");
+     // debugPrint("Resend OTP failed: $e");
     }
   }
 }

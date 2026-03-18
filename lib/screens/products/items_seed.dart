@@ -223,10 +223,16 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
       text: existingItem?.qty.toString() ?? '1',
     );
     final priceController = TextEditingController(
-      text: existingItem?.itemPrice.toStringAsFixed(2) ?? '0.00',
+      text:
+          existingItem?.itemPrice.toStringAsFixed(2) ??
+          product.itemPrice?.toStringAsFixed(2) ??
+          '0.00',
     );
     final buyingPriceController = TextEditingController(
-      text: existingItem?.buyingPrice.toStringAsFixed(2) ?? '0.00',
+      text:
+          existingItem?.buyingPrice.toStringAsFixed(2) ??
+          product.buyingPrice?.toStringAsFixed(2) ??
+          '0.00',
     );
 
     showDialog(
@@ -539,7 +545,7 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
             cartItemsMap.clear();
           });
           _saveCartToPrefs();
-          
+
           final storage = getIt<StorageService>();
           storage.setBool('is_seeded', true);
 
@@ -1052,11 +1058,11 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
             cartItemsMap[product.sku!] = CartItemData(
               itemCode: product.sku!,
               itemName: product.name!,
-              qty: 1,
-              itemPrice: 0.0,
-              buyingPrice: 0.0,
-              itemGroup: "Consumable",
-              uom: 'Nos',
+              qty: product.qty ?? 1,
+              itemPrice: product.itemPrice ?? 0.0,
+              buyingPrice: product.buyingPrice ?? 0.0,
+              itemGroup: product.itemGroup ?? "Consumable",
+              uom: product.uom ?? 'Nos',
             );
           }
         }

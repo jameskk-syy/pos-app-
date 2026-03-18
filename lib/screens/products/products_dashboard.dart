@@ -7,6 +7,7 @@ import 'package:pos/screens/units/units_page.dart';
 import 'package:pos/screens/warranties/warranties_page.dart';
 import 'package:pos/widgets/inventory/inventory_card.dart';
 import 'package:pos/screens/users/bussiness_type.dart';
+import 'package:pos/screens/products/bulk_upload_dialog.dart';
 
 class ProductsDashboard extends StatelessWidget {
   const ProductsDashboard({super.key});
@@ -127,11 +128,20 @@ class ProductsDashboard extends StatelessWidget {
                 title: "Seed Products",
                 subtitle: "Initialize default products",
                 onTap: () {
-                   Navigator.push(
+                  Navigator.push(
                     context,
                     MaterialPageRoute(builder: (_) => BussinessTypePage()),
                   );
                 },
+              ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: const Color(0xFFE8F5E9),
+                iconColor: Colors.teal,
+                icon: Icons.upload_file_outlined,
+                title: "Bulk Upload",
+                subtitle: "Upload products via Excel",
+                onTap: () => showBulkUploadDialog(context),
               ),
             ]),
           ],

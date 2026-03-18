@@ -91,7 +91,7 @@ class _InventoryValueByCategoryPageState
               }
             }
           } catch (e) {
-            debugPrint('Error parsing warehouses: $e');
+            //debugPrint('Error parsing warehouses: $e');
           }
 
           // Item Groups
@@ -112,12 +112,12 @@ class _InventoryValueByCategoryPageState
               }
             }
           } catch (e) {
-            debugPrint('Error parsing item groups: $e');
+            // debugPrint('Error parsing item groups: $e');
           }
         });
       }
     } catch (e) {
-      debugPrint('Error fetching filter options: $e');
+      // debugPrint('Error fetching filter options: $e');
     }
   }
 

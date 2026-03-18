@@ -132,7 +132,7 @@ class SalesBloc extends Bloc<SalesEvent, SalesState> {
         }),
       );
     } catch (e) {
-      debugPrint('Error saving session to prefs: $e');
+      //debugPrint('Error saving session to prefs: $e');
     }
   }
 

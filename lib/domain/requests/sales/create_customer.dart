@@ -25,7 +25,7 @@ class CompleteCustomerRequest {
     this.defaultCurrency = 'KES',
     this.disabled = false,
     this.company = '', String? defaultPriceList,
-  }) : name = name ?? customerName;  // Initialize in initializer list only
+  }) : name = name ?? customerName;  // Initialize in initializer list onl
 
   factory CompleteCustomerRequest.fromJson(Map<String, dynamic> json) {
     return CompleteCustomerRequest(

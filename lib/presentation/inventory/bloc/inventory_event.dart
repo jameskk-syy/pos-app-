@@ -50,14 +50,14 @@ class ExportLowStockCSV extends InventoryEvent {
 
 class GetStockLedger extends InventoryEvent {
   final String company;
-  final String warehouse;
+  final String? warehouse;
   final String? voucherType;
   final int? limit;
   final int? offset;
 
   GetStockLedger({
     required this.company,
-    required this.warehouse,
+    this.warehouse,
     this.voucherType,
     this.limit,
     this.offset,

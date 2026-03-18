@@ -435,48 +435,48 @@ class _WarehouseFormState extends State<WarehouseForm> {
     );
   }
 
-  Widget _buildAddressFields(BuildContext context, bool isMobile) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        _buildResponsiveRow(context, [
-          _buildField(
-            label: 'Address Line 1',
-            controller: addressLine1Controller,
-            required: false,
-            hint: 'Address Line 1',
-          ),
-          _buildField(
-            label: 'Address Line 2',
-            controller: addressLine2Controller,
-            required: false,
-            hint: 'Address Line 2',
-          ),
-        ]),
-        SizedBox(height: isMobile ? 16 : 20),
-        _buildResponsiveRow(context, [
-          _buildField(
-            label: 'City',
-            controller: cityController,
-            required: false,
-            hint: 'City',
-          ),
-          _buildField(
-            label: 'State/Province',
-            controller: stateProvinceController,
-            required: false,
-            hint: 'State/Province',
-          ),
-          _buildField(
-            label: 'PIN Code',
-            controller: pinCodeController,
-            required: false,
-            hint: 'PIN Code',
-          ),
-        ]),
-      ],
-    );
-  }
+  // Widget _buildAddressFields(BuildContext context, bool isMobile) {
+  //   return Column(
+  //     mainAxisSize: MainAxisSize.min,
+  //     children: [
+  //       _buildResponsiveRow(context, [
+  //         _buildField(
+  //           label: 'Address Line 1',
+  //           controller: addressLine1Controller,
+  //           required: false,
+  //           hint: 'Address Line 1',
+  //         ),
+  //         _buildField(
+  //           label: 'Address Line 2',
+  //           controller: addressLine2Controller,
+  //           required: false,
+  //           hint: 'Address Line 2',
+  //         ),
+  //       ]),
+  //       SizedBox(height: isMobile ? 16 : 20),
+  //       _buildResponsiveRow(context, [
+  //         _buildField(
+  //           label: 'City',
+  //           controller: cityController,
+  //           required: false,
+  //           hint: 'City',
+  //         ),
+  //         _buildField(
+  //           label: 'State/Province',
+  //           controller: stateProvinceController,
+  //           required: false,
+  //           hint: 'State/Province',
+  //         ),
+  //         _buildField(
+  //           label: 'PIN Code',
+  //           controller: pinCodeController,
+  //           required: false,
+  //           hint: 'PIN Code',
+  //         ),
+  //       ]),
+  //     ],
+  //   );
+  // }
 
   Widget _buildContactFields(BuildContext context, bool isMobile) {
     return Column(

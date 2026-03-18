@@ -30,7 +30,6 @@ class ApiClient {
           final baseUrl = await storage.getString('base_url');
 
           if (baseUrl != null && baseUrl.isNotEmpty) {
-            // Ensure trailing slash and correct path structure
             String newBase = baseUrl;
             if (!newBase.endsWith('/')) {
               newBase += '/';

@@ -39,7 +39,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       );
       emit(InventorySummaryLoaded(response));
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+      //debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -49,13 +49,13 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     Emitter<ReportsState> emit,
   ) async {
     // ... rest of file
-    debugPrint('ReportsBloc: Fetching sales analytics report ${event.request}');
+   // debugPrint('ReportsBloc: Fetching sales analytics report ${event.request}');
     emit(ReportsLoading());
     try {
       final response = await reportsRepo.getSalesAnalyticsReport(event.request);
       emit(SalesAnalyticsLoaded(response));
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+     // debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -80,7 +80,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         ),
       );
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+     // debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -128,7 +128,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         ),
       );
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+      //debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -153,7 +153,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         ),
       );
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+      //debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -195,7 +195,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
         ),
       );
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+      //debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }
@@ -204,7 +204,7 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     try {
       return await call();
     } catch (e) {
-      debugPrint('SafeReportCall Error: $e');
+     // debugPrint('SafeReportCall Error: $e');
       return fallback;
     }
   }
@@ -216,12 +216,12 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     emit(ReportsLoading());
     try {
       final response = await reportsRepo.getProfitAndLossReport(event.request);
-      debugPrint(
-        'Profit & Loss parsed: ${response.data.length} rows, ${response.columns.length} columns',
-      );
+     // debugPrint(
+       // 'Profit & Loss parsed: ${response.data.length} rows, ${response.columns.length} columns',
+      //);
       emit(ProfitAndLossLoaded(response));
     } catch (e) {
-      debugPrint('ReportsBloc Error: $e');
+     // debugPrint('ReportsBloc Error: $e');
       emit(ReportsError(e.toString()));
     }
   }

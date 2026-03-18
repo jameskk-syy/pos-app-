@@ -319,22 +319,11 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
 
       // Save the actual data (not the wrapper)
       await storageService.setString('dashboardData', jsonEncode(actualData));
-      // debugPrint('Dashboard data saved to local storage');
-
-      // Note: getCurrentUser() is in UserRemoteDataSource/AuthRemoteDataSource.
-      // Avoiding circular dependency/unnecessary call here if not strictly needed or move it.
-      // If needed, we might need to inject AuthRemoteDataSource or duplicate logic.
-      // For now, removing the call as it might be side-effect of original code.
-      // await getCurrentUser();
-
-      // Parse the actual data
       return DashboardResponse.fromJson(actualData);
     } on DioException catch (e) {
       // debugPrint('Dio Error: ${e.type} - ${e.message}');
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      // debugPrint('Unexpected error: $e');
-      // debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }
@@ -519,8 +508,7 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Invalid response format');
       }
     } on DioException catch (e) {
-      // debugPrint('Create Credit MOP Error: $e');
-      throw Exception('Failed to create credit MOP: ${e.message}');
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       rethrow;
     }
@@ -546,8 +534,7 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
       }
       throw Exception('Invalid response format');
     } on DioException catch (e) {
-      // debugPrint('Get Receivable Account Error: $e');
-      throw Exception('Failed to get receivable account: ${e.message}');
+      throw Exception(getErrorMessage(e));
     } catch (e) {
       rethrow;
     }

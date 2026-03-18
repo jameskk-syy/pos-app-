@@ -203,11 +203,11 @@ class _InvoiceDetailsWidgetState extends State<InvoiceDetailsWidget> {
   Widget build(BuildContext context) {
     final data = widget.response.data;
 
-    // ignore: deprecated_member_use
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
         Navigator.pop(context, true);
-        return false;
       },
       child: SafeArea(
         child: Scaffold(

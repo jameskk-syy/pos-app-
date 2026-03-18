@@ -16,12 +16,12 @@ import 'package:pos/domain/requests/get_inventory_discount_rules_request.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/presentation/sales/bloc/sales_bloc.dart';
-import 'package:pos/domain/models/pos_session_model.dart';
 import 'package:pos/screens/pages/point_of_sale/add_cart.dart';
 import 'package:pos/screens/pages/point_of_sale/app_bar.dart';
 import 'package:pos/screens/pages/point_of_sale/buttons_widget.dart';
 import 'package:pos/screens/pages/point_of_sale/summary.dart';
 import 'package:pos/screens/sales/invoices_page.dart';
+import 'package:pos/screens/sales/pos_opening_entries_page.dart';
 import 'package:pos/utils/cart_manager.dart';
 import 'package:pos/domain/responses/sales/crm_customer.dart';
 import 'dart:async';
@@ -521,15 +521,15 @@ class _ProductsPageState extends State<ProductsPage> {
         BlocListener<SalesBloc, SalesState>(
           listener: (context, state) {
             if (state is POSSessionClosed) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.green,
-                ),
-              );
               getIt<StorageService>().remove('current_pos_session');
 
-              _showOpenSessionBottomSheet();
+              Navigator.pushAndRemoveUntil(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const PosOpeningEntriesPage(),
+                ),
+                (route) => route.isFirst,
+              );
             } else if (state is POSSessionCloseError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -580,110 +580,11 @@ class _ProductsPageState extends State<ProductsPage> {
                         );
                       },
                       onCloseSession: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) {
-                            return LayoutBuilder(
-                              builder: (context, constraints) {
-                                final isTablet = constraints.maxWidth >= 600;
-                                return AlertDialog(
-                                  shape: const RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.zero,
-                                  ),
-                                  insetPadding: EdgeInsets.symmetric(
-                                    horizontal: isTablet ? 100.0 : 20.0,
-                                    vertical: 24.0,
-                                  ),
-                                  title: const Text('Close Session'),
-                                  content: SizedBox(
-                                    width: isTablet ? 500 : double.maxFinite,
-                                    child: const Text(
-                                      'Are you sure you want to close this session?',
-                                    ),
-                                  ),
-                                  actions: [
-                                    TextButton(
-                                      onPressed: () => Navigator.pop(context),
-                                      style: TextButton.styleFrom(
-                                        shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.zero,
-                                        ),
-                                      ),
-                                      child: const Text('Cancel'),
-                                    ),
-                                    ElevatedButton(
-                                      onPressed: () async {
-                                        final messenger = ScaffoldMessenger.of(
-                                          context,
-                                        );
-                                        // Capture bloc before popping
-                                        final salesBloc = context
-                                            .read<SalesBloc>();
-                                        Navigator.pop(context);
-
-                                        try {
-                                          final storage =
-                                              getIt<StorageService>();
-                                          final sessionString = await storage
-                                              .getString('current_pos_session');
-                                          if (sessionString != null) {
-                                            final sessionJson = jsonDecode(
-                                              sessionString,
-                                            );
-
-                                            String posOpeningEntry;
-                                            if (sessionJson['name'] is String) {
-                                              posOpeningEntry =
-                                                  sessionJson['name'];
-                                            } else {
-                                              // Fallback: use toString() or handle if it's a map
-                                              posOpeningEntry =
-                                                  sessionJson['name']
-                                                      .toString();
-                                            }
-
-                                            salesBloc.add(
-                                              ClosePOSSession(
-                                                request: ClosePOSSessionRequest(
-                                                  posOpeningEntry:
-                                                      posOpeningEntry,
-                                                ),
-                                              ),
-                                            );
-                                          } else {
-                                            messenger.showSnackBar(
-                                              const SnackBar(
-                                                content: Text(
-                                                  'No active session found',
-                                                ),
-                                              ),
-                                            );
-                                          }
-                                        } catch (e) {
-                                          messenger.showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Error closing session: $e',
-                                              ),
-                                              backgroundColor: Colors.red,
-                                            ),
-                                          );
-                                        }
-                                      },
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: Colors.red,
-                                        foregroundColor: Colors.white,
-                                        shape: const RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.zero,
-                                        ),
-                                      ),
-                                      child: const Text('Close'),
-                                    ),
-                                  ],
-                                );
-                              },
-                            );
-                          },
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const PosOpeningEntriesPage(),
+                          ),
                         );
                       },
                       onSaveDraft: () {

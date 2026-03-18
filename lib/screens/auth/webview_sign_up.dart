@@ -88,7 +88,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
 
         await _pollTenantStatus(tenantId);
       } else {
-        _navigateNext();
+        _navigateNext();                                                             
       }
     } catch (e) {
       if (data.startsWith('http')) {

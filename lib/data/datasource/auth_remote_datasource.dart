@@ -1,7 +1,7 @@
 import 'dart:convert';
+//import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:pos/domain/responses/system_responses.dart';
-import 'package:flutter/material.dart';
 import 'package:pos/domain/models/message.dart';
 import 'package:pos/domain/requests/users/assign_staff_to_store.dart';
 import 'package:pos/domain/responses/users/get_current_user.dart';
@@ -38,6 +38,7 @@ import 'package:pos/domain/responses/users/remove_staff_response.dart' as rs;
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/requests/inventory/create_warehouse.dart';
+import 'package:pos/domain/responses/users/set_user_industry_response.dart';
 
 import 'package:pos/data/datasource/inventory_datasource.dart';
 
@@ -206,7 +207,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   Future<SendOtpResponse> sendOtpEmail(SendOtpRequest request) async {
     try {
       final response = await dio.post(
-        'techsavanna_pos.api.auth.send_otp_email',
+        'techsavanna_pos.api.verification_api.send_email_verification',
         data: request.toJson(),
       );
 
@@ -219,16 +220,12 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       final sendOtpResponse = SendOtpResponse.fromJson(data);
 
       if (sendOtpResponse.success == false) {
-        throw Exception(
-          sendOtpResponse.error ??
-              sendOtpResponse.message ??
-              'Failed to send OTP',
-        );
+        throw Exception(sendOtpResponse.error ?? sendOtpResponse.message);
       }
 
       return sendOtpResponse;
     } on DioException catch (e) {
-     // debugPrint("DEBUG: DioException during sendOtpEmail: ${e.message}");
+      // debugPrint("DEBUG: DioException during sendOtpEmail: ${e.message}");
       throw Exception(getErrorMessage(e));
     } catch (e) {
       //debugPrint("DEBUG: General error during sendOtpEmail: $e");
@@ -242,7 +239,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
   ) async {
     try {
       final response = await dio.post(
-        'techsavanna_pos.api.auth.verify_otp_email',
+        'techsavanna_pos.api.verification_api.verify_email_code',
         data: {'email': email, 'code': code},
       );
 
@@ -310,9 +307,24 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       final currentUser = CurrentUserResponse.fromJson(data);
 
-      // debugPrint(
-      //   "DEBUG: current user parsed successfully: ${currentUser.message.user.fullName}",
-      // );
+      // Lazy check: If default warehouse is missing, trigger provisioning/creation
+      final warehouse = currentUser.message.defaultWarehouse;
+      if (warehouse.isEmpty || warehouse.toLowerCase() == 'none') {
+        await _ensureProvisioning(currentUser);
+        // Re-fetch to get updated user details with the new warehouse
+        final freshResponse = await dio.get(
+          'techsavanna_pos.api.auth_api.get_current_user',
+        );
+        if (freshResponse.data != null &&
+            freshResponse.data['message'] != null) {
+          final updatedUser = CurrentUserResponse.fromJson(freshResponse.data);
+          await storageService.setString(
+            'current_user',
+            jsonEncode(updatedUser.toJson()),
+          );
+          return updatedUser;
+        }
+      }
 
       await storageService.setString(
         'current_user',
@@ -768,6 +780,27 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     }
   }
 
+  Future<SetUserIndustryResponse> setUserIndustry(String industryCode) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.industry_api.set_user_industry',
+        data: {'industry_code': industryCode},
+      );
+
+      final data = response.data;
+      // debugPrint('setting industry: $data');
+      if (data == null || data['message'] == null) {
+        throw Exception('Invalid response from server');
+      }
+
+      return SetUserIndustryResponse.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<ws.GetWarehouseStaffResponse> getWarehouseStaff(
     String warehouseName,
   ) async {
@@ -884,7 +917,16 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       await createAccountProvisioning(request);
 
       // Create default warehouse for the company
-      await _createDefaultWarehouse(companyRequest);
+      await _createDefaultWarehouse(
+        companyName: companyRequest.companyName,
+        addressLine1: companyRequest.companyAddress.addressLine1,
+        addressLine2: companyRequest.companyAddress.addressLine2,
+        city: companyRequest.companyAddress.city,
+        state: companyRequest.companyAddress.state,
+        pin: companyRequest.companyAddress.pincode,
+        phone: companyRequest.companyAddress.phone,
+        email: companyRequest.companyAddress.emailId,
+      );
       await getCurrentUser();
       return CompanyResponse.fromJson(data);
     } on DioException catch (e) {
@@ -895,48 +937,62 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     }
   }
 
-  Future<void> _createDefaultWarehouse(CompanyRequest companyRequest) async {
-    try {
-      // debugPrint(
-      //   'Creating default warehouse for company: ${companyRequest.companyName}',
-      // );
+  Future<void> _ensureProvisioning(CurrentUserResponse userResponse) async {
+    final message = userResponse.message;
 
+    // Trigger Account Provisioning
+    try {
+      final provisioningRequest = ProvisionalAccountRequest(
+        company: message.company.companyName,
+        createAccountIfMissing: true,
+      );
+      await createAccountProvisioning(provisioningRequest);
+    } catch (e) {
+      //debugPrint('Lazy provisioning error (accounts): $e');
+    }
+
+    // Create default warehouse
+    await _createDefaultWarehouse(
+      companyName: message.company.companyName,
+      addressLine1: message.company.address?.addressLine1,
+      addressLine2: message.company.address?.addressLine2,
+      city: message.company.address?.city,
+      state: message.company.address?.state,
+      pin: message.company.address?.pincode,
+      phone: message.company.address?.phone,
+      email: message.company.address?.emailId,
+    );
+  }
+
+  Future<void> _createDefaultWarehouse({
+    required String companyName,
+    String? addressLine1,
+    String? addressLine2,
+    String? city,
+    String? state,
+    String? pin,
+    String? phone,
+    String? email,
+  }) async {
+    try {
       final warehouseRequest = CreateWarehouseRequest(
-        warehouseName: '${companyRequest.companyName} - Main Warehouse',
-        company: companyRequest.companyName,
+        warehouseName: '$companyName - Main Warehouse',
+        company: companyName,
         warehouseType: 'Transit',
         isMainDepot: true,
         setAsDefault: true,
-        addressLine1: companyRequest.companyAddress.addressLine1,
-        addressLine2: companyRequest.companyAddress.addressLine2,
-        city: companyRequest.companyAddress.city,
-        state: companyRequest.companyAddress.state,
-        pin: companyRequest.companyAddress.pincode,
-        phoneNo: companyRequest.companyAddress.phone,
-        emailId: companyRequest.companyAddress.emailId,
+        addressLine1: addressLine1,
+        addressLine2: addressLine2,
+        city: city,
+        state: state,
+        pin: pin,
+        phoneNo: phone,
+        emailId: email,
       );
 
-      final response = await inventoryRemoteDataSource.createWarehouse(
-        warehouseRequest,
-      );
-      // debugPrint(
-      //   'Default warehouse created successfully: ${response.toJson()}',
-      // );
-
-      /*
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        // debugPrint('Default warehouse created successfully');
-      } else {
-        // debugPrint(
-        //   'Warehouse creation returned status: ${response.statusCode}',
-        // );
-      }
-      */
+      await inventoryRemoteDataSource.createWarehouse(warehouseRequest);
     } catch (e) {
-      // debugPrint('Warning: Failed to create default warehouse: $e');
-      // debugPrint(
-      //   'Company registration will continue despite warehouse creation failure',
-      // );
+      //('Warning: Failed to create default warehouse: $e');
     }
   }
 

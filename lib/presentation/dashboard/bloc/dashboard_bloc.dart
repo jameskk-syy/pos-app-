@@ -39,7 +39,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      debugPrint('Dashboard fetch error: ${e.toString()}');
+      //debugPrint('Dashboard fetch error: ${e.toString()}');
       emit(
         DashboardError(
           message: e.toString(),
@@ -67,7 +67,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      debugPrint('Dashboard refresh error: ${e.toString()}');
+      //debugPrint('Dashboard refresh error: ${e.toString()}');
       emit(
         DashboardError(
           message: e.toString(),
@@ -94,7 +94,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      debugPrint('Dashboard filter update error: ${e.toString()}');
+      //debugPrint('Dashboard filter update error: ${e.toString()}');
       emit(
         DashboardError(
           message: e.toString(),
@@ -123,7 +123,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      debugPrint('Dashboard clear filters error: ${e.toString()}');
+      //debugPrint('Dashboard clear filters error: ${e.toString()}');
       emit(
         DashboardError(
           message: e.toString(),

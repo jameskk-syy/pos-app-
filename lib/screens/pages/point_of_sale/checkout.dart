@@ -18,15 +18,18 @@ import 'package:pos/widgets/crm/redeem_points_dialog.dart';
 import 'package:pos/domain/responses/crm/loyalty_response.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:flutter/services.dart';
 
 class SplitPayment {
   String? paymentMethod;
   TextEditingController amountController = TextEditingController();
+  TextEditingController mpesaPhoneController = TextEditingController();
 
   SplitPayment({this.paymentMethod});
 
   void dispose() {
     amountController.dispose();
+    mpesaPhoneController.dispose();
   }
 }
 
@@ -57,6 +60,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
   final TextEditingController voucherNumberController = TextEditingController();
   final TextEditingController amountPaidController = TextEditingController();
   final TextEditingController changeController = TextEditingController();
+  final TextEditingController _mpesaPhoneController = TextEditingController();
 
   bool isSplitPayment = false;
   List<SplitPayment> splitPayments = [SplitPayment()];
@@ -153,6 +157,7 @@ class _CheckoutPageState extends State<CheckoutPage> {
     voucherNumberController.dispose();
     amountPaidController.dispose();
     changeController.dispose();
+    _mpesaPhoneController.dispose();
     for (var split in splitPayments) {
       split.dispose();
     }
@@ -187,6 +192,19 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (!allValid) {
         _showWarningDialog('Please complete all split payment entries');
         return;
+      }
+
+      // MPesa Validation for Split Payments
+      for (var split in splitPayments) {
+        if (_isMPesa(split.paymentMethod ?? '')) {
+          final phone = split.mpesaPhoneController.text.trim();
+          if (phone.length != 10 && phone.length != 12) {
+            _showWarningDialog(
+              'Please enter a valid MPesa number (10 or 12 digits) for the split payment entry.',
+            );
+            return;
+          }
+        }
       }
 
       // Calculate total from split payments
@@ -236,6 +254,17 @@ class _CheckoutPageState extends State<CheckoutPage> {
       if (selectedPaymentMethod == null) {
         _showWarningDialog('There is no payment method selected yet');
         return;
+      }
+
+      // MPesa Validation for Single Payment
+      if (_isMPesa(selectedPaymentMethod ?? '')) {
+        final phone = _mpesaPhoneController.text.trim();
+        if (phone.length != 10 && phone.length != 12) {
+          _showWarningDialog(
+            'Please enter a valid MPesa number (10 or 12 digits).',
+          );
+          return;
+        }
       }
 
       // Check if it's cash payment
@@ -311,9 +340,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       posProfile: currentUserResponse!.message.posProfile.name,
       payments: [
         InvoicePayment(
-          modeOfPayment: paymentMethod.name,
+          modeOfPayment: _isMPesa(paymentMethod.name)
+              ? 'mpesa'
+              : paymentMethod.name,
           amount: amountPaid,
           baseAmount: total,
+          mpesaNumber: _isMPesa(paymentMethod.name)
+              ? _mpesaPhoneController.text.trim()
+              : null,
         ),
       ],
       doNotSubmit: false,
@@ -345,9 +379,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
 
     final invoicePayments = splitPayments.map((split) {
       return InvoicePayment(
-        modeOfPayment: split.paymentMethod!,
+        modeOfPayment: _isMPesa(split.paymentMethod!)
+            ? 'mpesa'
+            : split.paymentMethod!,
         amount: double.parse(split.amountController.text),
         baseAmount: double.parse(split.amountController.text),
+        mpesaNumber: _isMPesa(split.paymentMethod!)
+            ? split.mpesaPhoneController.text.trim()
+            : null,
       );
     }).toList();
 
@@ -472,6 +511,11 @@ class _CheckoutPageState extends State<CheckoutPage> {
         normalizedType == 'account' ||
         normalizedName.contains('credit') ||
         normalizedName.contains('account');
+  }
+
+  bool _isMPesa(String name) {
+    final normalized = name.toLowerCase().replaceAll('-', '');
+    return normalized.contains('mpesa');
   }
 
   void _showOpenSessionBottomSheet() {
@@ -983,6 +1027,74 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         ),
                                       );
                                     }),
+
+                                    // MPesa Phone Number Fields for Split Payments
+                                    ...splitPayments.asMap().entries.map((
+                                      entry,
+                                    ) {
+                                      final index = entry.key;
+                                      final split = entry.value;
+                                      if (split.paymentMethod == null ||
+                                          !_isMPesa(split.paymentMethod!)) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      return Container(
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 12,
+                                        ),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          border: Border(
+                                            bottom: BorderSide(
+                                              color: Colors.grey.shade200,
+                                            ),
+                                          ),
+                                        ),
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'M-Pesa Phone (Row ${index + 1})',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                                color: Colors.grey.shade700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 8),
+                                            TextField(
+                                              controller:
+                                                  split.mpesaPhoneController,
+                                              keyboardType: TextInputType.phone,
+                                              inputFormatters: [
+                                                FilteringTextInputFormatter
+                                                    .digitsOnly,
+                                              ],
+                                              decoration: InputDecoration(
+                                                hintText: 'Enter phone number',
+                                                hintStyle: TextStyle(
+                                                  fontSize: 13,
+                                                  color: Colors.grey.shade400,
+                                                ),
+                                                isDense: true,
+                                                border:
+                                                    const OutlineInputBorder(),
+                                                contentPadding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                              ),
+                                              style: const TextStyle(
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    }),
                                   ],
                                 ),
                               ),
@@ -1161,6 +1273,55 @@ class _CheckoutPageState extends State<CheckoutPage> {
                                         ),
                                       ),
                               ),
+
+                              if (selectedPaymentMethod != null &&
+                                  _isMPesa(selectedPaymentMethod!)) ...[
+                                const SizedBox(height: 16),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: RichText(
+                                    text: TextSpan(
+                                      text: 'M-Pesa Phone Number',
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w400,
+                                        color: Colors.black,
+                                      ),
+                                      children: [
+                                        TextSpan(
+                                          text: '*',
+                                          style: TextStyle(
+                                            color: Colors.red.shade600,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                TextField(
+                                  controller: _mpesaPhoneController,
+                                  keyboardType: TextInputType.phone,
+                                  inputFormatters: [
+                                    FilteringTextInputFormatter.digitsOnly,
+                                  ],
+                                  decoration: InputDecoration(
+                                    hintText: 'Enter phone number',
+                                    hintStyle: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    contentPadding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 12,
+                                    ),
+                                    border: const OutlineInputBorder(),
+                                  ),
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ],
 
                               // Amount Paid and Change fields for cash payment
                               if (_isCashPaymentSelected) ...[

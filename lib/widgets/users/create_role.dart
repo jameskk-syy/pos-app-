@@ -95,16 +95,14 @@ class _CreateRolePageState extends State<CreateRolePage> {
       builder: (context, state) {
         final isLoading = state is RoleStateLoading;
 
-        // ignore: deprecated_member_use
-        return WillPopScope(
-          onWillPop: () async {
-            if (_roleNameController.text.isNotEmpty ||
-                _domainController.text.isNotEmpty ||
-                _homePageController.text.isNotEmpty) {
-              _showCancelConfirmation();
-              return false;
-            }
-            return true;
+        return PopScope(
+          canPop:
+              _roleNameController.text.isEmpty &&
+              _domainController.text.isEmpty &&
+              _homePageController.text.isEmpty,
+          onPopInvokedWithResult: (didPop, result) async {
+            if (didPop) return;
+            _showCancelConfirmation();
           },
           child: Scaffold(
             appBar: AppBar(

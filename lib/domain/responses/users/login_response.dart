@@ -47,7 +47,6 @@ class LoginMessage {
       message: json['message']?.toString() ?? '',
     );
   }
-
   Map<String, dynamic> toJson() {
     return {
       'user': user.toJson(),

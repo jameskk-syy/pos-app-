@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -250,6 +251,202 @@ class _CreateDiscountRulePageState extends State<CreateDiscountRulePage> {
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text(message), backgroundColor: Colors.red),
+    );
+  }
+
+  // ─── Searchable picker bottom sheet ──────────────────────────────────────
+  Future<T?> _showSearchableBottomSheet<T>({
+    required BuildContext context,
+    required String title,
+    required List<T> items,
+    required String Function(T) displayLabel,
+    required T? currentValue,
+    bool isProductSearch = false,
+  }) async {
+    final searchController = TextEditingController();
+    Timer? debounce;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              builder: (_, scrollController) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    if (isProductSearch &&
+                                        currentUserResponse != null) {
+                                      context.read<ProductsBloc>().add(
+                                        GetAllProducts(
+                                          company: currentUserResponse!
+                                              .message
+                                              .company
+                                              .name,
+                                          searchTerm: '',
+                                        ),
+                                      );
+                                    }
+                                    setModalState(() {});
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (val) {
+                          if (debounce?.isActive ?? false) debounce!.cancel();
+                          debounce = Timer(
+                            const Duration(milliseconds: 500),
+                            () {
+                              if (isProductSearch &&
+                                  currentUserResponse != null) {
+                                context.read<ProductsBloc>().add(
+                                  GetAllProducts(
+                                    company: currentUserResponse!
+                                        .message
+                                        .company
+                                        .name,
+                                    searchTerm: val,
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                          setModalState(() {});
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: BlocBuilder<ProductsBloc, ProductsState>(
+                        builder: (context, state) {
+                          if (isProductSearch &&
+                              state is ProductsStateLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          List<T> displayItems = items;
+                          if (isProductSearch &&
+                              state is ProductsStateSuccess) {
+                            displayItems =
+                                state.productResponse.products as List<T>;
+                          } else if (!isProductSearch) {
+                            final query = searchController.text.toLowerCase();
+                            displayItems = items
+                                .where(
+                                  (item) => displayLabel(
+                                    item,
+                                  ).toLowerCase().contains(query),
+                                )
+                                .toList();
+                          }
+
+                          if (displayItems.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'No results found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: scrollController,
+                            itemCount: displayItems.length,
+                            itemBuilder: (context, index) {
+                              final item = displayItems[index];
+                              final isSelected = item == currentValue;
+
+                              return ListTile(
+                                title: Text(
+                                  displayLabel(item),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.blue[700]
+                                        : Colors.black87,
+                                  ),
+                                ),
+                                trailing: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        color: Colors.blue[700],
+                                        size: 20,
+                                      )
+                                    : null,
+                                onTap: () => Navigator.pop(ctx, item),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -552,38 +749,78 @@ class _CreateDiscountRulePageState extends State<CreateDiscountRulePage> {
                                           ],
                                         ),
                                       )
-                                    : Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                    : InkWell(
+                                        onTap: loadingItems || items.isEmpty
+                                            ? null
+                                            : () async {
+                                                final selected =
+                                                    await _showSearchableBottomSheet<
+                                                      ProductItem
+                                                    >(
+                                                      context: context,
+                                                      title: 'Select Item',
+                                                      items: items,
+                                                      displayLabel: (p) =>
+                                                          '${p.itemCode} - ${p.itemName}',
+                                                      currentValue: items
+                                                          .where(
+                                                            (i) =>
+                                                                i.itemCode ==
+                                                                selectedItem,
+                                                          )
+                                                          .firstOrNull,
+                                                      isProductSearch: true,
+                                                    );
+
+                                                if (selected != null) {
+                                                  setState(() {
+                                                    selectedItem =
+                                                        selected.itemCode;
+                                                  });
+                                                }
+                                              },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
                                           ),
-                                          border: Border.all(
-                                            color: Colors.grey[300]!,
-                                            width: 1,
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 1,
+                                            ),
                                           ),
-                                        ),
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: selectedItem,
-                                            isExpanded: true,
-                                            hint: const Text('Select Item'),
-                                            items: items.map((item) {
-                                              return DropdownMenuItem<String>(
-                                                value: item.itemCode,
+                                          child: Row(
+                                            children: [
+                                              Expanded(
                                                 child: Text(
-                                                  '${item.itemCode} - ${item.itemName}',
+                                                  selectedItem != null
+                                                      ? items
+                                                            .firstWhere(
+                                                              (i) =>
+                                                                  i.itemCode ==
+                                                                  selectedItem,
+                                                            )
+                                                            .itemName
+                                                      : 'Select Item',
+                                                  style: TextStyle(
+                                                    color: selectedItem != null
+                                                        ? Colors.black87
+                                                        : Colors.grey[600],
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                selectedItem = value;
-                                              });
-                                            },
+                                              ),
+                                              const Icon(
+                                                Icons.arrow_drop_down,
+                                                color: Colors.grey,
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),
@@ -668,40 +905,82 @@ class _CreateDiscountRulePageState extends State<CreateDiscountRulePage> {
                                           ],
                                         ),
                                       )
-                                    : Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: Colors.white,
-                                          borderRadius: BorderRadius.circular(
-                                            8,
+                                    : InkWell(
+                                        onTap:
+                                            loadingItemGroups ||
+                                                itemGroups.isEmpty
+                                            ? null
+                                            : () async {
+                                                final selected =
+                                                    await _showSearchableBottomSheet<
+                                                      ItemGroup
+                                                    >(
+                                                      context: context,
+                                                      title:
+                                                          'Select Item Group',
+                                                      items: itemGroups,
+                                                      displayLabel: (g) =>
+                                                          g.itemGroupName,
+                                                      currentValue: itemGroups
+                                                          .where(
+                                                            (g) =>
+                                                                g.name ==
+                                                                selectedItemGroup,
+                                                          )
+                                                          .firstOrNull,
+                                                    );
+
+                                                if (selected != null) {
+                                                  setState(() {
+                                                    selectedItemGroup =
+                                                        selected.name;
+                                                  });
+                                                }
+                                              },
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 12,
+                                            vertical: 14,
                                           ),
-                                          border: Border.all(
-                                            color: Colors.grey[300]!,
-                                            width: 1,
-                                          ),
-                                        ),
-                                        child: DropdownButtonHideUnderline(
-                                          child: DropdownButton<String>(
-                                            value: selectedItemGroup,
-                                            isExpanded: true,
-                                            hint: const Text(
-                                              'Select Item Group',
+                                          decoration: BoxDecoration(
+                                            color: Colors.white,
+                                            borderRadius: BorderRadius.circular(
+                                              8,
                                             ),
-                                            items: itemGroups.map((group) {
-                                              return DropdownMenuItem<String>(
-                                                value: group.name,
+                                            border: Border.all(
+                                              color: Colors.grey[300]!,
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Expanded(
                                                 child: Text(
-                                                  group.itemGroupName,
+                                                  selectedItemGroup != null
+                                                      ? itemGroups
+                                                            .firstWhere(
+                                                              (g) =>
+                                                                  g.name ==
+                                                                  selectedItemGroup,
+                                                            )
+                                                            .itemGroupName
+                                                      : 'Select Item Group',
+                                                  style: TextStyle(
+                                                    color:
+                                                        selectedItemGroup !=
+                                                            null
+                                                        ? Colors.black87
+                                                        : Colors.grey[600],
+                                                  ),
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
                                                 ),
-                                              );
-                                            }).toList(),
-                                            onChanged: (value) {
-                                              setState(() {
-                                                selectedItemGroup = value;
-                                              });
-                                            },
+                                              ),
+                                              const Icon(
+                                                Icons.arrow_drop_down,
+                                                color: Colors.grey,
+                                              ),
+                                            ],
                                           ),
                                         ),
                                       ),

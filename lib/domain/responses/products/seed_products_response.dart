@@ -66,6 +66,16 @@ class PharmacyMessage {
     return null;
   }
 
+  static double? _parseToDouble(dynamic value) {
+    if (value == null) return null;
+    if (value is double) return value;
+    if (value is int) return value.toDouble();
+    if (value is String) {
+      return double.tryParse(value);
+    }
+    return null;
+  }
+
   Map<String, dynamic> toJson() {
     return {
       if (status != null) 'status': status,
@@ -81,8 +91,22 @@ class PharmacyProduct {
   final String? sku;
   final String? name;
   final String? status;
+  final double? itemPrice;
+  final double? buyingPrice;
+  final int? qty;
+  final String? itemGroup;
+  final String? uom;
 
-  PharmacyProduct({this.sku, this.name, this.status});
+  PharmacyProduct({
+    this.sku,
+    this.name,
+    this.status,
+    this.itemPrice,
+    this.buyingPrice,
+    this.qty,
+    this.itemGroup,
+    this.uom,
+  });
 
   factory PharmacyProduct.fromJson(Map<String, dynamic>? json) {
     if (json == null) {
@@ -93,6 +117,11 @@ class PharmacyProduct {
       sku: json['sku']?.toString(),
       name: json['name']?.toString(),
       status: json['status']?.toString(),
+      itemPrice: PharmacyMessage._parseToDouble(json['item_price']),
+      buyingPrice: PharmacyMessage._parseToDouble(json['buying_price']),
+      qty: PharmacyMessage._parseToInt(json['qty']),
+      itemGroup: json['item_group']?.toString(),
+      uom: json['uom']?.toString(),
     );
   }
 
@@ -101,11 +130,16 @@ class PharmacyProduct {
       if (sku != null) 'sku': sku,
       if (name != null) 'name': name,
       if (status != null) 'status': status,
+      if (itemPrice != null) 'item_price': itemPrice,
+      if (buyingPrice != null) 'buying_price': buyingPrice,
+      if (qty != null) 'qty': qty,
+      if (itemGroup != null) 'item_group': itemGroup,
+      if (uom != null) 'uom': uom,
     };
   }
 
   @override
   String toString() {
-    return 'PharmacyProduct(sku: $sku, name: $name, status: $status)';
+    return 'PharmacyProduct(sku: $sku, name: $name, status: $status, itemPrice: $itemPrice, buyingPrice: $buyingPrice, qty: $qty, itemGroup: $itemGroup, uom: $uom)';
   }
 }

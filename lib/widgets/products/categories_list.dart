@@ -22,13 +22,18 @@ class CategoriesList extends StatelessWidget {
         final isMobile = constraints.maxWidth < 600;
 
         return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minWidth: constraints.maxWidth),
-            child: DataTable(
-              columnSpacing: isMobile ? 20 : 40,
-              columns: _buildColumns(isMobile),
-              rows: categories.map((cat) => _buildRow(cat, isMobile)).toList(),
+          scrollDirection: Axis.vertical,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth),
+              child: DataTable(
+                columnSpacing: isMobile ? 20 : 40,
+                columns: _buildColumns(isMobile),
+                rows: categories
+                    .map((cat) => _buildRow(cat, isMobile))
+                    .toList(),
+              ),
             ),
           ),
         );
@@ -73,7 +78,13 @@ class CategoriesList extends StatelessWidget {
     return DataRow(
       cells: [
         DataCell(Text(cat.itemGroupName)),
-        DataCell(Text(cat.parentItemGroup.isEmpty ? '-' : cat.parentItemGroup)),
+        DataCell(
+          Text(
+            (cat.parentItemGroup == null || cat.parentItemGroup!.isEmpty)
+                ? '-'
+                : cat.parentItemGroup!,
+          ),
+        ),
         if (!isMobile)
           DataCell(
             Container(

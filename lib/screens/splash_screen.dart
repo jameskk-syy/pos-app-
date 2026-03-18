@@ -7,6 +7,7 @@ import 'package:pos/screens/auth/lock_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+//import 'package:pos/core/services/security_service.dart';
 import 'package:pos/screens/sales/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {

@@ -100,6 +100,21 @@ abstract class BaseRemoteDataSource {
     }
 
     // Fallback for non-Map data or other Dio errors
+    if (response?.statusCode != null) {
+      switch (response!.statusCode) {
+        case 401:
+          return 'Unauthorized. Please check your credentials.';
+        case 403:
+          return 'Access denied. You do not have permission to perform this action.';
+        case 404:
+          return 'The requested resource was not found on the server.';
+        case 500:
+          return 'Server error. Please try again later or contact support.';
+        case 503:
+          return 'Service unavailable. The server is temporarily down for maintenance.';
+      }
+    }
+
     switch (e.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
@@ -107,10 +122,12 @@ abstract class BaseRemoteDataSource {
         return 'Connection timed out. Please check your internet.';
       case DioExceptionType.connectionError:
         return 'Unable to connect to server. Please check your internet.';
+      case DioExceptionType.badResponse:
+        return 'Server returned an error. Please try again.';
       case DioExceptionType.cancel:
         return 'Request cancelled.';
       default:
-        return e.message ?? 'An unexpected error occurred. Please try again.';
+        return 'An unexpected error occurred. Please try again.';
     }
   }
 
