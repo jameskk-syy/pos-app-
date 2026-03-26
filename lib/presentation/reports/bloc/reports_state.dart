@@ -76,6 +76,16 @@ class InventorySummaryLoaded extends ReportsState {
   InventorySummaryLoaded(this.response);
 }
 
+class ProductSalesAnalyticsLoaded extends ReportsState {
+  final ProductSalesAnalyticsResponse response;
+  ProductSalesAnalyticsLoaded(this.response);
+}
+
+class ZReportLoaded extends ReportsState {
+  final ZReportResponse response;
+  ZReportLoaded(this.response);
+}
+
 class ReportsError extends ReportsState {
   final String message;
   ReportsError(this.message);

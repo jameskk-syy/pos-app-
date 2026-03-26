@@ -45,7 +45,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
             if (request.url.contains('/login')) {
-              _navigateNext(); 
+              _navigateNext();
               return NavigationDecision.prevent;
             }
             if (request.url.contains('/dashboard') ||
@@ -54,6 +54,11 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
+          },
+          onUrlChange: (UrlChange change) {
+            if (change.url != null && change.url!.contains('/login')) {
+              _navigateNext();
+            }
           },
         ),
       )

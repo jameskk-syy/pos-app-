@@ -8,6 +8,8 @@ import 'package:pos/domain/models/reports/stock_movement_model.dart';
 import 'package:pos/domain/models/reports/aging_stock_model.dart';
 import 'package:pos/domain/models/reports/accounting_reports_model.dart';
 import 'package:pos/domain/models/reports/sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/product_sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/z_report_model.dart';
 import 'package:pos/domain/requests/report_request.dart';
 
 class ReportsRemoteDataSource extends BaseRemoteDataSource {
@@ -188,6 +190,27 @@ class ReportsRemoteDataSource extends BaseRemoteDataSource {
       'techsavanna_pos.api.reports.inventory_summary_report',
       request,
       InventorySummaryResponse.fromJson,
+    );
+  }
+
+  Future<ProductSalesAnalyticsResponse> getProductSalesAnalyticsReport(
+    ReportRequest request,
+  ) async {
+    return _getReport<ProductSalesAnalyticsResponse>(
+      'techsavanna_pos.api.reports.product_sales_analytics_report',
+      request,
+      ProductSalesAnalyticsResponse.fromJson,
+    );
+  }
+
+  Future<ZReportResponse> getZReport(ReportRequest request) async {
+    // For Z-Report, the parameter might be pos_opening_entry directly or within filters
+    // Based on user prompt: pos_opening_entry=POS-OPE-2024-00001
+    // I'll ensure it's handled in the request body
+    return _getReport<ZReportResponse>(
+      'techsavanna_pos.api.reports.get_z_report',
+      request,
+      ZReportResponse.fromJson,
     );
   }
 

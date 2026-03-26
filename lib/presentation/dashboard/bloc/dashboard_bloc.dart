@@ -1,10 +1,17 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:bloc/bloc.dart';
 import 'package:flutter/widgets.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/domain/repository/dashboard_repo.dart';
 import 'package:pos/domain/requests/sales/dashboard_request.dart';
 import 'package:pos/domain/responses/sales/dashboard_response.dart';
+import 'package:pos/domain/models/top_selling_item_model.dart';
+import 'package:pos/domain/models/invoice_list_model.dart';
+import 'package:pos/domain/responses/purchase/purchase_invoice_response.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
 
 part 'dashboard_event.dart';
 part 'dashboard_state.dart';
@@ -29,13 +36,49 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     emit(DashboardLoading());
     try {
-      final response = await dashboardRepo.getDashboardStats(event.request);
+      final req = event.request;
+      String company = req.company ?? '';
+      if (company.isEmpty) {
+        final storage = getIt<StorageService>();
+        final userString = await storage.getString('current_user');
+        if (userString != null) {
+          try {
+            final userRes = CurrentUserResponse.fromJson(jsonDecode(userString));
+            company = userRes.message.company.name;
+          } catch (_) {}
+        }
+      }
+      
+      final results = await Future.wait([
+        dashboardRepo.getDashboardStats(req),
+        if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
+          company: company,
+          warehouse: req.warehouse,
+          period: req.period,
+        ).then<TopSellingItemResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getLatestOrders(
+          company: company,
+          orderBy: 'creation desc',
+        ).then<InvoiceListResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getRecentPurchases(
+          company: company,
+        ).then<PurchaseInvoiceResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+      ]);
+
+      final response = results[0] as DashboardResponse;
+      final topSellingItemsRes = results[1] as TopSellingItemResponse?;
+      final latestOrdersRes = results[2] as InvoiceListResponse?;
+      final recentPurchasesRes = results[3] as PurchaseInvoiceResponse?;
+
       _cachedData = response;
-      _currentFilters = event.request;
+      _currentFilters = req;
       emit(
         DashboardLoaded(
           dashboardData: response,
-          currentFilters: event.request,
+          currentFilters: req,
+          topSellingItems: topSellingItemsRes?.data ?? [],
+          latestOrders: latestOrdersRes?.data,
+          recentPurchases: recentPurchasesRes?.data,
         ),
       );
     } catch (e) {
@@ -58,12 +101,47 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
     final request = _currentFilters ?? DashboardRequest();
     
     try {
-      final response = await dashboardRepo.getDashboardStats(request);
+      String company = request.company ?? '';
+      if (company.isEmpty) {
+        final storage = getIt<StorageService>();
+        final userString = await storage.getString('current_user');
+        if (userString != null) {
+          try {
+            final userRes = CurrentUserResponse.fromJson(jsonDecode(userString));
+            company = userRes.message.company.name;
+          } catch (_) {}
+        }
+      }
+      
+      final results = await Future.wait([
+        dashboardRepo.getDashboardStats(request),
+        if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
+          company: company,
+          warehouse: request.warehouse,
+          period: request.period,
+        ).then<TopSellingItemResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getLatestOrders(
+          company: company,
+          orderBy: 'creation desc',
+        ).then<InvoiceListResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getRecentPurchases(
+          company: company,
+        ).then<PurchaseInvoiceResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+      ]);
+
+      final response = results[0] as DashboardResponse;
+      final topSellingItemsRes = results[1] as TopSellingItemResponse?;
+      final latestOrdersRes = results[2] as InvoiceListResponse?;
+      final recentPurchasesRes = results[3] as PurchaseInvoiceResponse?;
+
       _cachedData = response;
       emit(
         DashboardLoaded(
           dashboardData: response,
           currentFilters: request,
+          topSellingItems: topSellingItemsRes?.data ?? [],
+          latestOrders: latestOrdersRes?.data,
+          recentPurchases: recentPurchasesRes?.data,
         ),
       );
     } catch (e) {
@@ -84,13 +162,49 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     emit(DashboardLoading());
     try {
-      final response = await dashboardRepo.getDashboardStats(event.newFilters);
+      final req = event.newFilters;
+      String company = req.company ?? '';
+      if (company.isEmpty) {
+        final storage = getIt<StorageService>();
+        final userString = await storage.getString('current_user');
+        if (userString != null) {
+          try {
+            final userRes = CurrentUserResponse.fromJson(jsonDecode(userString));
+            company = userRes.message.company.name;
+          } catch (_) {}
+        }
+      }
+
+      final results = await Future.wait([
+        dashboardRepo.getDashboardStats(req),
+        if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
+          company: company,
+          warehouse: req.warehouse,
+          period: req.period,
+        ) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getLatestOrders(
+          company: company,
+          orderBy: 'creation desc',
+        ) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getRecentPurchases(
+          company: company,
+        ) else Future.value(null),
+      ]);
+
+      final response = results[0] as DashboardResponse;
+      final topSellingItemsRes = results[1] as TopSellingItemResponse?;
+      final latestOrdersRes = results[2] as InvoiceListResponse?;
+      final recentPurchasesRes = results[3] as PurchaseInvoiceResponse?;
+
       _cachedData = response;
-      _currentFilters = event.newFilters;
+      _currentFilters = req;
       emit(
         DashboardLoaded(
           dashboardData: response,
-          currentFilters: event.newFilters,
+          currentFilters: req,
+          topSellingItems: topSellingItemsRes?.data ?? [],
+          latestOrders: latestOrdersRes?.data,
+          recentPurchases: recentPurchasesRes?.data,
         ),
       );
     } catch (e) {
@@ -111,15 +225,49 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
   ) async {
     emit(DashboardLoading());
     final defaultRequest = DashboardRequest();
-    
     try {
-      final response = await dashboardRepo.getDashboardStats(defaultRequest);
+      String company = defaultRequest.company ?? '';
+      if (company.isEmpty) {
+        final storage = getIt<StorageService>();
+        final userString = await storage.getString('current_user');
+        if (userString != null) {
+          try {
+            final userRes = CurrentUserResponse.fromJson(jsonDecode(userString));
+            company = userRes.message.company.name;
+          } catch (_) {}
+        }
+      }
+
+      final results = await Future.wait([
+        dashboardRepo.getDashboardStats(defaultRequest),
+        if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
+          company: company,
+          warehouse: defaultRequest.warehouse,
+          period: defaultRequest.period,
+        ).then<TopSellingItemResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getLatestOrders(
+          company: company,
+          orderBy: 'creation desc',
+        ).then<InvoiceListResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+        if (company.isNotEmpty) dashboardRepo.getRecentPurchases(
+          company: company,
+        ).then<PurchaseInvoiceResponse?>((v) => v).catchError((_) => null) else Future.value(null),
+      ]);
+
+      final response = results[0] as DashboardResponse;
+      final topSellingItemsRes = results[1] as TopSellingItemResponse?;
+      final latestOrdersRes = results[2] as InvoiceListResponse?;
+      final recentPurchasesRes = results[3] as PurchaseInvoiceResponse?;
+
       _cachedData = response;
       _currentFilters = defaultRequest;
       emit(
         DashboardLoaded(
           dashboardData: response,
           currentFilters: defaultRequest,
+          topSellingItems: topSellingItemsRes?.data ?? [],
+          latestOrders: latestOrdersRes?.data,
+          recentPurchases: recentPurchasesRes?.data,
         ),
       );
     } catch (e) {

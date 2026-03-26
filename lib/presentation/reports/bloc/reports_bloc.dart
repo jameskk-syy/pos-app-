@@ -6,6 +6,8 @@ import 'package:pos/domain/models/reports/sales_analytics_model.dart';
 import 'package:pos/domain/models/reports/stock_movement_model.dart';
 import 'package:pos/domain/models/reports/aging_stock_model.dart';
 import 'package:pos/domain/models/reports/accounting_reports_model.dart';
+import 'package:pos/domain/models/reports/product_sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/z_report_model.dart';
 import 'package:pos/domain/repository/reports_repo.dart';
 import 'package:pos/domain/requests/report_request.dart';
 
@@ -24,6 +26,8 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
     on<FetchAgingStock>(_onFetchAgingStock);
     on<FetchProfitAndLoss>(_onFetchProfitAndLoss);
     on<FetchInventorySummary>(_onFetchInventorySummary);
+    on<FetchProductSalesAnalytics>(_onFetchProductSalesAnalytics);
+    on<FetchZReport>(_onFetchZReport);
   }
 
   // ... existing handlers ...
@@ -40,6 +44,36 @@ class ReportsBloc extends Bloc<ReportsEvent, ReportsState> {
       emit(InventorySummaryLoaded(response));
     } catch (e) {
       //debugPrint('ReportsBloc Error: $e');
+      emit(ReportsError(e.toString()));
+    }
+  }
+
+  Future<void> _onFetchProductSalesAnalytics(
+    FetchProductSalesAnalytics event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(ReportsLoading());
+    try {
+      final response = await reportsRepo.getProductSalesAnalytics(
+        event.request,
+      );
+      emit(ProductSalesAnalyticsLoaded(response));
+    } catch (e) {
+      emit(ReportsError(e.toString()));
+    }
+  }
+
+  Future<void> _onFetchZReport(
+    FetchZReport event,
+    Emitter<ReportsState> emit,
+  ) async {
+    emit(ReportsLoading());
+    try {
+      final response = await reportsRepo.getZReport(
+        event.request,
+      );
+      emit(ZReportLoaded(response));
+    } catch (e) {
       emit(ReportsError(e.toString()));
     }
   }

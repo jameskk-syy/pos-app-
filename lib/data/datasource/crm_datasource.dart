@@ -1,4 +1,6 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
+// import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/requests/sales/create_customer.dart';
 import 'package:pos/domain/requests/sales/update_customer_request.dart';
@@ -279,14 +281,25 @@ class CrmRemoteDataSource extends BaseRemoteDataSource {
       }
 
       final data = response.data;
+      // debugPrint('Assign Loyalty Program Response: $data');
       if (data is! Map<String, dynamic>) {
         throw Exception('Invalid response format');
       }
 
-      return AssignLoyaltyProgramResponse.fromJson(data);
+      try {
+        return AssignLoyaltyProgramResponse.fromJson(data);
+      } catch (e, stack) {
+        if(kDebugMode){
+          debugPrint('Error parsing AssignLoyaltyProgramResponse: $e');
+          debugPrint('Stack trace: $stack');
+        }
+        rethrow;
+      }
     } on DioException catch (e) {
+      // debugPrint(getErrorMessage(e));
       throw Exception(getErrorMessage(e));
     } catch (e) {
+      // debugPrint(e.toString());
       rethrow;
     }
   }

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -189,6 +190,202 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  // ─── Searchable picker bottom sheet ──────────────────────────────────────
+  Future<T?> _showSearchableBottomSheet<T>({
+    required BuildContext context,
+    required String title,
+    required List<T> items,
+    required String Function(T) displayLabel,
+    required T? currentValue,
+    bool isProductSearch = false,
+  }) async {
+    final searchController = TextEditingController();
+    Timer? debounce;
+
+    return showModalBottomSheet<T>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return DraggableScrollableSheet(
+              expand: false,
+              initialChildSize: 0.6,
+              minChildSize: 0.4,
+              maxChildSize: 0.9,
+              builder: (_, scrollController) {
+                return Column(
+                  children: [
+                    const SizedBox(height: 8),
+                    Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    if (isProductSearch &&
+                                        currentUserResponse != null) {
+                                      context.read<ProductsBloc>().add(
+                                        GetAllProducts(
+                                          company: currentUserResponse!
+                                              .message
+                                              .company
+                                              .name,
+                                          searchTerm: '',
+                                        ),
+                                      );
+                                    }
+                                    setModalState(() {});
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (val) {
+                          if (debounce?.isActive ?? false) debounce!.cancel();
+                          debounce = Timer(
+                            const Duration(milliseconds: 500),
+                            () {
+                              if (isProductSearch &&
+                                  currentUserResponse != null) {
+                                context.read<ProductsBloc>().add(
+                                  GetAllProducts(
+                                    company: currentUserResponse!
+                                        .message
+                                        .company
+                                        .name,
+                                    searchTerm: val,
+                                  ),
+                                );
+                              }
+                            },
+                          );
+                          setModalState(() {});
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: BlocBuilder<ProductsBloc, ProductsState>(
+                        builder: (context, state) {
+                          if (isProductSearch &&
+                              state is ProductsStateLoading) {
+                            return const Center(
+                              child: CircularProgressIndicator(),
+                            );
+                          }
+
+                          List<T> displayItems = items;
+                          if (isProductSearch &&
+                              state is ProductsStateSuccess) {
+                            displayItems =
+                                state.productResponse.products as List<T>;
+                          } else if (!isProductSearch) {
+                            final query = searchController.text.toLowerCase();
+                            displayItems = items
+                                .where(
+                                  (item) => displayLabel(
+                                    item,
+                                  ).toLowerCase().contains(query),
+                                )
+                                .toList();
+                          }
+
+                          if (displayItems.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'No results found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          }
+
+                          return ListView.builder(
+                            controller: scrollController,
+                            itemCount: displayItems.length,
+                            itemBuilder: (context, index) {
+                              final item = displayItems[index];
+                              final isSelected = item == currentValue;
+
+                              return ListTile(
+                                title: Text(
+                                  displayLabel(item),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: isSelected
+                                        ? FontWeight.w600
+                                        : FontWeight.normal,
+                                    color: isSelected
+                                        ? Colors.blue[700]
+                                        : Colors.black87,
+                                  ),
+                                ),
+                                trailing: isSelected
+                                    ? Icon(
+                                        Icons.check,
+                                        color: Colors.blue[700],
+                                        size: 20,
+                                      )
+                                    : null,
+                                onTap: () => Navigator.pop(ctx, item),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
@@ -412,40 +609,53 @@ class _PurchaseOrderScreenState extends State<PurchaseOrderScreen> {
               ),
               child: BlocBuilder<ProductsBloc, ProductsState>(
                 builder: (context, state) {
-                  return DropdownButtonHideUnderline(
-                    child: DropdownButton<ProductItem>(
-                      isExpanded: true,
-                      style: const TextStyle(fontSize: 12),
-                      hint: Text(
-                        state is ProductsStateLoading
-                            ? 'Loading...'
-                            : _products.isEmpty
-                            ? 'No items'
-                            : 'Sel...',
-                        style: const TextStyle(fontSize: 12),
-                      ),
-                      value: item?.selectedProduct,
-                      items: _products.map((product) {
-                        return DropdownMenuItem<ProductItem>(
-                          value: product,
+                  return InkWell(
+                    onTap: state is ProductsStateLoading || _products.isEmpty
+                        ? null
+                        : () async {
+                            final selected =
+                                await _showSearchableBottomSheet<ProductItem>(
+                                  context: context,
+                                  title: 'Select Item',
+                                  items: _products,
+                                  displayLabel: (p) =>
+                                      '${p.itemCode} - ${p.itemName}',
+                                  currentValue: item?.selectedProduct,
+                                  isProductSearch: true,
+                                );
+
+                            if (selected != null) {
+                              setState(() {
+                                if (index == -1) {
+                                  final newItem = StockItem();
+                                  newItem.selectedProduct = selected;
+                                  newItem.itemCode = selected.itemCode;
+                                  items.add(newItem);
+                                } else if (item != null) {
+                                  item.selectedProduct = selected;
+                                  item.itemCode = selected.itemCode;
+                                }
+                              });
+                            }
+                          },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
                           child: Text(
-                            '${product.itemCode} - ${product.itemName}',
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: Colors.black,
-                            ),
+                            item?.selectedProduct != null
+                                ? '${item!.selectedProduct!.itemCode} - ${item.selectedProduct!.itemName}'
+                                : state is ProductsStateLoading
+                                ? 'Loading...'
+                                : _products.isEmpty
+                                ? 'No items'
+                                : 'Select Item',
+                            style: const TextStyle(fontSize: 12),
                             overflow: TextOverflow.ellipsis,
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (ProductItem? newValue) {
-                        if (index >= 0 && newValue != null) {
-                          setState(() {
-                            items[index].selectedProduct = newValue;
-                            items[index].itemCode = newValue.itemCode;
-                          });
-                        }
-                      },
+                        ),
+                        const Icon(Icons.arrow_drop_down, size: 20),
+                      ],
                     ),
                   );
                 },
