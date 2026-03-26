@@ -11,11 +11,17 @@ class DashboardLoaded extends DashboardState {
   final DashboardResponse dashboardData;
   final DashboardRequest currentFilters;
   final bool isFromCache;
+  final List<TopSellingItem> topSellingItems;
+  final List<InvoiceListItem>? latestOrders;
+  final List<PurchaseInvoiceData>? recentPurchases;
 
   DashboardLoaded({
     required this.dashboardData,
     required this.currentFilters,
     this.isFromCache = false,
+    this.topSellingItems = const [],
+    this.latestOrders,
+    this.recentPurchases,
   });
 }
 

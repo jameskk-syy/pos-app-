@@ -10,6 +10,7 @@ import 'package:pos/domain/models/pos_session_model.dart';
 import 'package:pos/domain/models/pos_opening_entry_model.dart';
 import 'package:pos/domain/requests/sales/dashboard_request.dart';
 import 'package:pos/domain/responses/sales/dashboard_response.dart';
+import 'package:pos/domain/models/top_selling_item_model.dart';
 import 'package:pos/core/services/storage_service.dart';
 
 class SalesRemoteDataSource extends BaseRemoteDataSource {
@@ -336,6 +337,7 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
     String? fromDate,
     String? toDate,
     String? status,
+    String? orderBy,
   }) async {
     try {
       final queryParams = {
@@ -347,6 +349,7 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
       if (fromDate != null) queryParams['from_date'] = fromDate;
       if (toDate != null) queryParams['to_date'] = toDate;
       if (status != null && status != 'All') queryParams['status'] = status;
+      if (orderBy != null) queryParams['order_by'] = orderBy;
 
       final response = await dio.get(
         'techsavanna_pos.api.sales_api.list_sales_invoices',
@@ -537,6 +540,45 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
       throw Exception(getErrorMessage(e));
     } catch (e) {
       rethrow;
+    }
+  }
+
+  Future<TopSellingItemResponse> getTopSellingItems({
+    required String company,
+    String? warehouse,
+    String? period,
+    int limit = 5,
+  }) async {
+    //debugPrint('Top Selling Items Request: $company, $warehouse, $period, $limit');
+    try {
+      final queryParams = {
+        'company': company,
+        'limit': limit.toString(),
+      };
+      if (warehouse != null) queryParams['warehouse'] = warehouse;
+      if (period != null) queryParams['period'] = period;
+
+      final response = await dio.get(
+        'techsavanna_pos.api.dashboard_api.get_top_selling_items',
+        queryParameters: queryParams,
+      );
+
+      //debugPrint('Top Selling Items Response: ${response.data}');
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data == null) {
+        throw Exception('Empty response from server');
+      }
+
+      return TopSellingItemResponse.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      throw Exception('Failed to get top selling items: $e');
     }
   }
 }

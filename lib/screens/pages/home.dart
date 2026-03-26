@@ -2,6 +2,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:pos/domain/requests/sales/dashboard_request.dart';
 import 'package:pos/domain/responses/sales/dashboard_response.dart';
@@ -13,6 +14,10 @@ import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/widgets/sales/sales_card.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/screens/pages/dashboard_sales_overview.dart';
+import 'package:pos/domain/models/top_selling_item_model.dart';
+import 'package:pos/domain/models/invoice_list_model.dart';
+import 'package:pos/domain/responses/purchase/purchase_invoice_response.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -94,6 +99,8 @@ class _HomePageState extends State<HomePage> {
                       const SizedBox(height: 22),
                       _buildMonthlySalesChart(context, state),
                       const SizedBox(height: 22),
+                      _buildSalesOverviewSection(w, state),
+                      const SizedBox(height: 22),
                       _buildSalesDueTable(state),
                       const SizedBox(height: 22),
                       _buildPurchasesDueTable(state),
@@ -111,6 +118,8 @@ class _HomePageState extends State<HomePage> {
                         cachedData: state.cachedData,
                       ),
                       const SizedBox(height: 22),
+                      _buildSalesOverviewSection(w, state),
+                      const SizedBox(height: 22),
                       _buildSalesDueTable(null, cachedData: state.cachedData),
                       const SizedBox(height: 22),
                       _buildPurchasesDueTable(
@@ -127,6 +136,7 @@ class _HomePageState extends State<HomePage> {
                         null,
                         cachedData: state.cachedData,
                       ),
+                    
                     ],
                   ],
                 ),
@@ -136,6 +146,43 @@ class _HomePageState extends State<HomePage> {
         ),
       ),
     );
+  }
+
+  Widget _buildSalesOverviewSection(double w, DashboardState state) {
+    if (state is! DashboardLoaded && state is! DashboardError) {
+      return const SizedBox();
+    }
+    
+    final topSellingItems = state is DashboardLoaded ? state.topSellingItems : <TopSellingItem>[];
+    final latestOrders = state is DashboardLoaded ? (state.latestOrders ?? []) : <InvoiceListItem>[];
+    final recentPurchases = state is DashboardLoaded ? (state.recentPurchases ?? []) : <PurchaseInvoiceData>[];
+
+    final widgets = [
+      DashboardSalesOverviewWidgets.buildTopSellingItems(context, topSellingItems),
+      DashboardSalesOverviewWidgets.buildLatestOrders(context, latestOrders.cast()),
+      DashboardSalesOverviewWidgets.buildRecentPurchases(context, recentPurchases.cast()),
+    ];
+
+    if (w < 800) {
+      // Mobile - 1 per row
+      return Column(
+        children: widgets.map((w) => Padding(
+          padding: const EdgeInsets.only(bottom: 16),
+          child: w,
+        )).toList(),
+      );
+    } else {
+      // Tablet/Desktop - 2 per row
+      return GridView.count(
+        crossAxisCount: 2,
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: w < 1100 ? 1.5 : 2.0,
+        children: widgets,
+      );
+    }
   }
 
   Widget _buildLoadingCards(double w) {
@@ -865,12 +912,7 @@ class _HomePageState extends State<HomePage> {
   }
 
   String _formatCurrency(double amount) {
-    if (amount >= 1000000) {
-      return "${(amount / 1000000).toStringAsFixed(2)}M";
-    } else if (amount >= 1000) {
-      return "${(amount / 1000).toStringAsFixed(1)}K";
-    }
-    return amount.toStringAsFixed(0);
+    return NumberFormat('#,##0.00').format(amount);
   }
 
   Widget _filters() {

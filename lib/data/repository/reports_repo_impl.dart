@@ -6,6 +6,8 @@ import 'package:pos/domain/models/reports/stock_movement_model.dart';
 import 'package:pos/domain/models/reports/aging_stock_model.dart';
 import 'package:pos/domain/models/reports/accounting_reports_model.dart';
 import 'package:pos/domain/models/reports/sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/product_sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/z_report_model.dart';
 import 'package:pos/domain/repository/reports_repo.dart';
 import 'package:pos/domain/requests/report_request.dart';
 
@@ -140,5 +142,17 @@ class ReportsRepoImpl implements ReportsRepo {
     ReportRequest request,
   ) async {
     return await remoteDataSource.getInventorySummaryReport(request);
+  }
+
+  @override
+  Future<ProductSalesAnalyticsResponse> getProductSalesAnalytics(
+    ReportRequest request,
+  ) async {
+    return await remoteDataSource.getProductSalesAnalyticsReport(request);
+  }
+
+  @override
+  Future<ZReportResponse> getZReport(ReportRequest request) async {
+    return await remoteDataSource.getZReport(request);
   }
 }

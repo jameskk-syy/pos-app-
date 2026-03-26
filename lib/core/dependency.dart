@@ -203,6 +203,7 @@ void setUp() {
   getIt.registerLazySingleton<DashboardRepo>(
     () => DashboardRepoImpl(
       remoteDataSource: getIt<SalesRemoteDataSource>(),
+      purchaseRemoteDataSource: getIt<PurchaseRemoteDataSource>(),
       connectivityService: getIt<ConnectivityService>(),
       localDataSource: getIt<LocalDataSource>(),
     ),

@@ -5,6 +5,8 @@ import 'package:pos/domain/models/reports/stock_movement_model.dart';
 import 'package:pos/domain/models/reports/aging_stock_model.dart';
 import 'package:pos/domain/models/reports/accounting_reports_model.dart';
 import 'package:pos/domain/models/reports/inventory_summary_model.dart';
+import 'package:pos/domain/models/reports/product_sales_analytics_model.dart';
+import 'package:pos/domain/models/reports/z_report_model.dart';
 import 'package:pos/domain/requests/report_request.dart';
 
 abstract class ReportsRepo {
@@ -67,4 +69,10 @@ abstract class ReportsRepo {
   Future<InventorySummaryResponse> getInventorySummaryReport(
     ReportRequest request,
   );
+
+  Future<ProductSalesAnalyticsResponse> getProductSalesAnalytics(
+    ReportRequest request,
+  );
+
+  Future<ZReportResponse> getZReport(ReportRequest request);
 }

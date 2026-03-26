@@ -10,6 +10,7 @@ import 'package:pos/screens/reports/widgets/stock_movement_tab.dart';
 import 'package:pos/screens/reports/widgets/aging_stock_tab.dart';
 import 'package:pos/screens/reports/widgets/profit_and_loss_tab.dart';
 import 'package:pos/screens/reports/widgets/inventory_summary_tab.dart';
+import 'package:pos/screens/reports/widgets/pos_analytics_tab.dart';
 
 class ReportsDashboardPage extends StatelessWidget {
   const ReportsDashboardPage({super.key});
@@ -19,7 +20,7 @@ class ReportsDashboardPage extends StatelessWidget {
     return BlocProvider(
       create: (_) => ReportsBloc(reportsRepo: getIt()),
       child: DefaultTabController(
-        length: 7,
+        length: 8,
         child: Scaffold(
           backgroundColor: Theme.of(context).brightness == Brightness.dark
               ? const Color(0xFF121212)
@@ -38,6 +39,7 @@ class ReportsDashboardPage extends StatelessWidget {
                 Tab(text: 'Performance'),
                 Tab(text: 'Aging Stock'),
                 Tab(text: 'Accounting'),
+                Tab(text: 'POS Analytics'),
               ],
             ),
           ),
@@ -50,6 +52,7 @@ class ReportsDashboardPage extends StatelessWidget {
               PerformanceMetricsTab(key: ValueKey('Performance')),
               AgingStockTab(key: ValueKey('Aging')),
               ProfitAndLossTab(key: ValueKey('Accounting')),
+              PosAnalyticsTab(key: ValueKey('PosAnalytics')),
             ],
           ),
         ),

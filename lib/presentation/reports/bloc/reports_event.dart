@@ -37,3 +37,13 @@ class FetchInventorySummary extends ReportsEvent {
   final ReportRequest request;
   FetchInventorySummary(this.request);
 }
+
+class FetchProductSalesAnalytics extends ReportsEvent {
+  final ReportRequest request;
+  FetchProductSalesAnalytics(this.request);
+}
+
+class FetchZReport extends ReportsEvent {
+  final ReportRequest request;
+  FetchZReport(this.request);
+}
