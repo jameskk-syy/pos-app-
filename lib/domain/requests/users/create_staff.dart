@@ -9,6 +9,7 @@ class StaffUserRequest {
   final bool enabled;
   final bool sendWelcomeEmail;
   final String company;
+  final List<String>? billers;
 
   StaffUserRequest({
     required this.email,
@@ -20,6 +21,7 @@ class StaffUserRequest {
     this.enabled = true,
     this.sendWelcomeEmail = false,
     required this.company,
+    this.billers,
   });
 
   // Convert to JSON for API request
@@ -34,6 +36,7 @@ class StaffUserRequest {
       'enabled': enabled,
       'send_welcome_email': sendWelcomeEmail,
       'company': company,
+      if (billers != null) 'billers': billers,
     };
   }
 
@@ -49,6 +52,7 @@ class StaffUserRequest {
       enabled: json['enabled'] ?? true,
       sendWelcomeEmail: json['send_welcome_email'] ?? false,
       company: json['company'],
+      billers: json['billers'] != null ? List<String>.from(json['billers']) : null,
     );
   }
 
@@ -63,6 +67,7 @@ class StaffUserRequest {
     bool? enabled,
     bool? sendWelcomeEmail,
     String? company,
+    List<String>? billers,
   }) {
     return StaffUserRequest(
       email: email ?? this.email,
@@ -74,6 +79,7 @@ class StaffUserRequest {
       enabled: enabled ?? this.enabled,
       sendWelcomeEmail: sendWelcomeEmail ?? this.sendWelcomeEmail,
       company: company ?? this.company,
+      billers: billers ?? this.billers,
     );
   }
 }

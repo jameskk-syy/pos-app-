@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+//import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/models/stock_ledger_entry.dart';
 import 'package:pos/domain/requests/inventory/add_stock_take_request.dart';
@@ -448,6 +449,9 @@ class InventoryRemoteDataSource extends BaseRemoteDataSource {
   }
 
   Future<ReceiveStockResponse> receiveStock(ReceiveStockRequest request) async {
+    if(kDebugMode){
+      debugPrint(request.toJson().toString());
+    }
     try {
       final response = await dio.post(
         'techsavanna_pos.api.stock.receive_stock_destination',
@@ -472,8 +476,14 @@ class InventoryRemoteDataSource extends BaseRemoteDataSource {
 
       return ReceiveStockResponse.fromJson(data);
     } on DioException catch (e) {
+      if (kDebugMode) {
+        debugPrint(e.response?.data.toString());
+      }
       throw Exception(getErrorMessage(e));
     } catch (e) {
+      if (kDebugMode) {
+        debugPrint(e.toString());
+      }
       rethrow;
     }
   }
