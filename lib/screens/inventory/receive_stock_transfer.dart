@@ -89,6 +89,7 @@ class _StockReceiveStockScreenState extends State<StockReceiveStockScreen> {
 
   Future<void> _handleReceive(
     String requestId,
+    String sourceWarehouse,
     String destinationWarehouse,
   ) async {
     bool hasInvalidQty = _items.any(
@@ -125,12 +126,14 @@ class _StockReceiveStockScreenState extends State<StockReceiveStockScreen> {
 
     final receiveRequest = ReceiveStockRequest(
       requestId: requestId,
+      sourceWarehouse: sourceWarehouse,
       destinationWarehouse: destinationWarehouse,
       items: _items
           .map(
             (item) => ReceiveStockItem(
               itemCode: item['item_code'],
               receivedQty: item['received_qty'],
+              sWarehouse: sourceWarehouse,
             ),
           )
           .toList(),
@@ -663,6 +666,7 @@ class _StockReceiveStockScreenState extends State<StockReceiveStockScreen> {
                           ? null
                           : () => _handleReceive(
                               data.name,
+                              data.originWarehouse,
                               data.destinationWarehouse,
                             ),
                       style: ElevatedButton.styleFrom(

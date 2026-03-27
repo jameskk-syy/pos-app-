@@ -19,6 +19,7 @@ import 'package:pos/screens/reports/reports_dashboard.dart';
 import 'package:pos/screens/users/role.dart';
 import 'package:pos/screens/sales/settings.dart';
 import 'package:pos/screens/sales/store_dashboard.dart';
+import 'package:pos/screens/biller/biller_management_page.dart';
 import 'package:pos/screens/suppliers/suppliers_dashboard.dart';
 import 'package:pos/screens/audit/audit_trail_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
@@ -26,6 +27,7 @@ import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/widgets/users/logout_confirmation_dialog.dart';
 import 'package:pos/widgets/inventory/warehouse_selector.dart';
+import 'package:pos/widgets/biller/biller_switcher.dart';
 
 import 'package:pos/screens/sales/sales_dashboard.dart';
 
@@ -180,17 +182,23 @@ class _DashboardPageState extends State<DashboardPage> {
       'pageIndex': 11,
     },
     {
+      'icon': Icons.business_outlined,
+      'title': 'Branches / Billers',
+      'roles': [UserRole.systemManager],
+      'pageIndex': 15,
+    },
+    {
       'icon': Icons.history,
       'title': 'Audit Trail',
       'roles': [UserRole.auditor, UserRole.systemManager],
-      'pageIndex': 15,
+      'pageIndex': 16,
     },
 
     {
       'icon': Icons.logout,
       'title': 'Logout',
-      'roles': <UserRole>[], // Everyone
-      'pageIndex': -1, // Custom action
+      'roles': <UserRole>[],
+      'pageIndex': -1,
     },
   ];
 
@@ -230,6 +238,7 @@ class _DashboardPageState extends State<DashboardPage> {
       _ResponsiveWrapper(child: const InvoicesPage()),
       _ResponsiveWrapper(child: const PosOpeningEntriesPage()),
       _ResponsiveWrapper(child: const SalesDashboard()),
+      _ResponsiveWrapper(child: const BillerManagementPage()),
       _ResponsiveWrapper(child: const AuditTrailScreen()),
     ];
   }
@@ -436,6 +445,8 @@ class _DashboardPageState extends State<DashboardPage> {
             title: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                const BillerSwitcher(),
+                const SizedBox(width: 12),
                 const WarehouseSelector(),
                 const SizedBox(width: 12),
                 Icon(Icons.notifications_active),

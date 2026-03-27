@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 // import 'package:flutter/material.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/models/invoice_model.dart';
@@ -162,11 +163,11 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
 
       return invoiceResponse;
     } on DioException catch (e) {
-      // debugPrint('Dio Error: ${e.type} - ${e.message}');
+      debugPrint('Dio Error: ${e.type} - ${e.message}');
       throw Exception(getErrorMessage(e));
-    } catch (e) {
-      // debugPrint('Unexpected error: $e');
-      // debugPrint('Stack trace: $stackTrace');
+    } catch (e, stackTrace) {
+      debugPrint('Unexpected error: $e');
+      debugPrint('Stack trace: $stackTrace');
       rethrow;
     }
   }

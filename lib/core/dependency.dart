@@ -18,6 +18,7 @@ import 'package:pos/data/datasource/purchase_remote_datasource.dart';
 import 'package:pos/data/datasource/store_remote_datasource.dart';
 import 'package:pos/data/datasource/reports_remote_datasource.dart';
 import 'package:pos/data/datasource/audit_remote_datasource.dart';
+import 'package:pos/data/datasource/biller_remote_datasource.dart';
 import 'package:pos/data/repository/authenticating_user_impl.dart';
 import 'package:pos/data/repository/crm_repo_impl.dart';
 import 'package:pos/data/repository/dasboard_repo_impl.dart';
@@ -34,6 +35,7 @@ import 'package:pos/data/repository/suppliers_repo_impl.dart';
 import 'package:pos/data/repository/user_list_repo_impl.dart';
 import 'package:pos/data/repository/audit_repository_impl.dart';
 import 'package:pos/data/repository/user_register_repo_impl.dart';
+import 'package:pos/data/repository/biller_repo_impl.dart';
 import 'package:pos/domain/repository/abstract_sales_repository.dart';
 import 'package:pos/domain/repository/authenticating_user_repo.dart';
 import 'package:pos/domain/repository/crm_repo.dart';
@@ -50,11 +52,13 @@ import 'package:pos/domain/repository/store_repo.dart';
 import 'package:pos/domain/repository/audit_repository.dart';
 import 'package:pos/domain/repository/suppliers_repo.dart';
 import 'package:pos/domain/repository/users_repo.dart';
+import 'package:pos/domain/repository/biller_repo.dart';
 import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/presentation/dashboard/bloc/dashboard_bloc.dart';
 import 'package:pos/presentation/industries/bloc/industries_bloc.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/audit/bloc/audit_bloc.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 import 'package:pos/presentation/posProfile/bloc/pos_profile_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
@@ -168,6 +172,10 @@ void setUp() {
     () => AuditRemoteDataSource(getIt<Dio>()),
   );
 
+  getIt.registerLazySingleton<BillerRemoteDatasource>(
+    () => BillerRemoteDatasource(getIt<Dio>()),
+  );
+
   getIt.registerLazySingleton<ProductsRepo>(
     () => ProductsRepoImpl(
       productsRemoteDataSource: getIt<ProductsRemoteDataSource>(),
@@ -238,9 +246,14 @@ void setUp() {
     () => AuditRepositoryImpl(remoteDataSource: getIt<AuditRemoteDataSource>()),
   );
 
+  getIt.registerLazySingleton<BillerRepo>(
+    () => BillerRepoImpl(remoteDataSource: getIt<BillerRemoteDatasource>()),
+  );
+
   // Blocs
   getIt.registerFactory(() => RegisterBloc(registerRepository: getIt()));
   getIt.registerFactory(() => LoginBloc(authenticateUserRepo: getIt()));
+  getIt.registerFactory(() => BillerBloc(billerRepo: getIt()));
   getIt.registerFactory(() => StaffBloc(userListRepo: getIt()));
   getIt.registerFactory(() => CrmBloc(crmRepo: getIt()));
   getIt.registerFactory(() => StoreBloc(storeRepo: getIt()));

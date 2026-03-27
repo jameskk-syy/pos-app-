@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/services/biometric_service.dart';
@@ -7,6 +8,10 @@ import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/sales/dashboard.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/presentation/widgets/custom_text_field.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
+import 'package:pos/widgets/biller/biller_selector_sheet.dart';
+import 'package:pos/domain/requests/biller/biller_requests.dart';
+import 'dart:convert';
 
 class LockScreen extends StatefulWidget {
   const LockScreen({super.key});
@@ -45,9 +50,7 @@ class _LockScreenState extends State<LockScreen> {
     final authenticated = await _biometricService.authenticate();
     if (authenticated && _storedPassword != null) {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardPage()),
-        );
+        await _handlePostLoginNavigation();
       }
     }
   }
@@ -67,9 +70,7 @@ class _LockScreenState extends State<LockScreen> {
 
     if (_passwordController.text == _storedPassword) {
       if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => const DashboardPage()),
-        );
+        await _handlePostLoginNavigation();
       }
     } else {
       if (mounted) {
@@ -85,6 +86,68 @@ class _LockScreenState extends State<LockScreen> {
 
     if (mounted) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _handlePostLoginNavigation() async {
+    setState(() => _isLoading = true);
+    try {
+      final billerBloc = context.read<BillerBloc>();
+      billerBloc.add(GetUserContext());
+
+      final state = await billerBloc.stream.firstWhere(
+        (s) => s is UserContextLoaded || s is UserContextError
+      );
+
+      if (state is UserContextError) {
+        throw Exception(state.message);
+      }
+
+      final contextData = (state as UserContextLoaded).response.data;
+      final storage = getIt<StorageService>();
+      await storage.setString('user_context', jsonEncode(contextData));
+
+      if (contextData.allowedBillers.length > 1) {
+        if (mounted) {
+          setState(() => _isLoading = false);
+          BillerSelectorSheet.show(
+            context,
+            allowedBillers: contextData.allowedBillers,
+            currentActiveBiller: contextData.activeBiller,
+            isDismissible: false,
+          );
+        }
+      } else {
+        if (contextData.allowedBillers.isNotEmpty) {
+          final biller = contextData.allowedBillers.first;
+          billerBloc.add(SetActiveBiller(SetActiveBillerRequest(billerName: biller.name)));
+          await billerBloc.stream.firstWhere((s) => s is SetActiveBillerSuccess || s is SetActiveBillerError);
+          
+          billerBloc.add(GetBillerDetails(GetBillerDetailsRequest(billerName: biller.name)));
+          final detailState = await billerBloc.stream.firstWhere((s) => s is BillerDetailsLoaded || s is BillerDetailsError);
+          
+          await storage.setString('active_biller', jsonEncode(biller.toJson()));
+          if (detailState is BillerDetailsLoaded) {
+            await storage.setString('active_biller_details', jsonEncode(detailState.response.data.toJson()));
+          }
+        }
+        
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (_) => const DashboardPage()),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error fetching context: $e')),
+        );
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const DashboardPage()),
+        );
+      }
     }
   }
 

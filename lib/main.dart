@@ -29,6 +29,7 @@ import 'package:pos/presentation/grn/bloc/grn_bloc.dart';
 import 'package:pos/presentation/invoices/bloc/invoices_bloc.dart';
 import 'package:pos/presentation/categories/bloc/categories_bloc.dart';
 import 'package:pos/presentation/sales/bloc/pos_opening_entries_bloc.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
 import 'package:pos/utils/themes/app_theme.dart';
 import 'package:pos/widgets/connectivity_wrapper.dart';
 import 'package:pos/widgets/security_wrapper.dart';
@@ -100,6 +101,7 @@ class MyApp extends StatelessWidget {
         BlocProvider<PosOpeningEntriesBloc>(
           create: (_) => getIt<PosOpeningEntriesBloc>(),
         ),
+        BlocProvider<BillerBloc>(create: (_) => getIt<BillerBloc>()),
         BlocProvider<CategoriesBloc>(create: (_) => getIt<CategoriesBloc>()),
         // add other blocs here if needed
       ],

@@ -8,6 +8,9 @@ import 'package:pos/domain/responses/users/get_current_user.dart';
 import 'package:pos/domain/responses/users/role_response.dart';
 import 'package:pos/domain/responses/users/users_list.dart';
 import 'package:pos/presentation/usersBloc/bloc/staff_bloc.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
+import 'package:pos/domain/requests/biller/biller_requests.dart';
+import 'package:pos/domain/models/biller_models.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/widgets/users/edit_staff.dart';
 
@@ -36,6 +39,8 @@ class _RegisterStaffState extends State<RegisterStaff> {
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   List<String> _selectedRoles = [];
+  List<BillerProfile> _availableBillers = [];
+  List<String> _selectedBillers = [];
   bool _isEnabled = true;
   bool _sendWelcomeEmail = false;
   CurrentUserResponse? currentUserResponse;
@@ -59,6 +64,7 @@ class _RegisterStaffState extends State<RegisterStaff> {
       _loadCurrentUser();
       // Fetch roles on init
       context.read<StaffBloc>().add(GetUserRoles());
+      context.read<BillerBloc>().add(ListBillers(ListBillersRequest(limit: 100)));
     });
   }
 
@@ -195,7 +201,7 @@ class _RegisterStaffState extends State<RegisterStaff> {
               availableRolesList = state.response.message.roles;
             });
           }
-          // Handle failures
+            // Handle failures
           else if (state is StaffStateFailure) {
             setState(() {
               _isLoading = false;
@@ -209,10 +215,19 @@ class _RegisterStaffState extends State<RegisterStaff> {
             );
           }
         },
-        child: Container(
-          color: const Color(0xFFF6F8FB),
-          padding: const EdgeInsets.all(16),
-          child: _showCreateStaff ? _createStaffUI() : _usersListUI(),
+        child: BlocListener<BillerBloc, BillerState>(
+          listener: (context, state) {
+            if (state is ListBillersLoaded) {
+              setState(() {
+                _availableBillers = state.response.billers;
+              });
+            }
+          },
+          child: Container(
+            color: const Color(0xFFF6F8FB),
+            padding: const EdgeInsets.all(16),
+            child: _showCreateStaff ? _createStaffUI() : _usersListUI(),
+          ),
         ),
       ),
     );
@@ -847,6 +862,39 @@ class _RegisterStaffState extends State<RegisterStaff> {
                               ),
                             ],
                           ),
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: InkWell(
+                                  onTap: () async {
+                                    final billerNames = _availableBillers.map((b) => b.name).toList();
+                                    await _showMultiSelectBillersDialog(billerNames);
+                                  },
+                                  child: InputDecorator(
+                                    decoration: InputDecoration(
+                                      labelText: 'Assigned Branches',
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    child: Text(
+                                      _selectedBillers.isEmpty
+                                          ? 'Choose branches'
+                                          : _selectedBillers.join(', '),
+                                      style: TextStyle(
+                                        color: _selectedBillers.isEmpty
+                                            ? Colors.grey.shade600
+                                            : Colors.black,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Expanded(child: SizedBox()), // spacer to keep widths uniform
+                            ],
+                          ),
                           const SizedBox(height: 16),
                           togglesRow,
                           const SizedBox(height: 24),
@@ -944,6 +992,31 @@ class _RegisterStaffState extends State<RegisterStaff> {
                                   : _selectedRoles.join(', '),
                               style: TextStyle(
                                 color: _selectedRoles.isEmpty
+                                    ? Colors.grey.shade600
+                                    : Colors.black,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        InkWell(
+                          onTap: () async {
+                            final billerNames = _availableBillers.map((b) => b.name).toList();
+                            await _showMultiSelectBillersDialog(billerNames);
+                          },
+                          child: InputDecorator(
+                            decoration: InputDecoration(
+                              labelText: 'Assigned Branches',
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                            ),
+                            child: Text(
+                              _selectedBillers.isEmpty
+                                  ? 'Choose branches'
+                                  : _selectedBillers.join(', '),
+                              style: TextStyle(
+                                color: _selectedBillers.isEmpty
                                     ? Colors.grey.shade600
                                     : Colors.black,
                               ),
@@ -1150,6 +1223,182 @@ class _RegisterStaffState extends State<RegisterStaff> {
     rolesSearchController.dispose();
   }
 
+  Future<void> _showMultiSelectBillersDialog(List<String> availableBillers) async {
+    final List<String> tempSelectedBillers = List.from(_selectedBillers);
+    final TextEditingController searchController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final screenHeight = MediaQuery.of(context).size.height;
+        final isMobile = screenWidth < 600;
+
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final query = searchController.text.toLowerCase();
+            final filtered = query.isEmpty
+                ? availableBillers
+                : availableBillers
+                      .where((b) => b.toLowerCase().contains(query))
+                      .toList();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              insetPadding: isMobile
+                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 24)
+                  : const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: isMobile ? screenWidth : 520,
+                  maxHeight: screenHeight * (isMobile ? 0.75 : 0.65),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
+                      child: Row(
+                        children: [
+                          const Expanded(
+                            child: Text(
+                              'Select Allowed Branches',
+                              style: TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 20),
+                            onPressed: () => Navigator.of(context).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: false,
+                        decoration: InputDecoration(
+                          hintText: 'Search branches...',
+                          prefixIcon: const Icon(Icons.search, size: 20),
+                          suffixIcon: searchController.text.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.clear, size: 18),
+                                  onPressed: () {
+                                    searchController.clear();
+                                    setDialogState(() {});
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: Colors.grey[100],
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        onChanged: (_) => setDialogState(() {}),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Divider(height: 1),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? const Center(
+                              child: Text(
+                                'No branches found',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            )
+                          : ListView.builder(
+                              shrinkWrap: true,
+                              itemCount: filtered.length,
+                              itemBuilder: (_, index) {
+                                final biller = filtered[index];
+                                final isChecked = tempSelectedBillers.contains(biller);
+                                return CheckboxListTile(
+                                  value: isChecked,
+                                  title: Text(
+                                    biller,
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: isChecked
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                    ),
+                                  ),
+                                  activeColor: Colors.blue,
+                                  controlAffinity: ListTileControlAffinity.leading,
+                                  onChanged: (checked) {
+                                    setDialogState(() {
+                                      if (checked == true) {
+                                        tempSelectedBillers.add(biller);
+                                      } else {
+                                        tempSelectedBillers.remove(biller);
+                                      }
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                    ),
+                    const Divider(height: 1),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pop(),
+                            child: const Text('Cancel'),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            onPressed: () {
+                              setState(() {
+                                _selectedBillers = tempSelectedBillers;
+                              });
+                              Navigator.of(context).pop();
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.blue,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Text(
+                              'Confirm',
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+
+    searchController.dispose();
+  }
+
   void _createStaffUser(BuildContext context) {
     if (_firstNameController.text.isEmpty ||
         _lastNameController.text.isEmpty ||
@@ -1178,6 +1427,7 @@ class _RegisterStaffState extends State<RegisterStaff> {
       enabled: _isEnabled,
       sendWelcomeEmail: _sendWelcomeEmail,
       company: currentUserResponse!.message.company.companyName,
+      billers: _selectedBillers.isNotEmpty ? _selectedBillers : null,
     );
 
     context.read<StaffBloc>().add(
@@ -1192,6 +1442,7 @@ class _RegisterStaffState extends State<RegisterStaff> {
     _phoneController.clear();
     _passwordController.clear();
     _selectedRoles.clear();
+    _selectedBillers.clear();
     _isEnabled = true;
     _sendWelcomeEmail = false;
   }
