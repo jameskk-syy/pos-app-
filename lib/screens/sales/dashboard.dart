@@ -27,6 +27,9 @@ import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/widgets/users/logout_confirmation_dialog.dart';
 import 'package:pos/widgets/inventory/warehouse_selector.dart';
+import 'package:pos/domain/requests/biller/biller_requests.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
+import 'package:pos/widgets/biller/biller_selector_sheet.dart';
 import 'package:pos/widgets/biller/biller_switcher.dart';
 
 import 'package:pos/screens/sales/sales_dashboard.dart';
@@ -222,6 +225,9 @@ class _DashboardPageState extends State<DashboardPage> {
   void initState() {
     super.initState();
     _loadUserRoles();
+    _initializeBillerContext();
+    // Re-check inventory notifications
+    // context.read<InventoryBloc>().add(GetLowStockAlerts());
     pages = [
       _ResponsiveWrapper(child: const HomePage()),
       _ResponsiveWrapper(child: const ProductsDashboard()),
@@ -241,6 +247,66 @@ class _DashboardPageState extends State<DashboardPage> {
       _ResponsiveWrapper(child: const BillerManagementPage()),
       _ResponsiveWrapper(child: const AuditTrailScreen()),
     ];
+  }
+
+  Future<void> _initializeBillerContext() async {
+    final storage = getIt<StorageService>();
+    final activeBillerJson = await storage.getString('active_biller');
+
+    if (activeBillerJson == null) {
+      if (!mounted) return;
+      try {
+        final billerBloc = context.read<BillerBloc>();
+        billerBloc.add(GetUserContext());
+
+        final state = await billerBloc.stream.firstWhere(
+          (s) => s is UserContextLoaded || s is UserContextError,
+        );
+
+        if (state is UserContextError) return;
+
+        final contextData = (state as UserContextLoaded).response.data;
+        await storage.setString('user_context', jsonEncode(contextData));
+
+        if (!mounted) return;
+
+        if (contextData.allowedBillers.length > 1) {
+          BillerSelectorSheet.show(
+            context,
+            allowedBillers: contextData.allowedBillers,
+            currentActiveBiller: contextData.activeBiller,
+            isDismissible: false,
+          );
+        } else if (contextData.allowedBillers.isNotEmpty) {
+          final biller = contextData.allowedBillers.first;
+          billerBloc.add(
+            SetActiveBiller(SetActiveBillerRequest(billerName: biller.name)),
+          );
+          await billerBloc.stream.firstWhere(
+            (s) => s is SetActiveBillerSuccess || s is SetActiveBillerError,
+          );
+
+          billerBloc.add(
+            GetBillerDetails(GetBillerDetailsRequest(billerName: biller.name)),
+          );
+          final detailState = await billerBloc.stream.firstWhere(
+            (s) => s is BillerDetailsLoaded || s is BillerDetailsError,
+          );
+
+          await storage.setString('active_biller', jsonEncode(biller.toJson()));
+          if (detailState is BillerDetailsLoaded) {
+            await storage.setString(
+              'active_biller_details',
+              jsonEncode(detailState.response.data.toJson()),
+            );
+          }
+          // Refresh the UI to show the dropdown
+          setState(() {});
+        }
+      } catch (e) {
+        debugPrint('Biller auto-init error: $e');
+      }
+    }
   }
 
   InventoryPage getInventoryPage(String title) {
@@ -442,14 +508,26 @@ class _DashboardPageState extends State<DashboardPage> {
                       _scaffoldKey.currentState?.openDrawer();
                     },
                   ),
-            title: const Row(
+            title: Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                Flexible(child: BillerSwitcher()),
-                SizedBox(width: 12),
-                Flexible(child: WarehouseSelector()),
-                SizedBox(width: 12),
-                Icon(Icons.notifications_active),
+                Expanded(
+                  flex: 3,
+                  child: Container(
+                    alignment: Alignment.centerRight,
+                    child: const BillerSwitcher(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 2,
+                  child: Container(
+                    alignment: Alignment.centerRight,
+                    child: const WarehouseSelector(),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                const Icon(Icons.notifications_active, color: Colors.black87),
               ],
             ),
           ),
