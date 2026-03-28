@@ -12,6 +12,7 @@ import 'package:pos/screens/purchase/purchase_order_details.dart';
 import 'package:pos/presentation/suppliers/bloc/suppliers_bloc.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/screens/purchase/create_purchase_return_dialog.dart';
 
 class ResponsiveHelper {
   static bool isMobile(BuildContext context) =>
@@ -52,6 +53,8 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   String company = '';
   final TextEditingController _searchController = TextEditingController();
   Timer? _searchDebounce;
+  bool _isWaitingForReturn = false;
+  bool _isLoadingShown = false;
 
   @override
   void initState() {
@@ -157,11 +160,43 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             ),
           ),
-          const SizedBox(width: 16),
         ],
       ),
-      body: Column(
-        children: [
+      body: BlocListener<PurchaseBloc, PurchaseState>(
+        listener: (context, state) {
+          if (state is PurchaseOrderDetailLoaded && _isWaitingForReturn) {
+            _isWaitingForReturn = false;
+            // Hide loading if any
+            if (Navigator.canPop(context) && _isLoadingShown) {
+              Navigator.pop(context);
+              _isLoadingShown = false;
+            }
+            CreatePurchaseReturnDialog.show(context, state.response.purchaseOrder);
+          } else if (state is PurchaseOrderDetailError && _isWaitingForReturn) {
+            _isWaitingForReturn = false;
+            if (Navigator.canPop(context) && _isLoadingShown) {
+              Navigator.pop(context);
+              _isLoadingShown = false;
+            }
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          } else if (state is PurchaseReturnCreated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Purchase return created successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _loadPurchaseOrders();
+          } else if (state is PurchaseReturnError) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(state.message), backgroundColor: Colors.red),
+            );
+          }
+        },
+        child: Column(
+          children: [
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
@@ -292,8 +327,10 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildPurchaseTable(List<PurchaseOrder> orders) {
     final isMobile = ResponsiveHelper.isMobile(context);
@@ -1180,12 +1217,16 @@ class _PurchaseOrdersPageState extends State<PurchaseOrdersPage> {
   void _printOrder(PurchaseOrder order) {}
 
   void _createReturn(PurchaseOrder order) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Create Return for ${order.poNumber}'),
-        backgroundColor: Colors.orange,
-      ),
+    _isWaitingForReturn = true;
+    _isLoadingShown = true;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(child: CircularProgressIndicator()),
     );
+    context.read<PurchaseBloc>().add(
+          FetchPurchaseOrderDetailEvent(poName: order.poNumber),
+        );
   }
 
   void _createGRN(PurchaseOrder order) {

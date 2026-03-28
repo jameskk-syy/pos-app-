@@ -103,7 +103,6 @@ class MyApp extends StatelessWidget {
         ),
         BlocProvider<BillerBloc>(create: (_) => getIt<BillerBloc>()),
         BlocProvider<CategoriesBloc>(create: (_) => getIt<CategoriesBloc>()),
-        // add other blocs here if needed
       ],
       child: SecurityWrapper(
         child: ConnectivityWrapper(

@@ -140,7 +140,12 @@ class BillerRemoteDatasource extends BaseRemoteDataSource {
         debugPrint('RAW BILLER LIST: ${message.toString()}');
       }
 
-      return ListBillersResponse.fromJson(message);
+      final responseModel = ListBillersResponse.fromJson(message);
+      if (!responseModel.success) {
+        throw Exception(message['message']?.toString() ?? 'Failed to fetch billers');
+      }
+
+      return responseModel;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint(e.response?.data?.toString());
@@ -163,6 +168,9 @@ class BillerRemoteDatasource extends BaseRemoteDataSource {
       }
 
       final data = response.data;
+      if(kDebugMode){
+        debugPrint(" your create biller data is : ${data.toString()}");
+      }
       if (data is! Map<String, dynamic>) {
         throw Exception('Invalid response format');
       }
@@ -172,7 +180,12 @@ class BillerRemoteDatasource extends BaseRemoteDataSource {
         throw Exception('Missing message in response');
       }
 
-      return CreateBillerResponse.fromJson(message);
+      final responseModel = CreateBillerResponse.fromJson(message);
+      if (!responseModel.success) {
+        throw Exception(message['message']?.toString() ?? 'Failed to create branch');
+      }
+
+      return responseModel;
     } on DioException catch (e) {
       if (kDebugMode) {
         debugPrint(e.response?.data?.toString());

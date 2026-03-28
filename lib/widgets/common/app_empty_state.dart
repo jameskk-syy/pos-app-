@@ -6,6 +6,8 @@ import 'app_button.dart';
 class AppEmptyState extends StatelessWidget {
   final String? title;
   final String? subtitle;
+  final String? message;
+  final IconData? icon;
   final String? buttonText;
   final VoidCallback? onTapButton;
 
@@ -13,6 +15,8 @@ class AppEmptyState extends StatelessWidget {
     super.key,
     this.title,
     this.subtitle,
+    this.message,
+    this.icon,
     this.buttonText,
     this.onTapButton,
   });
@@ -26,7 +30,7 @@ class AppEmptyState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
-              Icons.dashboard_rounded,
+              icon ?? Icons.dashboard_rounded,
               size: 80,
               color: Theme.of(context).colorScheme.outlineVariant,
             ),
@@ -41,7 +45,7 @@ class AppEmptyState extends StatelessWidget {
             ),
             const SizedBox(height: AppSizes.padding / 2),
             Text(
-              subtitle ?? '',
+              message ?? subtitle ?? '',
               textAlign: TextAlign.center,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                 color: Theme.of(context).colorScheme.outline,

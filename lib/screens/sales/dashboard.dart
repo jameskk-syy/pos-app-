@@ -442,13 +442,13 @@ class _DashboardPageState extends State<DashboardPage> {
                       _scaffoldKey.currentState?.openDrawer();
                     },
                   ),
-            title: Row(
+            title: const Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                const BillerSwitcher(),
-                const SizedBox(width: 12),
-                const WarehouseSelector(),
-                const SizedBox(width: 12),
+                Flexible(child: BillerSwitcher()),
+                SizedBox(width: 12),
+                Flexible(child: WarehouseSelector()),
+                SizedBox(width: 12),
                 Icon(Icons.notifications_active),
               ],
             ),

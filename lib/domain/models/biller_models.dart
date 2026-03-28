@@ -2,11 +2,13 @@ class BillerProfile {
   final String name;
   final String industry;
   final String company;
+  final int isDefault;
 
   BillerProfile({
     required this.name,
     required this.industry,
     required this.company,
+    this.isDefault = 0,
   });
 
   factory BillerProfile.fromJson(Map<String, dynamic> json) {
@@ -14,6 +16,7 @@ class BillerProfile {
       name: json['name'] ?? '',
       industry: json['industry'] ?? '',
       company: json['company'] ?? '',
+      isDefault: (json['is_default'] == true || json['is_default'] == 1) ? 1 : 0,
     );
   }
 
@@ -21,6 +24,7 @@ class BillerProfile {
         'name': name,
         'industry': industry,
         'company': company,
+        'is_default': isDefault,
       };
 }
 
@@ -95,7 +99,7 @@ class BillerDetailsData {
   final String? defaultCostCenter;
   final String? defaultPriceList;
   final String? defaultTaxTemplate;
-  final bool isDefault;
+  final int isDefault;
   final List<BillerWarehouse> warehouses;
   final List<BillerPosProfile> posProfiles;
 
@@ -119,7 +123,7 @@ class BillerDetailsData {
       defaultCostCenter: json['default_cost_center'],
       defaultPriceList: json['default_price_list'],
       defaultTaxTemplate: json['default_tax_template'],
-      isDefault: json['is_default'] ?? false,
+      isDefault: (json['is_default'] == true || json['is_default'] == 1) ? 1 : 0,
       warehouses: (json['warehouses'] as List<dynamic>?)
               ?.map((e) => BillerWarehouse.fromJson(e))
               .toList() ??

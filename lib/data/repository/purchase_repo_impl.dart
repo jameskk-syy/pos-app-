@@ -14,6 +14,9 @@ import 'package:pos/domain/responses/purchase/grn_response.dart';
 import 'package:pos/domain/responses/purchase/grn_detail_response.dart';
 import 'package:pos/domain/requests/purchase/pay_purchase_invoice_request.dart';
 import 'package:pos/domain/responses/purchase/pay_purchase_invoice_response.dart';
+import 'package:pos/domain/requests/purchase/create_purchase_return_request.dart';
+import 'package:pos/domain/responses/purchase/create_purchase_return_response.dart';
+import 'package:pos/domain/responses/purchase/list_purchase_returns_response.dart';
 
 class PurchaseRepoImpl implements PurchaseRepo {
   final PurchaseRemoteDataSource purchaseRemoteDataSource;
@@ -137,5 +140,27 @@ class PurchaseRepoImpl implements PurchaseRepo {
     required PayPurchaseInvoiceRequest request,
   }) async {
     return await purchaseRemoteDataSource.payPurchaseInvoice(request: request);
+  }
+
+  @override
+  Future<CreatePurchaseReturnResponse> createPurchaseReturn(
+    CreatePurchaseReturnRequest request,
+  ) {
+    return purchaseRemoteDataSource.createPurchaseReturn(request: request);
+  }
+
+  @override
+  Future<ListPurchaseReturnsResponse> listPurchaseReturns({
+    required String company,
+    int page = 1,
+    int pageSize = 20,
+    String? searchTerm,
+  }) {
+    return purchaseRemoteDataSource.listPurchaseReturns(
+      company: company,
+      page: page,
+      pageSize: pageSize,
+      searchTerm: searchTerm,
+    );
   }
 }

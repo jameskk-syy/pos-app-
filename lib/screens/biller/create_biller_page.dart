@@ -22,6 +22,8 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
   final _nameController = TextEditingController();
   final _companyController = TextEditingController();
   String? _selectedIndustry;
+  String? _selectedIndustryId;
+  bool _isDefault = false;
 
   @override
   void initState() {
@@ -60,30 +62,33 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
     required T? currentValue,
   }) async {
     final searchController = TextEditingController();
+    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
     return showModalBottomSheet<T>(
       context: context,
       isScrollControlled: true,
       useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
+      backgroundColor: Colors.transparent,
       builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            final query = searchController.text.toLowerCase();
-            final displayItems = items
-                .where((item) => displayLabel(item).toLowerCase().contains(query))
-                .toList();
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.6,
-              minChildSize: 0.4,
-              maxChildSize: 0.9,
-              builder: (_, scrollController) {
+        return Align(
+          alignment: Alignment.bottomCenter,
+          child: Container(
+            constraints: isTablet
+                ? const BoxConstraints(maxWidth: 550)
+                : const BoxConstraints(maxWidth: double.infinity),
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: StatefulBuilder(
+              builder: (ctx, setModalState) {
+                final query = searchController.text.toLowerCase();
+                final displayItems = items
+                    .where((item) => displayLabel(item).toLowerCase().contains(query))
+                    .toList();
                 return Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    const SizedBox(height: 8),
+                    const SizedBox(height: 12),
                     Container(
                       width: 40,
                       height: 4,
@@ -92,64 +97,48 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
                         borderRadius: BorderRadius.circular(2),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 20),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: Text(
                         title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20),
                       child: TextField(
                         controller: searchController,
-                        autofocus: true,
                         decoration: InputDecoration(
                           hintText: 'Search...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    setModalState(() {});
-                                  },
-                                )
-                              : null,
+                          prefixIcon: const Icon(Icons.search),
                           filled: true,
                           fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
+                            borderRadius: BorderRadius.circular(12),
                             borderSide: BorderSide.none,
                           ),
                         ),
-                        onChanged: (val) {
-                          setModalState(() {});
-                        },
+                        onChanged: (_) => setModalState(() {}),
                       ),
                     ),
                     const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    Expanded(
+                    const Divider(),
+                    ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxHeight: MediaQuery.of(ctx).size.height * 0.5,
+                      ),
                       child: displayItems.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No results found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
+                          ? const Padding(
+                              padding: EdgeInsets.all(40.0),
+                              child: Text('No results found', style: TextStyle(color: Colors.grey)),
                             )
                           : ListView.builder(
-                              controller: scrollController,
+                              shrinkWrap: true,
                               itemCount: displayItems.length,
+                              padding: const EdgeInsets.only(bottom: 20),
                               itemBuilder: (context, index) {
                                 final item = displayItems[index];
                                 final isSelected = item == currentValue;
@@ -157,22 +146,12 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
                                   title: Text(
                                     displayLabel(item),
                                     style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isSelected
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                      color: isSelected
-                                          ? Colors.blue[700]
-                                          : Colors.black87,
+                                      fontSize: 15,
+                                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                                      color: isSelected ? Colors.blue[700] : Colors.black87,
                                     ),
                                   ),
-                                  trailing: isSelected
-                                      ? Icon(
-                                          Icons.check,
-                                          color: Colors.blue[700],
-                                          size: 20,
-                                        )
-                                      : null,
+                                  trailing: isSelected ? Icon(Icons.check_circle, color: Colors.blue[700]) : null,
                                   onTap: () => Navigator.pop(ctx, item),
                                 );
                               },
@@ -181,8 +160,8 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
                   ],
                 );
               },
-            );
-          },
+            ),
+          ),
         );
       },
     );
@@ -200,8 +179,9 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
             CreateBiller(
               CreateBillerRequest(
                 billerName: _nameController.text.trim(),
-                industry: _selectedIndustry!,
+                industry: _selectedIndustryId ?? '',
                 company: _companyController.text.trim(),
+                isDefault: _isDefault,
               ),
             ),
           );
@@ -279,9 +259,12 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
                                           .where((i) => i.industryName == _selectedIndustry)
                                           .firstOrNull,
                                 );
-                                if (selected != null) {
-                                  setState(() => _selectedIndustry = selected.industryName);
-                                }
+                                  if (selected != null) {
+                                    setState(() {
+                                      _selectedIndustry = selected.industryName;
+                                      _selectedIndustryId = selected.name;
+                                    });
+                                  }
                               },
                         child: Container(
                           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
@@ -321,6 +304,14 @@ class _CreateBillerPageState extends State<CreateBillerPage> {
                     readOnly: true,
                     validator: (v) =>
                         v == null || v.isEmpty ? 'Required' : null,
+                  ),
+                  const SizedBox(height: 16),
+                  SwitchListTile(
+                    title: const Text('Set as Default Branch'),
+                    subtitle: const Text('This branch will be selected by default upon login.'),
+                    value: _isDefault,
+                    onChanged: (val) => setState(() => _isDefault = val),
+                    contentPadding: EdgeInsets.zero,
                   ),
                   const SizedBox(height: 32),
                   SizedBox(

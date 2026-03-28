@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/requests/purchase/create_grn_request.dart';
 import 'package:pos/domain/requests/purchase/create_purchase_order_request.dart';
@@ -22,6 +23,9 @@ import 'package:pos/domain/responses/suppliers/create_supplier_group_response.da
 import 'package:pos/domain/responses/suppliers/create_supplier_response.dart';
 import 'package:pos/domain/responses/suppliers/supplier_group_response.dart';
 import 'package:pos/domain/responses/suppliers/suppliers_response.dart';
+import 'package:pos/domain/requests/purchase/create_purchase_return_request.dart';
+import 'package:pos/domain/responses/purchase/create_purchase_return_response.dart';
+import 'package:pos/domain/responses/purchase/list_purchase_returns_response.dart';
 
 
 class PurchaseRemoteDataSource extends BaseRemoteDataSource {
@@ -756,6 +760,100 @@ class PurchaseRemoteDataSource extends BaseRemoteDataSource {
     } catch (e) {
       //debugPrint('Error fetching suppliers: $e');
       throw Exception('Failed to fetch suppliers: ${e.toString()}');
+    }
+  }
+  Future<CreatePurchaseReturnResponse> createPurchaseReturn({
+    required CreatePurchaseReturnRequest request,
+  }) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.purchase.create_purchase_return',
+        data: request.toJson(),
+      );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+
+      if(kDebugMode){
+        debugPrint('Purchase return response: ${jsonEncode(data)}');
+      }
+
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format');
+      }
+
+      final message = data['message'];
+      if (message is Map<String, dynamic> &&
+          (message['status'] == 'failed' || message['status'] == 'error')) {
+        throw Exception(message['message'] ?? message['error'] ?? 'Failed to create purchase return');
+      }
+
+      return CreatePurchaseReturnResponse.fromJson(data);
+    } on DioException catch (e) {
+      if(kDebugMode){
+        debugPrint('Purchase return response: ${jsonEncode(e.response?.data)}');
+      }
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      if(kDebugMode){
+        debugPrint('Purchase return catch error: ${e.toString()}');
+      }
+      throw Exception('Failed to create purchase return: $e');
+    }
+  }
+
+  Future<ListPurchaseReturnsResponse> listPurchaseReturns({
+    required String company,
+    int page = 1,
+    int pageSize = 20,
+    String? searchTerm,
+  }) async {
+    try {
+      final Map<String, dynamic> queryParams = {
+        'company': company,
+        'page': page,
+        'page_size': pageSize,
+      };
+
+      if (searchTerm != null && searchTerm.isNotEmpty) {
+        queryParams['search_term'] = searchTerm;
+      }
+
+      final response = await dio.get(
+        'techsavanna_pos.api.purchase.list_purchase_returns',
+        queryParameters: queryParams,
+      );
+   if(kDebugMode){
+    debugPrint('Purchase return response: ${jsonEncode(response.data)}');
+   }
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format');
+      }
+
+      final message = data['message'];
+      if (message is Map<String, dynamic> && message['status'] == 'failed') {
+        throw Exception(message['message'] ?? 'Failed to fetch purchase returns');
+      }
+
+      return ListPurchaseReturnsResponse.fromJson(data);
+    } on DioException catch (e) {
+      if(kDebugMode){
+    debugPrint('Purchase return response: ${jsonEncode(e.response?.data)}');
+   }
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      if(kDebugMode){
+    debugPrint('Purchase return catch error: ${e.toString()}');
+   }
+      throw Exception('Failed to fetch purchase returns: $e');
     }
   }
 }

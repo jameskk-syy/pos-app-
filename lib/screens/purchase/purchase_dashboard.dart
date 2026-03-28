@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:pos/screens/purchase/purchase_order_list.dart';
 import 'package:pos/screens/purchase/purchase_invoice_list.dart';
 import 'package:pos/screens/purchase/grn_list_screen.dart';
+import 'package:pos/screens/purchase/purchase_return_list.dart';
 import 'package:pos/widgets/inventory/inventory_card.dart';
 
 class PurchaseDashboards extends StatelessWidget {
@@ -71,6 +72,22 @@ class PurchaseDashboards extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const GrnListScreen(),
+                    ),
+                  );
+                },
+              ),
+              InventoryCard(
+                backgroundColor: Colors.white,
+                iconBackgroundColor: const Color(0xFFFFEBEE),
+                iconColor: Colors.red,
+                icon: Icons.assignment_return_outlined,
+                title: "Purchase Returns",
+                subtitle: "View and track purchase returns",
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const PurchaseReturnListScreen(),
                     ),
                   );
                 },

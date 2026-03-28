@@ -26,9 +26,7 @@ class _BillerDetailPageState extends State<BillerDetailPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Branch Details'),
-      ),
+      backgroundColor: Colors.grey[50], // Light grey background for a clean look
       body: BlocBuilder<BillerBloc, BillerState>(
         builder: (context, state) {
           if (state is BillerDetailsLoading) {
@@ -36,43 +34,55 @@ class _BillerDetailPageState extends State<BillerDetailPage> {
           }
 
           if (state is BillerDetailsError) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
-                  const SizedBox(height: 16),
-                  Text('Failed to load: ${state.message}'),
-                  TextButton(
-                    onPressed: () {
-                      context.read<BillerBloc>().add(
-                            GetBillerDetails(GetBillerDetailsRequest(
-                                billerName: widget.billerName)),
-                          );
-                    },
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorState(state.message);
           }
 
           if (state is BillerDetailsLoaded) {
             final data = state.response.data;
-            return SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildHeaderCard(data),
-                  const SizedBox(height: 24),
-                  _buildWarehousesSection(data.warehouses),
-                  const SizedBox(height: 24),
-                  _buildPosProfilesSection(data.posProfiles),
-                  const SizedBox(height: 24),
-                  _buildConfigSection(data),
-                ],
-              ),
+            return CustomScrollView(
+              slivers: [
+                _buildSliverAppBar(data),
+                SliverToBoxAdapter(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isTablet = constraints.maxWidth >= 720;
+                      return Padding(
+                        padding: EdgeInsets.all(isTablet ? 32.0 : 16.0),
+                        child: isTablet
+                            ? Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(
+                                    flex: 3,
+                                    child: Column(
+                                      children: [
+                                        _buildWarehousesCard(data.warehouses),
+                                        const SizedBox(height: 24),
+                                        _buildPosProfilesCard(data.posProfiles),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 32),
+                                  Expanded(
+                                    flex: 2,
+                                    child: _buildConfigCard(data),
+                                  ),
+                                ],
+                              )
+                            : Column(
+                                children: [
+                                  _buildWarehousesCard(data.warehouses),
+                                  const SizedBox(height: 24),
+                                  _buildPosProfilesCard(data.posProfiles),
+                                  const SizedBox(height: 24),
+                                  _buildConfigCard(data),
+                                ],
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             );
           }
 
@@ -82,192 +92,316 @@ class _BillerDetailPageState extends State<BillerDetailPage> {
     );
   }
 
-  Widget _buildHeaderCard(BillerDetailsData data) {
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.grey.shade200),
+  Widget _buildSliverAppBar(BillerDetailsData data) {
+    return SliverAppBar(
+      expandedHeight: 220,
+      pinned: true,
+      floating: false,
+      backgroundColor: Colors.blue[700],
+      iconTheme: const IconThemeData(color: Colors.white), // Set back arrow to white
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back, color: Colors.white),
+        onPressed: () => Navigator.of(context).pop(),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.blue.withAlpha(30),
-                shape: BoxShape.circle,
-              ),
-              child: getIndustryIcon(data.industry, size: 36),
+      flexibleSpace: FlexibleSpaceBar(
+        title: Text(
+          data.billerName,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+          ),
+        ),
+        background: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Colors.blue.shade900,
+                Colors.blue.shade600,
+                Colors.blue.shade400,
+              ],
             ),
-            const SizedBox(width: 24),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    data.billerName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+          ),
+          child: Stack(
+            children: [
+              Positioned(
+                right: -40,
+                bottom: -40,
+                child: Icon(
+                  Icons.business_rounded,
+                  size: 200,
+                  color: Colors.white.withAlpha(20),
+                ),
+              ),
+              Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withAlpha(50),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white.withAlpha(200), width: 2),
+                      ),
+                      child: getIndustryIcon(data.industry, size: 48, color: Colors.white),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      IndustryBadge(industry: data.industry),
-                      if (data.isDefault) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.amber.withAlpha(40),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            'Default',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.amber,
-                              fontWeight: FontWeight.bold,
-                            ),
+                    const SizedBox(height: 12),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildHeaderBadge(data.industry, Icons.category),
+                        if (data.isDefault == 1) ...[
+                          const SizedBox(width: 8),
+                          _buildHeaderBadge('Default', Icons.star, color: Colors.amber[400]!),
+                        ],
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeaderBadge(String label, IconData icon, {Color color = Colors.white}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(50),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withAlpha(100)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: Row(
+        children: [
+          Icon(icon, size: 24, color: Colors.blue[800]),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: Colors.blue[900],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWarehousesCard(List<BillerWarehouse> warehouses) {
+    return Card(
+      elevation: 6,
+      color: Colors.white,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildSectionHeader('Warehouses', Icons.warehouse_rounded),
+            if (warehouses.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text('No warehouses assigned', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              ListView.separated(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: warehouses.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final w = warehouses[index];
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50.withAlpha(100),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.blue.shade100),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.location_on_outlined, color: Colors.blue),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(w.name, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              if (w.location != null)
+                                Text(w.location!, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+                            ],
                           ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Company: ${data.company}',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
+                    ),
+                  );
+                },
               ),
-            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildWarehousesSection(List<BillerWarehouse> warehouses) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Warehouses',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+  Widget _buildPosProfilesCard(List<BillerPosProfile> profiles) {
+    return Card(
+       elevation: 6,
+      color: Colors.white,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildSectionHeader('POS Profiles', Icons.settings_remote_rounded),
+            if (profiles.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text('No POS profiles assigned', style: TextStyle(color: Colors.grey)),
+              )
+            else
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: profiles.map((p) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50.withAlpha(100),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: Colors.blue.shade100),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.point_of_sale_rounded, size: 18, color: Colors.blue),
+                      const SizedBox(width: 8),
+                      Text(p.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                    ],
+                  ),
+                )).toList(),
+              ),
+          ],
         ),
-        const SizedBox(height: 12),
-        if (warehouses.isEmpty)
-          const Text('No warehouses assigned.')
-        else
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: warehouses.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final w = warehouses[index];
-              return ListTile(
-                leading: const Icon(Icons.warehouse_outlined),
-                title: Text(w.name),
-                subtitle: w.location != null ? Text(w.location!) : null,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                  side: BorderSide(color: Colors.grey.shade200),
-                ),
-                tileColor: Theme.of(context).colorScheme.surface,
-              );
-            },
-          ),
-      ],
+      ),
     );
   }
 
-  Widget _buildPosProfilesSection(List<BillerPosProfile> profiles) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'POS Profiles',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+  Widget _buildConfigCard(BillerDetailsData data) {
+    return Card(
+      elevation: 6,
+      color: Colors.white,
+      shadowColor: Colors.black12,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            _buildSectionHeader('Configuration', Icons.tune_rounded),
+            _buildConfigItem('Default Cost Center', data.defaultCostCenter ?? 'Not configured', Icons.account_balance_rounded),
+            const Divider(height: 32),
+            _buildConfigItem('Default Price List', data.defaultPriceList ?? 'Not configured', Icons.list_alt_rounded),
+            const Divider(height: 32),
+            _buildConfigItem('Default Tax Template', data.defaultTaxTemplate ?? 'Not configured', Icons.receipt_long_rounded),
+            const Divider(height: 32),
+            _buildConfigItem('Parent Company', data.company, Icons.business_rounded),
+          ],
         ),
-        const SizedBox(height: 12),
-        if (profiles.isEmpty)
-          const Text('No POS profiles assigned.')
-        else
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: profiles.map((p) => Chip(
-              avatar: const Icon(Icons.point_of_sale, size: 16),
-              label: Text(p.name),
-            )).toList(),
-          ),
-      ],
+      ),
     );
   }
 
-  Widget _buildConfigSection(BillerDetailsData data) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildConfigItem(String label, String value, IconData icon) {
+    return Row(
       children: [
-        const Text(
-          'Configuration',
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
-        ),
-        const SizedBox(height: 12),
-        Card(
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: BorderSide(color: Colors.grey.shade200),
+        Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.grey.shade100,
+            borderRadius: BorderRadius.circular(10),
           ),
+          child: Icon(icon, size: 20, color: Colors.blueGrey),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _ConfigRow(
-                label: 'Default Cost Center',
-                value: data.defaultCostCenter ?? 'Not set',
-              ),
-              const Divider(height: 1),
-              _ConfigRow(
-                label: 'Default Price List',
-                value: data.defaultPriceList ?? 'Not set',
-              ),
-              const Divider(height: 1),
-              _ConfigRow(
-                label: 'Default Tax Template',
-                value: data.defaultTaxTemplate ?? 'Not set',
-              ),
+              Text(label, style: TextStyle(color: Colors.grey[600], fontSize: 13)),
+              const SizedBox(height: 2),
+              Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             ],
           ),
         ),
       ],
     );
   }
-}
 
-class _ConfigRow extends StatelessWidget {
-  final String label;
-  final String value;
-
-  const _ConfigRow({required this.label, required this.value});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: const TextStyle(fontWeight: FontWeight.w500)),
-          Text(value, style: TextStyle(color: Colors.grey.shade600)),
-        ],
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline_rounded, size: 80, color: Colors.red),
+            const SizedBox(height: 24),
+            Text(
+              'Opps! Something went wrong',
+              style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.grey[800]),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  context.read<BillerBloc>().add(
+                        GetBillerDetails(GetBillerDetailsRequest(billerName: widget.billerName)),
+                      );
+                },
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.all(16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
