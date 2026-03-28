@@ -5,6 +5,7 @@ import 'package:pos/domain/responses/purchase/purchase_order_detail_response.dar
 import 'package:pos/presentation/purchase/bloc/purchase_bloc.dart';
 
 import 'package:pos/utils/report_pdf_generator.dart';
+import 'package:pos/screens/purchase/create_purchase_return_dialog.dart';
 
 class PurchaseOrderDetailScreen extends StatefulWidget {
   final String poName;
@@ -337,16 +338,19 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
               ),
             );
             _fetchPurchaseOrderDetail();
-          } else if (state is GrnCreateError) {
+          } else if (state is PurchaseReturnCreated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(state.response.message ?? 'Purchase return created successfully'),
+                backgroundColor: Colors.green,
+              ),
+            );
+            _fetchPurchaseOrderDetail();
+          } else if (state is PurchaseReturnError) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(state.message),
                 backgroundColor: Colors.red,
-                action: SnackBarAction(
-                  label: 'Dismiss',
-                  textColor: Colors.white,
-                  onPressed: () {},
-                ),
               ),
             );
           }
@@ -452,6 +456,36 @@ class _PurchaseOrderDetailScreenState extends State<PurchaseOrderDetailScreen> {
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             backgroundColor: Colors.blue,
                             foregroundColor: Colors.white,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.zero,
+                            ),
+                          ),
+                        ),
+                      ),
+                    const SizedBox(height: 16),
+                    if (po.status == 'Completed' || po.status == 'To Bill' || po.status == 'To Receive and Bill')
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: state is PurchaseReturnCreating
+                              ? null
+                              : () => CreatePurchaseReturnDialog.show(context, po),
+                          icon: state is PurchaseReturnCreating
+                              ? const SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.assignment_return),
+                          label: Text(
+                            state is PurchaseReturnCreating
+                                ? 'Creating Return...'
+                                : 'Create Purchase Return',
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            side: const BorderSide(color: Colors.red),
+                            foregroundColor: Colors.red,
                             shape: const RoundedRectangleBorder(
                               borderRadius: BorderRadius.zero,
                             ),

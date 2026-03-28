@@ -55,10 +55,9 @@ class CreateBillerRequest {
         'biller_name': billerName,
         'industry': industry,
         'company': company,
-        if (defaultCostCenter != null) 'default_cost_center': defaultCostCenter,
-        if (defaultPriceList != null) 'default_price_list': defaultPriceList,
-        if (defaultTaxTemplate != null)
-          'default_tax_template': defaultTaxTemplate,
-        'is_default': isDefault ? 1 : 0,
+        'default_cost_center': defaultCostCenter ?? '',
+        'default_price_list': defaultPriceList ?? '',
+        'default_tax_template': defaultTaxTemplate ?? '',
+        'is_default': isDefault,
       };
 }

@@ -41,26 +41,6 @@ class SubmitPurchaseOrderEvent extends PurchaseEvent {
   SubmitPurchaseOrderEvent({required this.lpoNo});
 }
 
-final class PurchaseOrderSubmitting extends PurchaseState {
-  final String lpoNo;
-
-  PurchaseOrderSubmitting({required this.lpoNo});
-}
-
-final class PurchaseOrderSubmitted extends PurchaseState {
-  final SubmitPurchaseOrderResponse response;
-  final String message;
-
-  PurchaseOrderSubmitted({required this.response, required this.message});
-}
-
-final class PurchaseOrderSubmitError extends PurchaseState {
-  final String message;
-  final String? lpoNo;
-
-  PurchaseOrderSubmitError({required this.message, this.lpoNo});
-}
-
 class ResubmitPurchaseOrderEvent extends PurchaseEvent {
   final String lpoNo;
 
@@ -77,4 +57,26 @@ class FetchPurchaseOrderDetailEvent extends PurchaseEvent {
   final String poName;
 
   FetchPurchaseOrderDetailEvent({required this.poName});
+}
+
+class CreatePurchaseReturnEvent extends PurchaseEvent {
+  final CreatePurchaseReturnRequest request;
+
+  CreatePurchaseReturnEvent({required this.request});
+}
+
+class FetchPurchaseReturnsEvent extends PurchaseEvent {
+  final String company;
+  final int page;
+  final int pageSize;
+  final String? searchTerm;
+  final bool isRefresh;
+
+  FetchPurchaseReturnsEvent({
+    required this.company,
+    this.page = 1,
+    this.pageSize = 20,
+    this.searchTerm,
+    this.isRefresh = false,
+  });
 }

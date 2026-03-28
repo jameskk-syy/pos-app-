@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/requests/biller/biller_requests.dart';
 import 'package:pos/domain/models/biller_models.dart';
 import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
-import 'package:pos/widgets/biller/industry_helpers.dart';
 import 'package:pos/screens/biller/create_biller_page.dart';
 import 'package:pos/screens/biller/biller_detail_page.dart';
 
@@ -21,8 +20,7 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
   Timer? _debounce;
   List<BillerProfile> _billers = [];
   bool _hasReachedMax = false;
-  final int _currentLimit = 20; // Reduced from 100 for better pagination demo/feel.
-
+  final int _currentLimit = 20;
 
   @override
   void initState() {
@@ -52,7 +50,6 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
     return currentScroll >= (maxScroll * 0.9);
   }
 
-
   void _fetchBillers([String searchTerm = '']) {
     _hasReachedMax = false;
     context.read<BillerBloc>().add(
@@ -75,7 +72,6 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
         );
   }
 
-
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
@@ -85,12 +81,15 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final isTablet = MediaQuery.of(context).size.shortestSide >= 600;
+    final isMobile = MediaQuery.of(context).size.width < 600;
 
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
         title: const Text('Branches / Billers'),
+        backgroundColor: Colors.white,
+        foregroundColor: Colors.blue,
+        elevation: 0.5,
         actions: [
           IconButton(
             icon: const Icon(Icons.add_business),
@@ -101,7 +100,6 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
                 MaterialPageRoute(builder: (_) => const CreateBillerPage()),
               );
               if (result == true && mounted) {
-                // Wait briefly for backend to sync the newly created record
                 await Future.delayed(const Duration(milliseconds: 500));
                 if (mounted) {
                   _fetchBillers(_searchController.text);
@@ -112,31 +110,49 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
           const SizedBox(width: 8),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          _fetchBillers(_searchController.text);
-          // Wait briefly so spinner shows
-          await Future.delayed(const Duration(milliseconds: 500));
-        },
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: TextField(
-                controller: _searchController,
-                onChanged: _onSearchChanged,
-                decoration: InputDecoration(
-                  hintText: 'Search branches...',
-                  prefixIcon: const Icon(Icons.search),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  filled: true,
-                  fillColor: isDark ? Colors.white10 : Colors.grey.shade100,
-                ),
-              ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border(bottom: BorderSide(color: Colors.grey[200]!)),
             ),
-            Expanded(
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: _onSearchChanged,
+                    style: const TextStyle(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Search branches...',
+                      prefixIcon: const Icon(Icons.search, size: 20),
+                      filled: true,
+                      fillColor: Colors.grey[50],
+                      isDense: true,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(6),
+                        borderSide: BorderSide(color: Colors.grey.shade300),
+                      ),
+                    ),
+                  ),
+                ),
+                if (!isMobile) const SizedBox(width: 120),
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                _fetchBillers(_searchController.text);
+                await Future.delayed(const Duration(milliseconds: 500));
+              },
               child: BlocConsumer<BillerBloc, BillerState>(
                 listener: (context, state) {
                   if (state is ListBillersLoaded) {
@@ -156,133 +172,118 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
                   }
 
                   if (_billers.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.business_outlined,
-                            size: 64,
-                            color: Colors.grey.shade400,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            'No branches found',
-                            style: TextStyle(
-                              fontSize: 18,
-                              color: Colors.grey.shade600,
+                    return ListView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      children: [
+                        SizedBox(
+                          height: MediaQuery.of(context).size.height * 0.6,
+                          child: Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.business_outlined, size: 64, color: Colors.grey.shade400),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No branches found',
+                                  style: TextStyle(fontSize: 18, color: Colors.grey.shade600),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     );
                   }
 
-                  // Responsive Grid
-                  int crossAxisCount = 1;
-                  if (MediaQuery.of(context).size.width >= 1200) {
-                    crossAxisCount = 4;
-                  } else if (MediaQuery.of(context).size.width >= 900) {
-                    crossAxisCount = 3;
-                  } else if (isTablet) {
-                    crossAxisCount = 2;
-                  }
-
-                  return GridView.builder(
+                  return SingleChildScrollView(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(16),
-                    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: crossAxisCount,
-                      childAspectRatio: 2.5,
-                      crossAxisSpacing: 16,
-                      mainAxisSpacing: 16,
-                    ),
-                    itemCount: _hasReachedMax ? _billers.length : _billers.length + 1,
-                    itemBuilder: (context, index) {
-                      if (index >= _billers.length) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.all(8.0),
-                            child: CircularProgressIndicator(),
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: Container(
+                      margin: const EdgeInsets.all(0),
+                      color: Colors.white,
+                      child: SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(
+                            minWidth: MediaQuery.of(context).size.width,
                           ),
-                        );
-                      }
-                      final biller = _billers[index];
-                      return _BillerCard(biller: biller);
-                    },
+                          child: DataTable(
+                            headingRowColor: WidgetStateProperty.all(Colors.grey[50]),
+                            columnSpacing: 20,
+                            columns: [
+                              const DataColumn(label: Text('Branch Name', style: TextStyle(fontWeight: FontWeight.bold))),
+                              const DataColumn(label: Text('Industry', style: TextStyle(fontWeight: FontWeight.bold))),
+                              if (!isMobile)
+                                const DataColumn(label: Text('Company', style: TextStyle(fontWeight: FontWeight.bold))),
+                              const DataColumn(label: Text('Status', style: TextStyle(fontWeight: FontWeight.bold))),
+                              const DataColumn(label: Text('Actions', style: TextStyle(fontWeight: FontWeight.bold))),
+                            ],
+                            rows: _billers.map((biller) {
+                              return DataRow(
+                                cells: [
+                                  DataCell(
+                                    Text(
+                                      biller.name,
+                                      style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.blue),
+                                    ),
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) => BillerDetailPage(billerName: biller.name),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  DataCell(Text(biller.industry)),
+                                  if (!isMobile) DataCell(Text(biller.company)),
+                                  DataCell(_buildStatusBadge(biller)),
+                                  DataCell(
+                                    IconButton(
+                                      icon: const Icon(Icons.chevron_right, color: Colors.blue),
+                                      onPressed: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => BillerDetailPage(billerName: biller.name),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              );
+                            }).toList(),
+                          ),
+                        ),
+                      ),
+                    ),
                   );
                 },
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
-}
 
-class _BillerCard extends StatelessWidget {
-  final BillerProfile biller;
-
-  const _BillerCard({required this.biller});
-
-  @override
-  Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
-    return Card(
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(
-          color: isDark ? Colors.white10 : Colors.grey.shade200,
-        ),
+  Widget _buildStatusBadge(BillerProfile biller) {
+    final bool isDefault = biller.isDefault == 1;
+    final color = isDefault ? Colors.green : Colors.blue;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withAlpha(20),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withAlpha(50)),
       ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (_) => BillerDetailPage(billerName: biller.name),
-            ),
-          );
-        },
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.blue.withAlpha(20),
-                  shape: BoxShape.circle,
-                ),
-                child: getIndustryIcon(biller.industry),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      biller.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    IndustryBadge(industry: biller.industry),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_right, color: Colors.grey),
-            ],
-          ),
+      child: Text(
+        isDefault ? 'DEFAULT' : 'ACTIVE',
+        style: TextStyle(
+          color: color,
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
         ),
       ),
     );

@@ -35,10 +35,11 @@ class BillerSelectorSheet extends StatelessWidget {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) {
-        return Center(
+        return Align(
+          alignment: Alignment.bottomCenter,
           child: Container(
             constraints: isTablet
-                ? const BoxConstraints(maxWidth: 500)
+                ? const BoxConstraints(maxWidth: 550)
                 : const BoxConstraints(maxWidth: double.infinity),
             decoration: BoxDecoration(
               color: Theme.of(context).scaffoldBackgroundColor,
@@ -46,9 +47,9 @@ class BillerSelectorSheet extends StatelessWidget {
                 topLeft: Radius.circular(24),
                 topRight: Radius.circular(24),
               ),
-              boxShadow: const [
+              boxShadow: [
                 BoxShadow(
-                  color: Colors.black26,
+                  color: Colors.black.withAlpha(20),
                   blurRadius: 20,
                   spreadRadius: 2,
                 )

@@ -54,14 +54,25 @@ class ListBillersResponse {
   });
 
   factory ListBillersResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? {};
-    return ListBillersResponse(
-      success: json['success'] ?? false,
-      billers: (data['billers'] as List<dynamic>?)
+    final dynamic rawData = json['data'];
+    List<BillerProfile> billers = [];
+    int totalCount = 0;
+
+    if (rawData is List) {
+      billers = rawData.map((e) => BillerProfile.fromJson(e)).toList();
+      totalCount = json['total_count'] ?? billers.length;
+    } else if (rawData is Map<String, dynamic>) {
+      billers = (rawData['billers'] as List<dynamic>?)
               ?.map((e) => BillerProfile.fromJson(e))
               .toList() ??
-          [],
-      totalCount: data['total_count'] ?? 0,
+          [];
+      totalCount = rawData['total_count'] ?? json['total_count'] ?? billers.length;
+    }
+
+    return ListBillersResponse(
+      success: json['success'] ?? false,
+      billers: billers,
+      totalCount: totalCount,
     );
   }
 }

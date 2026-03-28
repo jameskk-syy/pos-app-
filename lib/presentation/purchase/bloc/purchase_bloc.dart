@@ -10,6 +10,9 @@ import 'package:pos/domain/responses/purchase/create_purchase_order_response.dar
 import 'package:pos/domain/responses/purchase/purchase_order_detail_response.dart';
 import 'package:pos/domain/responses/purchase/purchase_order_response.dart';
 import 'package:pos/domain/responses/purchase/submit_purchase_order_response.dart';
+import 'package:pos/domain/requests/purchase/create_purchase_return_request.dart';
+import 'package:pos/domain/responses/purchase/create_purchase_return_response.dart';
+import 'package:pos/domain/responses/purchase/list_purchase_returns_response.dart';
 
 part 'purchase_event.dart';
 part 'purchase_state.dart';
@@ -25,6 +28,8 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
     on<ResubmitPurchaseOrderEvent>(_onResubmitPurchaseOrder);
     on<CreateGrnEvent>(_onCreateGrn);
     on<FetchPurchaseOrderDetailEvent>(_onFetchPurchaseOrderDetail);
+    on<CreatePurchaseReturnEvent>(_onCreatePurchaseReturn);
+    on<FetchPurchaseReturnsEvent>(_onFetchPurchaseReturns);
   }
   Future<void> _onFetchPurchaseOrderDetail(
     FetchPurchaseOrderDetailEvent event,
@@ -174,6 +179,61 @@ class PurchaseBloc extends Bloc<PurchaseEvent, PurchaseState> {
       }
     } catch (e) {
       emit(PurchaseError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onCreatePurchaseReturn(
+    CreatePurchaseReturnEvent event,
+    Emitter<PurchaseState> emit,
+  ) async {
+    emit(PurchaseReturnCreating());
+    try {
+      final response = await purchaseRepo.createPurchaseReturn(event.request);
+      emit(PurchaseReturnCreated(response: response));
+    } catch (e) {
+      emit(PurchaseReturnError(message: e.toString()));
+    }
+  }
+
+  Future<void> _onFetchPurchaseReturns(
+    FetchPurchaseReturnsEvent event,
+    Emitter<PurchaseState> emit,
+  ) async {
+    if (event.isRefresh) {
+      emit(PurchaseReturnsLoading());
+    }
+
+    try {
+      final response = await purchaseRepo.listPurchaseReturns(
+        company: event.company,
+        page: event.page,
+        pageSize: event.pageSize,
+        searchTerm: event.searchTerm,
+      );
+
+      final hasReachedMax = response.data.returns.length < event.pageSize;
+
+      if (state is PurchaseReturnsLoaded && !event.isRefresh) {
+        final currentState = state as PurchaseReturnsLoaded;
+        final allReturns = List<PurchaseReturnListItem>.from(currentState.response.data.returns)
+          ..addAll(response.data.returns);
+        
+        // This is a bit tricky because the ListPurchaseReturnsResponse structure
+        // We'll just emit a new response with merged data
+        final mergedResponse = ListPurchaseReturnsResponse(
+          status: response.status,
+          message: response.message,
+          data: PurchaseReturnsData(
+            returns: allReturns,
+            meta: response.data.meta,
+          ),
+        );
+        emit(PurchaseReturnsLoaded(response: mergedResponse, hasReachedMax: hasReachedMax));
+      } else {
+        emit(PurchaseReturnsLoaded(response: response, hasReachedMax: hasReachedMax));
+      }
+    } catch (e) {
+      emit(PurchaseReturnsError(message: e.toString()));
     }
   }
 }
