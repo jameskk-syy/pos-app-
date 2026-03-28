@@ -1,21 +1,25 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/domain/requests/biller/biller_requests.dart';
+import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 import 'package:pos/screens/sales/dashboard.dart';
 import 'package:pos/screens/users/bussiness_type.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/auth/set_new_password.dart';
+import 'package:pos/widgets/biller/biller_selector_sheet.dart';
 
-class OtpScreen extends StatelessWidget {
+class OtpScreen extends StatefulWidget {
   final bool showBackLogin;
   final String title;
-  final String? email; // Added email parameter
+  final String? email;
 
   const OtpScreen({
     super.key,
@@ -23,6 +27,80 @@ class OtpScreen extends StatelessWidget {
     this.showBackLogin = false,
     this.email,
   });
+
+  @override
+  State<OtpScreen> createState() => _OtpScreenState();
+}
+
+class _OtpScreenState extends State<OtpScreen> {
+  bool _isInitializingBiller = false;
+
+  /// Mirrors the biller init logic from lock_screen.dart:
+  /// Fetches user context, auto-selects if one biller, or shows sheet.
+  Future<void> _handleBillerInit() async {
+    setState(() => _isInitializingBiller = true);
+    try {
+      final billerBloc = context.read<BillerBloc>();
+      billerBloc.add(GetUserContext());
+
+      final state = await billerBloc.stream.firstWhere(
+        (s) => s is UserContextLoaded || s is UserContextError,
+      );
+
+      if (state is UserContextError) throw Exception(state.message);
+
+      final contextData = (state as UserContextLoaded).response.data;
+      final storage = getIt<StorageService>();
+      await storage.setString('user_context', jsonEncode(contextData));
+
+      if (!mounted) return;
+
+      if (contextData.allowedBillers.length > 1) {
+        setState(() => _isInitializingBiller = false);
+        BillerSelectorSheet.show(
+          context,
+          allowedBillers: contextData.allowedBillers,
+          currentActiveBiller: contextData.activeBiller,
+          isDismissible: false,
+        );
+      } else {
+        // Auto-select the single biller and go to dashboard
+        if (contextData.allowedBillers.isNotEmpty) {
+          final biller = contextData.allowedBillers.first;
+          billerBloc.add(SetActiveBiller(SetActiveBillerRequest(billerName: biller.name)));
+          await billerBloc.stream.firstWhere(
+            (s) => s is SetActiveBillerSuccess || s is SetActiveBillerError,
+          );
+          billerBloc.add(GetBillerDetails(GetBillerDetailsRequest(billerName: biller.name)));
+          final detailState = await billerBloc.stream.firstWhere(
+            (s) => s is BillerDetailsLoaded || s is BillerDetailsError,
+          );
+          await storage.setString('active_biller', jsonEncode(biller.toJson()));
+          if (detailState is BillerDetailsLoaded) {
+            await storage.setString(
+              'active_biller_details',
+              jsonEncode(detailState.response.data.toJson()),
+            );
+          }
+        }
+        if (mounted) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const DashboardPage()),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isInitializingBiller = false);
+        // Fallback — still go to dashboard even if biller init fails
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (_) => const DashboardPage()),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,131 +127,134 @@ class OtpScreen extends StatelessWidget {
           ),
         ),
       ),
-      body: BlocProvider(
-        create: (context) => getIt<LoginBloc>(),
-        child: BlocConsumer<LoginBloc, LoginState>(
-          listener: (context, state) {
-            if (state is LoginUserSuccess) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  backgroundColor: Colors.green,
-                  content: Text('Verification successful'),
-                ),
-              );
+      body: _isInitializingBiller
+          ? const Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 16),
+                  Text('Setting up your workspace...'),
+                ],
+              ),
+            )
+          : BlocProvider(
+              create: (context) => getIt<LoginBloc>(),
+              child: BlocConsumer<LoginBloc, LoginState>(
+                listener: (context, state) {
+                  if (state is LoginUserSuccess) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        backgroundColor: Colors.green,
+                        content: Text('Verification successful'),
+                      ),
+                    );
 
-              if (title == "reset") {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (_) => SetPasswordPage()),
-                );
-              } else {
-                // Proceed to dashboard or next step similar to login success
-                final storage = getIt<StorageService>();
-                storage.getBool('is_seeded').then((isSeeded) {
-                  if (context.mounted) {
-                    if (isSeeded == true) {
+                    if (widget.title == "reset") {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(
-                          builder: (_) => const DashboardPage(),
-                        ),
+                        MaterialPageRoute(builder: (_) => SetPasswordPage()),
                       );
                     } else {
-                      Navigator.pushReplacement(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              const BussinessTypePage(showBackButton: false),
-                        ),
-                      );
-                    }
-                  }
-                });
-              }
-            } else if (state is VerifyEmailCodeFailure) {
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text(state.error)));
-            }
-          },
-          builder: (context, state) {
-            final isLoading = state is VerifyEmailCodeLoading;
-            return SafeArea(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Center(
-                  child: SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 500),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(height: h * 0.06),
-                          SvgPicture.asset(
-                            "assets/svgs/maiLogo.svg",
-                            height: 70,
-                          ),
-                          const SizedBox(height: 24),
-                          const Text(
-                            "Verification",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontSize: 24,
-                              fontWeight: FontWeight.bold,
+                      final storage = getIt<StorageService>();
+                      storage.getBool('is_seeded').then((isSeeded) {
+                        if (!context.mounted) return;
+                        if (isSeeded == true) {
+                          _handleBillerInit();
+                        } else {
+                          Navigator.pushReplacement(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const BussinessTypePage(showBackButton: false),
                             ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "We sent a code to ${email ?? 'your email'}. Enter the code to proceed",
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(color: Color(0xFF757575)),
-                          ),
-                          const SizedBox(height: 48),
-                          OtpForm(
-                            title: title,
-                            email: email,
-                            isLoading: isLoading,
-                          ),
-                          const SizedBox(height: 16),
-                          ResendCodeWidget(email: email),
-                          SizedBox(
-                            height: MediaQuery.of(context).size.height * 0.03,
-                          ),
-                          if (showBackLogin)
-                            GestureDetector(
-                              onTap: () => {
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context2) => SignInScreen(),
+                          );
+                        }
+                      });
+                    }
+                  } else if (state is VerifyEmailCodeFailure) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text(state.error)),
+                    );
+                  }
+                },
+                builder: (context, state) {
+                  final isLoading = state is VerifyEmailCodeLoading;
+                  return SafeArea(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 500),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(height: h * 0.06),
+                                SvgPicture.asset(
+                                  "assets/svgs/maiLogo.svg",
+                                  height: 70,
+                                ),
+                                const SizedBox(height: 24),
+                                const Text(
+                                  "Verification",
+                                  style: TextStyle(
+                                    color: Colors.black,
+                                    fontSize: 24,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
-                              },
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(Icons.arrow_back, color: AppColors.red),
-                                  SizedBox(width: 4),
-                                  Text(
-                                    "Back to Login",
-                                    style: TextStyle(
-                                      color: AppColors.red,
-                                      fontWeight: FontWeight.w600,
+                                const SizedBox(height: 8),
+                                Text(
+                                  "We sent a code to ${widget.email ?? 'your email'}. Enter the code to proceed",
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(color: Color(0xFF757575)),
+                                ),
+                                const SizedBox(height: 48),
+                                OtpForm(
+                                  title: widget.title,
+                                  email: widget.email,
+                                  isLoading: isLoading,
+                                ),
+                                const SizedBox(height: 16),
+                                ResendCodeWidget(email: widget.email),
+                                SizedBox(
+                                  height: MediaQuery.of(context).size.height * 0.03,
+                                ),
+                                if (widget.showBackLogin)
+                                  GestureDetector(
+                                    onTap: () => {
+                                      Navigator.pushReplacement(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (context2) => SignInScreen(),
+                                        ),
+                                      ),
+                                    },
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      children: [
+                                        Icon(Icons.arrow_back, color: AppColors.red),
+                                        SizedBox(width: 4),
+                                        Text(
+                                          "Back to Login",
+                                          style: TextStyle(
+                                            color: AppColors.red,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
-                                ],
-                              ),
+                              ],
                             ),
-                        ],
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
+                  );
+                },
               ),
-            );
-          },
-        ),
-      ),
+            ),
     );
   }
 }
