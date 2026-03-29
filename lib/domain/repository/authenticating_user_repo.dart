@@ -14,6 +14,10 @@ abstract class AuthenticateUserRepo {
 
   Future<Map<String, dynamic>> verifyEmailCode(String email, String code);
   Future<SendOtpResponse> sendOtpEmail(SendOtpRequest request);
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  });
   Future<SetUserIndustryResponse> setUserIndustry(String industryCode);
   Future<CurrentUserResponse> getCurrentUser();
 }

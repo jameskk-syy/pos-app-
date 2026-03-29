@@ -41,6 +41,17 @@ class AuthenticateUserRepoImpl implements AuthenticateUserRepo {
   }
 
   @override
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    return await remoteDataSource.resetPassword(
+      email: email,
+      newPassword: newPassword,
+    );
+  }
+
+  @override
   Future<SetUserIndustryResponse> setUserIndustry(String industryCode) async {
     return await remoteDataSource.setUserIndustry(industryCode);
   }

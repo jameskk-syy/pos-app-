@@ -261,6 +261,33 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
     }
   }
 
+  Future<Map<String, dynamic>> resetPassword({
+    required String email,
+    required String newPassword,
+  }) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.auth_api.reset_password',
+        data: {'email': email, 'new_password': newPassword},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data is Map<String, dynamic>) {
+        return data;
+      } else {
+        throw Exception('Invalid response format');
+      }
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<Map<String, dynamic>> changePassword({
     required String oldPassword,
     required String newPassword,

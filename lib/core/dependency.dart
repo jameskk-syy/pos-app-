@@ -55,6 +55,7 @@ import 'package:pos/domain/repository/users_repo.dart';
 import 'package:pos/domain/repository/biller_repo.dart';
 import 'package:pos/presentation/crm/bloc/crm_bloc.dart';
 import 'package:pos/presentation/dashboard/bloc/dashboard_bloc.dart';
+import 'package:pos/presentation/forgot_password/bloc/forgot_password_bloc.dart';
 import 'package:pos/presentation/industries/bloc/industries_bloc.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/audit/bloc/audit_bloc.dart';
@@ -254,6 +255,7 @@ void setUp() {
   getIt.registerFactory(() => RegisterBloc(registerRepository: getIt()));
   getIt.registerFactory(() => LoginBloc(authenticateUserRepo: getIt()));
   getIt.registerFactory(() => BillerBloc(billerRepo: getIt()));
+  getIt.registerFactory(() => ForgotPasswordBloc(authenticateUserRepo: getIt()));
   getIt.registerFactory(() => StaffBloc(userListRepo: getIt()));
   getIt.registerFactory(() => CrmBloc(crmRepo: getIt()));
   getIt.registerFactory(() => StoreBloc(storeRepo: getIt()));
