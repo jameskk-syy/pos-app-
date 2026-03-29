@@ -153,7 +153,7 @@ class _OtpScreenState extends State<OtpScreen> {
                     if (widget.title == "reset") {
                       Navigator.pushReplacement(
                         context,
-                        MaterialPageRoute(builder: (_) => SetPasswordPage()),
+                        MaterialPageRoute(builder: (_) => SetPasswordPage(email: widget.email ?? '')),
                       );
                     } else {
                       final storage = getIt<StorageService>();

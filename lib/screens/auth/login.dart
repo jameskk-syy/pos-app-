@@ -8,7 +8,7 @@ import 'package:pos/domain/requests/users/login.dart';
 import 'package:pos/presentation/loginBloc/bloc/login_bloc.dart';
 //import 'package:pos/screens/auth/register_user.dart';
 import 'package:pos/screens/auth/webview_sign_up.dart';
-// import 'package:pos/screens/auth/reset_password.dart';
+import 'package:pos/screens/auth/reset_password.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/screens/auth/otp.dart';
 
@@ -152,12 +152,12 @@ class _SignInScreenState extends State<SignInScreen> {
                             const Spacer(),
                             TextButton(
                               onPressed: () {
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //     builder: (context2) => ResetPasswordPage(),
-                                //   ),
-                                // );
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context2) => const ResetPasswordPage(),
+                                  ),
+                                );
                               },
                               child: Text(
                                 "Forgot Password?",
