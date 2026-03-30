@@ -99,8 +99,8 @@ class _CreateReconciliationPageState extends State<CreateReconciliationPage> {
       postingTime:
           '${postingTime.hour.toString().padLeft(2, '0')}:${postingTime.minute.toString().padLeft(2, '0')}:00',
       purpose: selectedPurpose,
-      expenseAccount: expenseAccountController.text,
-      costCenter: costCenterController.text,
+      expenseAccount: "",
+      costCenter: "",
       items: selectedItems,
       company: currentUserResponse?.message.company.name ?? '',
       doNotSubmit: doNotSubmit,
