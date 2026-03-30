@@ -44,12 +44,14 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
           },
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
-            if (request.url.contains('/login')) {
+            final url = request.url.toLowerCase();
+            if (url.contains('/login')) {
               _navigateNext();
               return NavigationDecision.prevent;
             }
-            if (request.url.contains('/dashboard') ||
-                request.url.contains('/success')) {
+            if (url.contains('/dashboard') ||
+                url.contains('/success') ||
+                url.contains('.pos.saas.techsavanna.technology')) {
               _handleSuccess(request.url);
               return NavigationDecision.prevent;
             }
@@ -79,6 +81,22 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
     if (_isPolling || _isNavigating) return;
 
     try {
+      // If data is a URL, it might be a redirect to the new sub domain
+      if (data.startsWith('http')) {
+        final storage = getIt<StorageService>();
+        await storage.remove('access_token');
+
+        // Extract tenant URL if it's a saas sub domain
+        if (data.contains('.pos.saas.techsavanna.technology')) {
+          final uri = Uri.parse(data);
+          final siteUrl = '${uri.scheme}://${uri.host}';
+          await storage.setString('base_url', siteUrl);
+        }
+        
+        _navigateNext();
+        return;
+      }
+
       final Map<String, dynamic> response = jsonDecode(data);
       final String? siteUrl = response['siteUrl'];
       final String? tenantId = response['tenantId'];
@@ -93,7 +111,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
 
         await _pollTenantStatus(tenantId);
       } else {
-        _navigateNext();                                                             
+        _navigateNext();
       }
     } catch (e) {
       if (data.startsWith('http')) {
@@ -162,9 +180,10 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
     _isNavigating = true;
 
     if (mounted) {
-      Navigator.pushReplacement(
+      Navigator.pushAndRemoveUntil(
         context,
         MaterialPageRoute(builder: (_) => const SignInScreen()),
+        (route) => false,
       );
     }
   }

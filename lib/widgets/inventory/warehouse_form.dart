@@ -168,9 +168,7 @@ class _WarehouseFormState extends State<WarehouseForm> {
           isGroup: isGroupWarehouse,
           isMainDepot: isMainDepot,
           setAsDefault: setAsDefaultWarehouse,
-          account: accountController.text.isNotEmpty
-              ? accountController.text
-              : null,
+          account: "",
           addressLine1: addressLine1Controller.text.isNotEmpty
               ? addressLine1Controller.text
               : null,
@@ -210,9 +208,7 @@ class _WarehouseFormState extends State<WarehouseForm> {
           isGroup: isGroupWarehouse,
           isMainDepot: isMainDepot,
           setAsDefault: setAsDefaultWarehouse,
-          account: accountController.text.isNotEmpty
-              ? accountController.text
-              : null,
+          account: "",
           addressLine1: addressLine1Controller.text.isNotEmpty
               ? addressLine1Controller.text
               : null,

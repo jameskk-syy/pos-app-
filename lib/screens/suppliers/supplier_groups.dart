@@ -370,16 +370,14 @@ class _AddSupplierGroupPageState extends State<AddSupplierGroupPage> {
     }
 
     // Handle payment terms - only send if not "None (Root Group)"
-    String? paymentTerm;
     if (selectedPaymentTerm != 'None (Root Group)') {
-      paymentTerm = selectedPaymentTerm;
     }
 
     // Create the request - using the exact API structure from your example
     final request = CreateSupplierGroupRequest(
       supplierGroupName: groupNameController.text.trim(),
       isGroup: false, // From your API example (is_group: false)
-      paymentTerms: paymentTerm, // Optional field
+      paymentTerms: "", // Optional field
     );
 
     // Dispatch the event

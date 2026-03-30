@@ -104,8 +104,8 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
         fromDate: _fromDateController.text.trim(),
         toDate: _toDateController.text.trim(),
         conversionFactor: conversionFactor,
-        expenseAccount: _expenseAccountController.text.trim(),
-        costCenter: _costCenterController.text.trim(),
+        expenseAccount: "",
+        costCenter: "",
         expiryDuration: expiryDuration,
       );
       context.read<InventoryBloc>().add(CreateLoyaltyProgram(request: request));
