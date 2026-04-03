@@ -25,6 +25,7 @@ import 'package:pos/screens/audit/audit_trail_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/widgets/users/logout_confirmation_dialog.dart';
 import 'package:pos/widgets/inventory/warehouse_selector.dart';
 import 'package:pos/domain/requests/biller/biller_requests.dart';
@@ -71,129 +72,105 @@ class _DashboardPageState extends State<DashboardPage> {
       'icon': Icons.dashboard,
       'title': 'Dashboard',
       'roles': <UserRole>[],
+      'capability': null,
       'pageIndex': 0,
     },
     {
       'icon': Icons.point_of_sale,
       'title': 'Sales Dashboard',
-      'roles': [
-        UserRole.posUser,
-        UserRole.salesManager,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'process_sales',
       'pageIndex': 14,
     },
     {
       'icon': Icons.shopping_bag,
       'title': 'Products',
-      'roles': [
-        UserRole.systemManager,
-        UserRole.inventoryManager,
-        UserRole.stockManager,
-        UserRole.posUser,
-      ],
+      'roles': [],
+      'capability': 'manage_products',
       'pageIndex': 1,
     },
     {
       'icon': Icons.inventory,
       'title': 'Inventory',
-      'roles': [
-        UserRole.inventoryManager,
-        UserRole.stockUser,
-        UserRole.storeManager,
-        UserRole.posUser,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'manage_inventory',
       'pageIndex': 2,
     },
     {
       'icon': Icons.people,
       'title': 'Customers',
-      'roles': [
-        UserRole.posUser,
-        UserRole.storeManager,
-        UserRole.salesManager,
-        UserRole.accountsManager,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'manage_customers',
       'pageIndex': 3,
     },
     {
       'icon': Icons.warehouse,
       'title': 'Stores',
-      'roles': [UserRole.storeManager, UserRole.systemManager],
+      'roles': [],
+      'capability': 'manage_inventory',
       'pageIndex': 4,
     },
     {
       'icon': Icons.local_shipping,
       'title': 'Suppliers',
-      'roles': [
-        UserRole.purchaseManager,
-        UserRole.stockUser,
-        UserRole.accountUser,
-        UserRole.storeManager,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'manage_inventory',
       'pageIndex': 5,
     },
     {
       'icon': Icons.shopping_cart,
       'title': 'Purchases',
-      'roles': [
-        UserRole.purchaseManager,
-        UserRole.stockUser,
-        UserRole.accountUser,
-        UserRole.storeManager,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'manage_purchases',
       'pageIndex': 6,
     },
     {
       'icon': Icons.badge,
       'title': 'Staff',
-      'roles': [UserRole.branchAdmin, UserRole.auditor, UserRole.systemManager],
+      'roles': [],
+      'capability': 'manage_users',
       'pageIndex': 7,
     },
     {
       'icon': Icons.loyalty,
       'title': 'Loyalty Programs',
-      'roles': [
-        UserRole.marketingManager,
-        UserRole.salesManager,
-        UserRole.posUser,
-        UserRole.auditor,
-        UserRole.systemManager,
-      ],
+      'roles': [],
+      'capability': 'manage_settings',
       'pageIndex': 8,
     },
     {
       'icon': Icons.perm_identity,
       'title': 'Roles',
-      'roles': [UserRole.branchAdmin, UserRole.auditor, UserRole.systemManager],
+      'roles': [],
+      'capability': 'manage_users',
       'pageIndex': 9,
     },
     {
       'icon': Icons.bar_chart,
       'title': 'Reports',
-      'roles': [UserRole.auditor, UserRole.systemManager],
+      'roles': [],
+      'capability': 'view_reports',
       'pageIndex': 10,
     },
     {
       'icon': Icons.settings,
       'title': 'Settings',
-      'roles': [UserRole.systemManager],
+      'roles': [],
+      'capability': 'manage_settings',
       'pageIndex': 11,
     },
     {
       'icon': Icons.business_outlined,
       'title': 'Branches / Billers',
-      'roles': [UserRole.systemManager],
+      'roles': [],
+      'capability': 'manage_company',
       'pageIndex': 15,
     },
     {
       'icon': Icons.history,
       'title': 'Audit Trail',
-      'roles': [UserRole.auditor, UserRole.systemManager],
+      'roles': [UserRole.systemManager],
+      'capability': '',
       'pageIndex': 16,
     },
 
@@ -226,8 +203,10 @@ class _DashboardPageState extends State<DashboardPage> {
     super.initState();
     _loadUserRoles();
     _initializeBillerContext();
-    // Re-check inventory notifications
-    // context.read<InventoryBloc>().add(GetLowStockAlerts());
+    // Load capabilities for the current user
+    PermissionHelper.loadUser().then((_) {
+      if (mounted) setState(() {});
+    });
     pages = [
       _ResponsiveWrapper(child: const HomePage()),
       _ResponsiveWrapper(child: const ProductsDashboard()),
@@ -366,8 +345,15 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  bool _hasPermission(List<UserRole> allowedRoles) {
-    if (_userRoles.contains(UserRole.systemManager.name.toLowerCase())) {
+  bool _hasPermission(List<UserRole> allowedRoles, {String? capability}) {
+    // If a capability is provided, use PermissionHelper
+    if (capability != null) {
+      return PermissionHelper.hasCapability(capability);
+    }
+
+    // Fallback to role-based check
+    if (_userRoles.contains(UserRole.systemManager.name.toLowerCase()) ||
+        _userRoles.contains('all')) {
       return true;
     }
     if (allowedRoles.isEmpty) return true;
@@ -382,52 +368,40 @@ class _DashboardPageState extends State<DashboardPage> {
         'icon': Icons.home,
         'label': 'Home',
         'roles': <UserRole>[],
+        'capability': null,
         'pageIndex': 0,
       },
       {
         'icon': Icons.shopping_bag,
         'label': 'Products',
-        'roles': [
-          UserRole.systemManager,
-          UserRole.inventoryManager,
-          UserRole.stockManager,
-          UserRole.posUser,
-        ],
+        'roles': [],
+        'capability': 'manage_products',
         'pageIndex': 1,
       },
       {'isSpacer': true},
       {
         'icon': Icons.inventory,
         'label': 'Inventory',
-        'roles': [
-          UserRole.systemManager,
-          UserRole.inventoryManager,
-          UserRole.stockUser,
-          UserRole.storeManager,
-          UserRole.posUser,
-        ],
+        'roles': [],
+        'capability': 'manage_inventory',
         'pageIndex': 2,
       },
       {
         'icon': Icons.person,
         'label': 'Profile',
         'roles': <UserRole>[],
+        'capability': null,
         'pageIndex': 11,
       },
     ];
 
     return allItems.where((item) {
       if (item['isSpacer'] == true) {
-        return _hasPermission([
-          UserRole.systemManager,
-          UserRole.posUser,
-          UserRole.posManager,
-          UserRole.salesManager,
-          UserRole.accountUser,
-        ]);
+        return _hasPermission([], capability: 'process_sales');
       }
       return _hasPermission(
         List<UserRole>.from((item['roles'] as Iterable?) ?? []),
+        capability: item['capability'] as String?,
       );
     }).toList();
   }
@@ -637,13 +611,7 @@ class _DashboardPageState extends State<DashboardPage> {
                           );
                         }).toList(),
                       ),
-                      if (_hasPermission([
-                        UserRole.systemManager,
-                        UserRole.posUser,
-                        UserRole.posManager,
-                        UserRole.salesManager,
-                        UserRole.accountUser,
-                      ]))
+                      if (_hasPermission([], capability: 'process_sales'))
                         Positioned(
                           left: MediaQuery.of(context).size.width / 2 - 32,
                           top: -20,
@@ -730,9 +698,10 @@ class _DashboardPageState extends State<DashboardPage> {
             itemBuilder: (context, index) {
               final item = menuItems[index];
 
-              // Filter based on roles
+              // Filter based on roles or capabilities
               if (!_hasPermission(
                 List<UserRole>.from((item['roles'] as Iterable?) ?? []),
+                capability: item['capability'] as String?,
               )) {
                 return const SizedBox.shrink();
               }

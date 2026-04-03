@@ -17,6 +17,24 @@ class StoreBloc extends Bloc<StoreEvent, StoreState> {
     on<GetAllStores>(_getAllStores);
     on<Createwarehouse>(_createWarehouse);
     on<UpdateWarehouse>(_updateWarehouse);
+    on<GetWarehouseDetails>(_getWarehouseDetails);
+  }
+
+  Future<void> _getWarehouseDetails(
+    GetWarehouseDetails event,
+    Emitter<StoreState> emit,
+  ) async {
+    emit(WarehouseDetailLoading());
+    try {
+      final response = await storeRepo.getWarehouseDetails(event.name);
+      if (response.message.data.isNotEmpty) {
+        emit(WarehouseDetailLoaded(warehouse: response.message.data.first));
+      } else {
+        emit(StoreStateFailure(error: 'Warehouse not found'));
+      }
+    } catch (e) {
+      emit(StoreStateFailure(error: e.toString()));
+    }
   }
 
   Future<void> _getAllStores(

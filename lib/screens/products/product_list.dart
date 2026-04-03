@@ -13,6 +13,7 @@ import 'package:pos/widgets/products/manage_price_sheet.dart';
 import 'package:pos/widgets/products/product_details_dialog.dart';
 import 'package:pos/widgets/products/products_list.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/core/dependency.dart';
 
 class ProductManagementPage extends StatefulWidget {
@@ -285,38 +286,40 @@ class _ProductManagementPageState extends State<ProductManagementPage> {
                         ),
                       ),
                       const SizedBox(width: 16),
-                      SizedBox(
-                        height: 38,
-                        child: ElevatedButton.icon(
-                          onPressed: () async {
-                            final result = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AddProductPage(),
-                              ),
-                            );
+                      if (PermissionHelper.hasPermission('manage_products:create'))
+                        SizedBox(
+                          height: 38,
+                          child: ElevatedButton.icon(
+                            onPressed: () async {
+                              final result = await Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => const AddProductPage(),
+                                ),
+                              );
 
-                            if (result == true) {
-                              _refreshProducts();
-                            }
-                          },
-                          icon: const Icon(Icons.add, color: Colors.black),
-                          label: const Text(
-                            "Add Product",
-                            style: TextStyle(
-                              color: Colors.black,
-                              fontWeight: FontWeight.bold,
+                              if (result == true) {
+                                _refreshProducts();
+                              }
+                            },
+                            icon: const Icon(Icons.add, color: Colors.black),
+                            label: const Text(
+                              "Add Product",
+                              style: TextStyle(
+                                color: Colors.black,
+                                fontWeight: FontWeight.bold,
+                              ),
                             ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(horizontal: 20),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
                             ),
                           ),
                         ),
-                      ),
                     ],
                   ),
                 ),

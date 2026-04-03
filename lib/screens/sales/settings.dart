@@ -67,12 +67,12 @@ class SettingsPage extends StatelessWidget {
                     );
                   },
                 ),
-                ProfileMenuCard(
-                  svgSrc: markerIconSvg,
-                  title: "Locations",
-                  subTitle: "Add or remove your delivery locations",
-                  press: () {},
-                ),
+                // ProfileMenuCard(
+                //   svgSrc: markerIconSvg,
+                //   title: "Locations",
+                //   subTitle: "Add or remove your delivery locations",
+                //   press: () {},
+                // ),
                 ProfileMenuCard(
                   svgSrc: shareIconSvg,
                   title: "Offline Sync",

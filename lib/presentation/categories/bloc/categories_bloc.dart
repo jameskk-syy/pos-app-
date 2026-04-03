@@ -11,6 +11,7 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
     on<SearchCategories>(_onSearchCategories);
     on<CreateCategory>(_onCreateCategory);
     on<UpdateCategory>(_onUpdateCategory);
+    on<DeleteCategory>(_onDeleteCategory);
   }
 
   Future<void> _onLoadCategories(
@@ -97,6 +98,21 @@ class CategoriesBloc extends Bloc<CategoriesEvent, CategoriesState> {
         event.parentItemGroup,
       );
       emit(const CategoriesActionSuccess("Category updated successfully"));
+      add(LoadCategories());
+    } catch (e) {
+      emit(CategoriesError(e.toString()));
+      add(LoadCategories());
+    }
+  }
+
+  Future<void> _onDeleteCategory(
+    DeleteCategory event,
+    Emitter<CategoriesState> emit,
+  ) async {
+    emit(CategoriesLoading());
+    try {
+      await productsRepo.deleteItemGroup(event.name);
+      emit(const CategoriesActionSuccess("Category deleted successfully"));
       add(LoadCategories());
     } catch (e) {
       emit(CategoriesError(e.toString()));

@@ -22,3 +22,9 @@ class UpdateWarehouse extends StoreEvent {
 
   UpdateWarehouse({required this.updateWarehouseRequest});
 }
+
+class GetWarehouseDetails extends StoreEvent {
+  final String name;
+
+  GetWarehouseDetails({required this.name});
+}

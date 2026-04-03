@@ -17,4 +17,6 @@ abstract class StoreRepo {
   Future<UpdateWarehouseResponse> updateWarehouse(
     UpdateWarehouseRequest updateWarehouseRequest,
   );
+
+  Future<StoreGetResponse> getWarehouseDetails(String name);
 }

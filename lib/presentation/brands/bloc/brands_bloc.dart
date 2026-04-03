@@ -11,6 +11,7 @@ class BrandsBloc extends Bloc<BrandsEvent, BrandsState> {
     on<SearchBrands>(_onSearchBrands);
     on<CreateBrand>(_onCreateBrand);
     on<UpdateBrand>(_onUpdateBrand);
+    on<DeleteBrand>(_onDeleteBrand);
   }
 
   Future<void> _onLoadBrands(
@@ -82,6 +83,21 @@ class BrandsBloc extends Bloc<BrandsEvent, BrandsState> {
     try {
       await productsRepo.updateBrand(event.oldBrandName, event.newBrandName);
       emit(const BrandsActionSuccess("Brand updated successfully"));
+      add(LoadBrands());
+    } catch (e) {
+      emit(BrandsError(e.toString()));
+      add(LoadBrands());
+    }
+  }
+
+  Future<void> _onDeleteBrand(
+    DeleteBrand event,
+    Emitter<BrandsState> emit,
+  ) async {
+    emit(BrandsLoading());
+    try {
+      await productsRepo.deleteBrand(event.brandName, event.company);
+      emit(const BrandsActionSuccess("Brand deleted successfully"));
       add(LoadBrands());
     } catch (e) {
       emit(BrandsError(e.toString()));

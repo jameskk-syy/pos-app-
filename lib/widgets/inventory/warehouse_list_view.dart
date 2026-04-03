@@ -96,6 +96,21 @@ class _WarehouseListViewState extends State<WarehouseListView> {
     );
   }
 
+  Future<void> _onRefresh() async {
+    final company = widget.currentUserResponse?.message.company.name;
+    if (company == null) return;
+
+    setState(() {
+      _currentOffset = 0;
+      _hasMore = true;
+      _isLoading = true;
+    });
+
+    context.read<StoreBloc>().add(
+      GetAllStores(company: company, limit: _limit, offset: 0),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isMobile = ResponsiveHelper.isMobile(context);
@@ -138,99 +153,39 @@ class _WarehouseListViewState extends State<WarehouseListView> {
               }
 
               if (state is StoreStateFailure && _warehouses.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.error_outline,
-                        size: isMobile ? 48 : 64,
-                        color: Colors.red[400],
-                      ),
-                      SizedBox(height: isMobile ? 12 : 16),
-                      Text(
-                        'Error loading warehouses',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(
-                            context,
-                            mobile: 16,
-                            tablet: 18,
-                            desktop: 18,
-                          ),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(height: isMobile ? 6 : 8),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16),
-                        child: Text(
-                          state.error,
-                          style: TextStyle(
-                            fontSize: ResponsiveHelper.getResponsiveFontSize(
-                              context,
-                              mobile: 13,
-                              tablet: 14,
-                              desktop: 14,
-                            ),
-                            color: Colors.grey[600],
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                    ],
+                return RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: _buildErrorState(state.error, isMobile),
+                    ),
                   ),
                 );
               }
 
-              if (filteredWarehouses.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.warehouse_outlined,
-                        size: isMobile ? 48 : 64,
-                        color: Colors.grey[400],
-                      ),
-                      SizedBox(height: isMobile ? 12 : 16),
-                      Text(
-                        widget.searchQuery.isEmpty
-                            ? 'No warehouses found'
-                            : 'No matches found',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(
-                            context,
-                            mobile: 16,
-                            tablet: 18,
-                            desktop: 18,
-                          ),
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey[700],
-                        ),
-                      ),
-                      SizedBox(height: isMobile ? 6 : 8),
-                      Text(
-                        widget.searchQuery.isEmpty
-                            ? 'Add your first warehouse to get started'
-                            : 'Try a different search term',
-                        style: TextStyle(
-                          fontSize: ResponsiveHelper.getResponsiveFontSize(
-                            context,
-                            mobile: 13,
-                            tablet: 14,
-                            desktop: 14,
-                          ),
-                          color: Colors.grey[600],
-                        ),
-                      ),
-                    ],
+              if (filteredWarehouses.isEmpty && !_isLoading) {
+                return RefreshIndicator(
+                  onRefresh: _onRefresh,
+                  child: SingleChildScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: _buildEmptyState(isMobile),
+                    ),
                   ),
                 );
               }
+
               return Column(
                 children: [
-                  Expanded(child: _buildWarehouseTable(filteredWarehouses)),
+                  Expanded(
+                    child: RefreshIndicator(
+                      onRefresh: _onRefresh,
+                      child: _buildWarehouseTable(filteredWarehouses),
+                    ),
+                  ),
                   if (_isLoading)
                     const Padding(
                       padding: EdgeInsets.symmetric(vertical: 8),
@@ -242,6 +197,66 @@ class _WarehouseListViewState extends State<WarehouseListView> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildErrorState(String error, bool isMobile) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.error_outline,
+              size: isMobile ? 48 : 64, color: Colors.red[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Error loading warehouses',
+            style: TextStyle(
+              fontSize: isMobile ? 16 : 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              error,
+              style: TextStyle(color: Colors.grey[600]),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(bool isMobile) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.warehouse_outlined,
+              size: isMobile ? 48 : 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            widget.searchQuery.isEmpty
+                ? 'No warehouses found'
+                : 'No matches found',
+            style: TextStyle(
+              fontSize: isMobile ? 16 : 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[700],
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            widget.searchQuery.isEmpty
+                ? 'Add your first warehouse to get started'
+                : 'Try a different search term',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -265,6 +280,7 @@ class _WarehouseListViewState extends State<WarehouseListView> {
       builder: (context, constraints) {
         return SingleChildScrollView(
           controller: _scrollController,
+          physics: const AlwaysScrollableScrollPhysics(),
           scrollDirection: Axis.vertical,
           child: SingleChildScrollView(
             scrollDirection: Axis.horizontal,

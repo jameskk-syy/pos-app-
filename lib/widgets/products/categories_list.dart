@@ -4,11 +4,13 @@ import 'package:pos/domain/responses/products/item_group.dart';
 class CategoriesList extends StatelessWidget {
   final List<ItemGroup> categories;
   final Function(ItemGroup) onEdit;
+  final Function(ItemGroup) onDelete;
 
   const CategoriesList({
     super.key,
     required this.categories,
     required this.onEdit,
+    required this.onDelete,
   });
 
   @override
@@ -110,6 +112,8 @@ class CategoriesList extends StatelessWidget {
             onSelected: (value) {
               if (value == 'edit') {
                 onEdit(cat);
+              } else if (value == 'delete') {
+                onDelete(cat);
               }
             },
             itemBuilder: (BuildContext context) => [
@@ -120,6 +124,16 @@ class CategoriesList extends StatelessWidget {
                     Icon(Icons.edit, size: 18, color: Colors.blue),
                     SizedBox(width: 8),
                     Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 18, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Delete'),
                   ],
                 ),
               ),

@@ -237,7 +237,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
                         children: [
                           Expanded(
                             child: _buildDropdownField(
-                              label: 'Select Group',
+                              label: 'Select Group*',
                               value: selectedGroup,
                               items: supplierGroups,
                               hint: isLoadingGroups ? 'Loading...' : '...',
@@ -304,7 +304,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
                       ),
                       const SizedBox(height: 14),
                       _buildDropdownField(
-                        label: 'Select Group',
+                        label: 'Select Group*',
                         value: selectedGroup,
                         items: supplierGroups,
                         hint: isLoadingGroups ? 'Loading...' : '...',
@@ -527,6 +527,16 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
       return;
     }
 
+    if (selectedGroup == null || selectedGroup!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a supplier group'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     if (taxIdController.text.isNotEmpty) {
       if (!RegExp(r'^[a-zA-Z0-9]{11}$').hasMatch(taxIdController.text.trim())) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -546,7 +556,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
         company: companyName,
         supplierName: supplierNameController.text.trim(),
         supplierType: selectedType,
-        supplierGroup: selectedGroup ?? 'All Supplier Groups',
+        supplierGroup: selectedGroup!,
         taxId: taxIdController.text.trim().isNotEmpty
             ? taxIdController.text.trim()
             : null,
@@ -564,7 +574,7 @@ class _AddSupplierPageState extends State<AddSupplierPage> {
         company: companyName,
         supplierName: supplierNameController.text.trim(),
         supplierType: selectedType,
-        supplierGroup: selectedGroup ?? 'All Supplier Groups',
+        supplierGroup: selectedGroup!,
         taxId: taxIdController.text.trim().isNotEmpty
             ? taxIdController.text.trim()
             : null,

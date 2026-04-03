@@ -30,4 +30,28 @@ class StoreRemoteDataSource extends BaseRemoteDataSource {
       rethrow;
     }
   }
+
+  Future<StoreGetResponse> getWarehouseDetails(String name) async {
+    try {
+      final response = await dio.get(
+        'techsavanna_pos.api.warehouse_api.get_warehouse_details',
+        queryParameters: {'name': name},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data is! Map<String, dynamic>) {
+        throw Exception('Invalid response format');
+      }
+
+      return StoreGetResponse.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

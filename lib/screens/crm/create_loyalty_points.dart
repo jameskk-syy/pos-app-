@@ -92,9 +92,22 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
         return;
       }
 
+      DateTime? fromDate = DateTime.tryParse(_fromDateController.text);
+      DateTime? toDate = DateTime.tryParse(_toDateController.text);
+
+      if (fromDate == null || toDate == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Please select valid From and To dates'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final conversionFactor =
           double.tryParse(_conversionFactorController.text) ?? 0.0;
-      final expiryDuration = int.tryParse(_expiryDurationController.text) ?? 0;
+      final expiryDuration = toDate.difference(fromDate).inDays;
 
       final request = CreateLoyaltyProgramRequest(
         loyaltyProgramName: _programNameController.text.trim(),
@@ -309,47 +322,15 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                         ),
                         SizedBox(height: isMobile ? 16 : 20),
 
-                        // Expense Account and Cost Center
+                        // Expense Account and Cost Center - HIDDEN
+                        /*
                         if (isMobile) ...[
-                          _buildTextField(
-                            controller: _expenseAccountController,
-                            label: 'Expense Account',
-                            icon: Icons.account_balance_wallet,
-                            isMobile: isMobile,
-                          ),
-                          SizedBox(height: isMobile ? 16 : 20),
-                          _buildTextField(
-                            controller: _costCenterController,
-                            label: 'Cost Center',
-                            icon: Icons.business,
-                            isMobile: isMobile,
-                          ),
-                        ] else ...[
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _expenseAccountController,
-                                  label: 'Expense Account',
-                                  icon: Icons.account_balance_wallet,
-                                  isMobile: isMobile,
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: _buildTextField(
-                                  controller: _costCenterController,
-                                  label: 'Cost Center',
-                                  icon: Icons.business,
-                                  isMobile: isMobile,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                        SizedBox(height: isMobile ? 16 : 20),
+                          _buildTextField( ... )
+                        ]
+                        */
 
-                        // Expiry Duration
+                        // Expiry Duration - HIDDEN
+                        /*
                         _buildTextField(
                           controller: _expiryDurationController,
                           label: 'Expiry Duration (Days)',
@@ -358,6 +339,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                           keyboardType: TextInputType.number,
                           isMobile: isMobile,
                         ),
+                        */
                         SizedBox(height: isMobile ? 16 : 20),
 
                         // Date Range Section
@@ -376,7 +358,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Text(
-                                    'Program Duration (Optional)',
+                                    'Program Duration',
                                     style: TextStyle(
                                       fontSize: isMobile ? 14 : 15,
                                       fontWeight: FontWeight.w600,
@@ -390,12 +372,14 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                 _buildDateField(
                                   controller: _fromDateController,
                                   label: 'From Date',
+                                  required: true,
                                   isMobile: isMobile,
                                 ),
                                 const SizedBox(height: 12),
                                 _buildDateField(
                                   controller: _toDateController,
                                   label: 'To Date',
+                                  required: true,
                                   isMobile: isMobile,
                                 ),
                               ] else ...[
@@ -405,6 +389,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                       child: _buildDateField(
                                         controller: _fromDateController,
                                         label: 'From Date',
+                                        required: true,
                                         isMobile: isMobile,
                                       ),
                                     ),
@@ -413,6 +398,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                       child: _buildDateField(
                                         controller: _toDateController,
                                         label: 'To Date',
+                                        required: true,
                                         isMobile: isMobile,
                                       ),
                                     ),
@@ -420,14 +406,14 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                 ),
                               ],
                               const SizedBox(height: 8),
-                              Text(
-                                'Leave empty for unlimited duration',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  color: Colors.grey[600],
-                                  fontStyle: FontStyle.italic,
-                                ),
-                              ),
+                              // Text(
+                              //   'Leave empty for unlimited duration',
+                              //   style: TextStyle(
+                              //     fontSize: 11,
+                              //     color: Colors.grey[600],
+                              //     fontStyle: FontStyle.italic,
+                              //   ),
+                              // ),
                             ],
                           ),
                         ),
@@ -622,24 +608,48 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
   Widget _buildDateField({
     required TextEditingController controller,
     required String label,
+    bool required = false,
     required bool isMobile,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isMobile ? 12 : 13,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[700],
-          ),
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: isMobile ? 12 : 13,
+                fontWeight: FontWeight.w500,
+                color: Colors.grey[700],
+              ),
+            ),
+            if (required) ...[
+              const SizedBox(width: 4),
+              const Text(
+                '*',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.red,
+                ),
+              ),
+            ],
+          ],
         ),
         const SizedBox(height: 6),
         TextFormField(
           controller: controller,
           readOnly: true,
           onTap: () => _selectDate(context, controller),
+          validator: required
+              ? (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'This field is required';
+                  }
+                  return null;
+                }
+              : null,
           decoration: InputDecoration(
             contentPadding: EdgeInsets.symmetric(
               horizontal: isMobile ? 10 : 12,

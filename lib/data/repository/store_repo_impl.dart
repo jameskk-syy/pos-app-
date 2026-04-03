@@ -71,4 +71,13 @@ class StoreRepoImpl implements StoreRepo {
       updateWarehouseRequest,
     );
   }
+
+  @override
+  Future<StoreGetResponse> getWarehouseDetails(String name) async {
+    try {
+      return await remoteDataSource.getWarehouseDetails(name);
+    } catch (e) {
+      rethrow;
+    }
+  }
 }

@@ -276,6 +276,7 @@ class _StaffAssignmentPageState extends State<StaffAssignmentPage> {
               _showSnackBar('Staff assigned successfully', Colors.green);
               _refreshPage();
             } else if (state is StaffRemovalSuccess) {
+              _showSnackBar(state.message, Colors.green);
               _refreshPage();
             }
           },

@@ -5,6 +5,7 @@ import 'package:pos/screens/auth/lock_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/screens/sales/home_screen.dart';
 
 class SplashScreen extends StatefulWidget {
@@ -61,6 +62,10 @@ class _SplashScreenState extends State<SplashScreen>
 
     if (accessToken != null && accessToken.isNotEmpty) {
       if (encryptedPassword != null && encryptedPassword.isNotEmpty) {
+        // Load capabilities before navigating
+        await PermissionHelper.loadUser();
+        
+        if (!mounted) return;
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(builder: (_) => const LockScreen()),
         );

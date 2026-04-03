@@ -226,13 +226,13 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
       text:
           existingItem?.itemPrice.toStringAsFixed(2) ??
           product.itemPrice?.toStringAsFixed(2) ??
-          '0.00',
+          '',
     );
     final buyingPriceController = TextEditingController(
       text:
           existingItem?.buyingPrice.toStringAsFixed(2) ??
           product.buyingPrice?.toStringAsFixed(2) ??
-          '0.00',
+          '',
     );
 
     showDialog(
@@ -259,7 +259,7 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            existingItem != null ? 'Update itm' : 'Add itm',
+                            existingItem != null ? 'Update itm' : 'Add item',
                             style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.w600,
@@ -643,9 +643,6 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
   Widget _buildProductsTable() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    final allSelected =
-        filteredProducts.isNotEmpty &&
-        filteredProducts.every((p) => cartItemsMap.containsKey(p.sku));
 
     final double horizontalPadding = AppSizes.padding * 2;
     final double contentWidth = screenWidth - horizontalPadding;
@@ -749,13 +746,12 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
                             dataRowMaxHeight: 64,
                             columns: isMobile
                                 ? [
-                                    DataColumn(
-                                      label: SizedBox(
-                                        width: 24,
-                                        child: Checkbox(
-                                          value: allSelected,
-                                          onChanged: (value) =>
-                                              _toggleSelectAll(value),
+                                    const DataColumn(
+                                      label: Text(
+                                        'Select',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 13,
                                         ),
                                       ),
                                     ),
@@ -788,21 +784,12 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
                                     ),
                                   ]
                                 : [
-                                    DataColumn(
-                                      label: Row(
-                                        children: [
-                                          Checkbox(
-                                            value: allSelected,
-                                            onChanged: (value) =>
-                                                _toggleSelectAll(value),
-                                          ),
-                                          const Text(
-                                            'Category',
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ],
+                                    const DataColumn(
+                                      label: Text(
+                                        'Select',
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
                                     ),
                                     const DataColumn(
@@ -1050,30 +1037,4 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
     );
   }
 
-  void _toggleSelectAll(bool? value) {
-    setState(() {
-      if (value == true) {
-        for (var product in filteredProducts) {
-          if (product.sku != null && product.name != null) {
-            cartItemsMap[product.sku!] = CartItemData(
-              itemCode: product.sku!,
-              itemName: product.name!,
-              qty: product.qty ?? 1,
-              itemPrice: product.itemPrice ?? 0.0,
-              buyingPrice: product.buyingPrice ?? 0.0,
-              itemGroup: product.itemGroup ?? "Consumable",
-              uom: product.uom ?? 'Nos',
-            );
-          }
-        }
-      } else {
-        for (var product in filteredProducts) {
-          if (product.sku != null) {
-            cartItemsMap.remove(product.sku);
-          }
-        }
-      }
-      _saveCartToPrefs();
-    });
-  }
 }

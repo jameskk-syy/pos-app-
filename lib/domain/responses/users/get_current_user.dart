@@ -25,6 +25,7 @@ class CurrentUserMessage {
   final PosIndustry posIndustry;
   final List<String> roles;
   final Map<String, List<Permission>> permissions;
+  final BusinessCapabilities businessCapabilities;
   final String defaultWarehouse;
 
   CurrentUserMessage({
@@ -34,8 +35,15 @@ class CurrentUserMessage {
     required this.posIndustry,
     required this.roles,
     required this.permissions,
+    required this.businessCapabilities,
     required this.defaultWarehouse,
   });
+
+  bool hasPermission(String permission) =>
+      businessCapabilities.permissions[permission] ?? false;
+
+  bool hasCapability(String capability) =>
+      businessCapabilities.map.containsKey(capability);
 
   factory CurrentUserMessage.fromJson(Map<String, dynamic> json) {
     final Map<String, List<Permission>> perms = {};
@@ -61,6 +69,9 @@ class CurrentUserMessage {
           json['pos_industry'] as Map<String, dynamic>? ?? {}),
       roles: List<String>.from(json['roles'] ?? []),
       permissions: perms,
+      businessCapabilities: BusinessCapabilities.fromJson(
+        json['business_capabilities'] as Map<String, dynamic>? ?? {},
+      ),
       defaultWarehouse: json['default_warehouse']?.toString() ?? '',
     );
   }
@@ -75,6 +86,7 @@ class CurrentUserMessage {
       'permissions': permissions.map(
         (k, v) => MapEntry(k, v.map((e) => e.toJson()).toList()),
       ),
+      'business_capabilities': businessCapabilities.toJson(),
       'default_warehouse': defaultWarehouse,
     };
   }
@@ -340,6 +352,68 @@ class Permission {
       'applicable_for': applicableFor,
       'is_default': isDefault,
       'hide_descendants': hideDescendants,
+    };
+  }
+}
+
+class BusinessCapabilities {
+  final List<CapabilityItem> list;
+  final Map<String, List<String>> map;
+  final Map<String, bool> permissions;
+
+  BusinessCapabilities({
+    required this.list,
+    required this.map,
+    required this.permissions,
+  });
+
+  factory BusinessCapabilities.fromJson(Map<String, dynamic> json) {
+    final listJson = json['list'] as List? ?? [];
+    final mapJson = json['map'] as Map<String, dynamic>? ?? {};
+    final permissionsJson = json['permissions'] as Map<String, dynamic>? ?? {};
+
+    return BusinessCapabilities(
+      list: listJson
+          .map((e) => CapabilityItem.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      map: mapJson.map(
+        (key, value) => MapEntry(key, List<String>.from(value ?? [])),
+      ),
+      permissions: permissionsJson.map(
+        (key, value) => MapEntry(key, value == true),
+      ),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'list': list.map((e) => e.toJson()).toList(),
+      'map': map,
+      'permissions': permissions,
+    };
+  }
+}
+
+class CapabilityItem {
+  final String capability;
+  final List<String> actions;
+
+  CapabilityItem({
+    required this.capability,
+    required this.actions,
+  });
+
+  factory CapabilityItem.fromJson(Map<String, dynamic> json) {
+    return CapabilityItem(
+      capability: json['capability']?.toString() ?? '',
+      actions: List<String>.from(json['actions'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'capability': capability,
+      'actions': actions,
     };
   }
 }

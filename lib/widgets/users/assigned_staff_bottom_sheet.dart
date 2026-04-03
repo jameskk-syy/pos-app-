@@ -63,22 +63,23 @@ class _AssignedStaffBottomSheetState extends State<AssignedStaffBottomSheet> {
     String email,
     String name,
   ) {
+    final staffBloc = context.read<StaffBloc>();
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text('Confirm Removal'),
         content: Text(
           'Are you sure you want to remove $name from ${widget.store.warehouseName}?',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(dialogContext).pop(),
             child: const Text('Cancel'),
           ),
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop();
-              context.read<StaffBloc>().add(
+              Navigator.of(dialogContext).pop();
+              staffBloc.add(
                 RemoveStaffFromWarehouse(
                   email: email,
                   warehouseName: widget.store.name,
@@ -179,6 +180,9 @@ class _AssignedStaffBottomSheetState extends State<AssignedStaffBottomSheet> {
                       if (widget.onRefresh != null) {
                         widget.onRefresh!();
                       }
+                      // Fetch the updated staff list for this warehouse immediately
+                      _loadStaff();
+
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text(state.message),

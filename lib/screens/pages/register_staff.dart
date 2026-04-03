@@ -15,9 +15,11 @@ import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/widgets/users/edit_staff.dart';
 
 import 'package:pos/widgets/users/manage_user_roles.dart';
+import 'package:pos/widgets/users/staff_multi_select_dialog.dart';
 import 'package:pos/widgets/users/view_staff_widget.dart';
-import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/utils/permission_helper.dart';
+import 'package:pos/core/dependency.dart';
 
 enum StaffMenuAction { viewDetails, edit, manange }
 
@@ -263,29 +265,30 @@ class _RegisterStaffState extends State<RegisterStaff> {
               ),
             ),
             const SizedBox(width: 16),
-            SizedBox(
-              width: 150,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: () {
-                  debugPrint('Add Staff button pressed');
-                  setState(() {
-                    _showCreateStaff = true;
-                  });
-                },
-                icon: const Icon(Icons.add, color: AppColors.white),
-                label: const Text(
-                  'Add Staff',
-                  style: TextStyle(color: AppColors.white),
-                ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
+            if (PermissionHelper.hasPermission('manage_users:create'))
+              SizedBox(
+                width: 150,
+                height: 48,
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    debugPrint('Add Staff button pressed');
+                    setState(() {
+                      _showCreateStaff = true;
+                    });
+                  },
+                  icon: const Icon(Icons.add, color: AppColors.white),
+                  label: const Text(
+                    'Add Staff',
+                    style: TextStyle(color: AppColors.white),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                 ),
               ),
-            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -470,12 +473,14 @@ class _RegisterStaffState extends State<RegisterStaff> {
                     'View Details',
                     StaffMenuAction.viewDetails,
                   ),
-                  _menuItem(Icons.edit, 'Edit', StaffMenuAction.edit),
-                  _menuItem(
-                    Icons.assignment,
-                    'Manage Roles',
-                    StaffMenuAction.manange,
-                  ),
+                  if (PermissionHelper.hasPermission('manage_users:edit'))
+                    _menuItem(Icons.edit, 'Edit', StaffMenuAction.edit),
+                  if (PermissionHelper.hasPermission('manage_users:edit'))
+                    _menuItem(
+                      Icons.assignment,
+                      'Manage Roles',
+                      StaffMenuAction.manange,
+                    ),
                   // _menuItem(Icons.block, 'Disable', StaffMenuAction.disable),
                 ],
               ),
@@ -1040,363 +1045,39 @@ class _RegisterStaffState extends State<RegisterStaff> {
   }
 
   Future<void> _showMultiSelectRolesDialog(List<String> availableRoles) async {
-    final List<String> tempSelectedRoles = List.from(_selectedRoles);
-    final TextEditingController rolesSearchController = TextEditingController();
-
-    await showDialog(
+    final result = await showDialog<List<String>>(
       context: context,
-      builder: (context) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
-        final isMobile = screenWidth < 600;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            // Filtered list based on search query
-            final query = rolesSearchController.text.toLowerCase();
-            final filteredRoles = query.isEmpty
-                ? availableRoles
-                : availableRoles
-                      .where((role) => role.toLowerCase().contains(query))
-                      .toList();
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              insetPadding: isMobile
-                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 24)
-                  : const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isMobile ? screenWidth : 520,
-                  maxHeight: screenHeight * (isMobile ? 0.75 : 0.65),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // ── Header ──────────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Select Staff Roles',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 20),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // ── Search field ─────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: TextField(
-                        controller: rolesSearchController,
-                        autofocus: false,
-                        decoration: InputDecoration(
-                          hintText: 'Search roles...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: rolesSearchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    rolesSearchController.clear();
-                                    setDialogState(() {});
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (_) => setDialogState(() {}),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(height: 1),
-                    // ── Roles list ───────────────────────────────────────────
-                    Expanded(
-                      child: filteredRoles.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No roles found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: filteredRoles.length,
-                              itemBuilder: (_, index) {
-                                final role = filteredRoles[index];
-                                final isChecked = tempSelectedRoles.contains(
-                                  role,
-                                );
-                                return CheckboxListTile(
-                                  value: isChecked,
-                                  title: Text(
-                                    role,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isChecked
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  activeColor: Colors.blue,
-                                  controlAffinity:
-                                      ListTileControlAffinity.leading,
-                                  onChanged: (checked) {
-                                    setDialogState(() {
-                                      if (checked == true) {
-                                        tempSelectedRoles.add(role);
-                                      } else {
-                                        tempSelectedRoles.remove(role);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                    const Divider(height: 1),
-                    // ── Actions ──────────────────────────────────────────────
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedRoles = tempSelectedRoles;
-                              });
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Confirm',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => StaffMultiSelectDialog(
+        title: 'Select Staff Roles',
+        availableItems: availableRoles,
+        initialSelectedItems: _selectedRoles,
+        searchHint: 'Search roles...',
+      ),
     );
 
-    rolesSearchController.dispose();
+    if (result != null) {
+      setState(() {
+        _selectedRoles = result;
+      });
+    }
   }
 
   Future<void> _showMultiSelectBillersDialog(List<String> availableBillers) async {
-    final List<String> tempSelectedBillers = List.from(_selectedBillers);
-    final TextEditingController searchController = TextEditingController();
-
-    await showDialog(
+    final result = await showDialog<List<String>>(
       context: context,
-      builder: (context) {
-        final screenWidth = MediaQuery.of(context).size.width;
-        final screenHeight = MediaQuery.of(context).size.height;
-        final isMobile = screenWidth < 600;
-
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            final query = searchController.text.toLowerCase();
-            final filtered = query.isEmpty
-                ? availableBillers
-                : availableBillers
-                      .where((b) => b.toLowerCase().contains(query))
-                      .toList();
-
-            return Dialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              insetPadding: isMobile
-                  ? const EdgeInsets.symmetric(horizontal: 16, vertical: 24)
-                  : const EdgeInsets.symmetric(horizontal: 80, vertical: 40),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: isMobile ? screenWidth : 520,
-                  maxHeight: screenHeight * (isMobile ? 0.75 : 0.65),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 8, 0),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            child: Text(
-                              'Select Allowed Branches',
-                              style: TextStyle(
-                                fontSize: 17,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                          IconButton(
-                            icon: const Icon(Icons.close, size: 20),
-                            onPressed: () => Navigator.of(context).pop(),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-                      child: TextField(
-                        controller: searchController,
-                        autofocus: false,
-                        decoration: InputDecoration(
-                          hintText: 'Search branches...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    setDialogState(() {});
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (_) => setDialogState(() {}),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: filtered.isEmpty
-                          ? const Center(
-                              child: Text(
-                                'No branches found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            )
-                          : ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: filtered.length,
-                              itemBuilder: (_, index) {
-                                final biller = filtered[index];
-                                final isChecked = tempSelectedBillers.contains(biller);
-                                return CheckboxListTile(
-                                  value: isChecked,
-                                  title: Text(
-                                    biller,
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      fontWeight: isChecked
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                    ),
-                                  ),
-                                  activeColor: Colors.blue,
-                                  controlAffinity: ListTileControlAffinity.leading,
-                                  onChanged: (checked) {
-                                    setDialogState(() {
-                                      if (checked == true) {
-                                        tempSelectedBillers.add(biller);
-                                      } else {
-                                        tempSelectedBillers.remove(biller);
-                                      }
-                                    });
-                                  },
-                                );
-                              },
-                            ),
-                    ),
-                    const Divider(height: 1),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            child: const Text('Cancel'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              setState(() {
-                                _selectedBillers = tempSelectedBillers;
-                              });
-                              Navigator.of(context).pop();
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                            ),
-                            child: const Text(
-                              'Confirm',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      builder: (context) => StaffMultiSelectDialog(
+        title: 'Select Allowed Branches',
+        availableItems: availableBillers,
+        initialSelectedItems: _selectedBillers,
+        searchHint: 'Search branches...',
+      ),
     );
 
-    searchController.dispose();
+    if (result != null) {
+      setState(() {
+        _selectedBillers = result;
+      });
+    }
   }
 
   void _createStaffUser(BuildContext context) {

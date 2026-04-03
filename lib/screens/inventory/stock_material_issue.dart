@@ -11,6 +11,7 @@ import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/widgets/common/delete_confirmation_dialog.dart';
+import 'package:pos/widgets/common/error_dialog.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
 
@@ -126,12 +127,7 @@ class _MaterialIssuePageState extends State<MaterialIssuePage> {
               );
               Navigator.pop(context, true);
             } else if (state is CreateMaterialIssueError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error: ${state.message}'),
-                  backgroundColor: Colors.red,
-                ),
-              );
+              ErrorDialog.show(context, state.message);
             }
           },
         ),
