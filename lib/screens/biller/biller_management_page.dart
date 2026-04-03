@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/domain/requests/biller/biller_requests.dart';
 import 'package:pos/domain/models/biller_models.dart';
 import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
@@ -86,27 +87,29 @@ class _BillerManagementPageState extends State<BillerManagementPage> {
     return Scaffold(
       backgroundColor: Colors.grey[200],
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         title: const Text('Branches / Billers'),
         backgroundColor: Colors.white,
         foregroundColor: Colors.blue,
         elevation: 0.5,
         actions: [
-          IconButton(
-            icon: const Icon(Icons.add_business),
-            tooltip: 'Add New Biller',
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const CreateBillerPage()),
-              );
-              if (result == true && mounted) {
-                await Future.delayed(const Duration(milliseconds: 500));
-                if (mounted) {
-                  _fetchBillers(_searchController.text);
+          if (PermissionHelper.hasPermission('manage_businesses:create'))
+            IconButton(
+              icon: const Icon(Icons.add),
+              tooltip: 'Add New Biller',
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const CreateBillerPage()),
+                );
+                if (result == true && mounted) {
+                  await Future.delayed(const Duration(milliseconds: 500));
+                  if (mounted) {
+                    _fetchBillers(_searchController.text);
+                  }
                 }
-              }
-            },
-          ),
+              },
+            ),
           const SizedBox(width: 8),
         ],
       ),

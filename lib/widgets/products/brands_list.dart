@@ -4,8 +4,14 @@ import 'package:pos/domain/responses/products/item_brand.dart';
 class BrandsList extends StatelessWidget {
   final List<Brand> brands;
   final Function(Brand) onEdit;
+  final Function(Brand) onDelete;
 
-  const BrandsList({super.key, required this.brands, required this.onEdit});
+  const BrandsList({
+    super.key,
+    required this.brands,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -59,6 +65,8 @@ class BrandsList extends StatelessWidget {
             onSelected: (value) {
               if (value == 'edit') {
                 onEdit(brand);
+              } else if (value == 'delete') {
+                onDelete(brand);
               }
             },
             itemBuilder: (BuildContext context) => [
@@ -69,6 +77,16 @@ class BrandsList extends StatelessWidget {
                     Icon(Icons.edit, size: 18, color: Colors.blue),
                     SizedBox(width: 8),
                     Text('Edit'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    Icon(Icons.delete, size: 18, color: Colors.red),
+                    SizedBox(width: 8),
+                    Text('Delete'),
                   ],
                 ),
               ),

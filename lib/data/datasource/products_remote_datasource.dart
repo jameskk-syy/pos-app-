@@ -232,6 +232,28 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
     }
   }
 
+  Future<void> deleteBrand(String brandName, String company) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.product_api.delete_brand',
+        data: {'brand_name': brandName, 'company': company},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data == null || data['message'] == null) {
+        throw Exception('Invalid response from server');
+      }
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
+      throw Exception(e.toString());
+    }
+  }
+
   // --- Item Group Methods ---
 
   Future<void> createItemGroup(
@@ -301,6 +323,28 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
       throw Exception(getErrorMessage(e));
     } catch (e) {
       // debugPrint(e.toString());
+      throw Exception(e.toString());
+    }
+  }
+
+  Future<void> deleteItemGroup(String name) async {
+    try {
+      final response = await dio.post(
+        'techsavanna_pos.api.product_api.delete_item_group',
+        data: {'name': name},
+      );
+
+      if (response.statusCode != 200) {
+        throw Exception('Server returned ${response.statusCode}');
+      }
+
+      final data = response.data;
+      if (data == null || data['message'] == null) {
+        throw Exception('Invalid response from server');
+      }
+    } on DioException catch (e) {
+      throw Exception(getErrorMessage(e));
+    } catch (e) {
       throw Exception(e.toString());
     }
   }

@@ -36,3 +36,13 @@ class UpdateBrand extends BrandsEvent {
   @override
   List<Object?> get props => [oldBrandName, newBrandName];
 }
+
+class DeleteBrand extends BrandsEvent {
+  final String brandName;
+  final String company;
+
+  const DeleteBrand({required this.brandName, required this.company});
+
+  @override
+  List<Object?> get props => [brandName, company];
+}

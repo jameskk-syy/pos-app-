@@ -62,6 +62,33 @@ class _CategoriesPageState extends State<CategoriesPage> {
     );
   }
 
+  void _onDeleteCategory(ItemGroup category) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Category'),
+        content: Text(
+          'Are you sure you want to delete category "${category.itemGroupName}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      _categoriesBloc.add(DeleteCategory(name: category.name));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocProvider.value(
@@ -166,6 +193,7 @@ class _CategoriesPageState extends State<CategoriesPage> {
       return CategoriesList(
         categories: state.filteredCategories,
         onEdit: _onEditCategory,
+        onDelete: _onDeleteCategory,
       );
     }
     return const Center(child: CircularProgressIndicator());

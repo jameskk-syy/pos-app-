@@ -56,7 +56,7 @@ class _MaterialReceiptPageState extends State<MaterialReceiptPage> {
                 children: [
                   _twoColumnRow(
                     left: _fieldLabel(
-                      "Target Warehouse*",
+                      "Target Warehouses*",
                       DropdownButtonFormField<String>(
                         items: const [],
                         onChanged: (v) {},

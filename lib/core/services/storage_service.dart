@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class StorageService {
@@ -11,7 +12,7 @@ class StorageService {
   }
 
   Future<String?> getString(String key) async {
-    return await _storage.read(key: key);
+    return await _safeRead(key);
   }
 
   Future<void> setBool(String key, bool value) async {
@@ -19,7 +20,7 @@ class StorageService {
   }
 
   Future<bool?> getBool(String key) async {
-    final value = await _storage.read(key: key);
+    final value = await _safeRead(key);
     if (value == null) return null;
     return value == 'true';
   }
@@ -29,7 +30,7 @@ class StorageService {
   }
 
   Future<int?> getInt(String key) async {
-    final value = await _storage.read(key: key);
+    final value = await _safeRead(key);
     return value != null ? int.tryParse(value) : null;
   }
 
@@ -43,7 +44,7 @@ class StorageService {
   }
 
   Future<String?> getEncryptedPassword() async {
-    return await _storage.read(key: 'encrypted_password');
+    return await _safeRead('encrypted_password');
   }
 
   Future<void> removeEncryptedPassword() async {
@@ -52,5 +53,19 @@ class StorageService {
 
   Future<void> clear() async {
     await _storage.deleteAll();
+  }
+
+  /// Safely reads a value from secure storage, handling potential decryption errors.
+  Future<String?> _safeRead(String key) async {
+    try {
+      return await _storage.read(key: key);
+    } catch (e) {
+      if (e is PlatformException) {
+        // Handle Android KeyStore decryption failures (e.g. BadPaddingException)
+        // by clearing the corrupted storage.
+        await clear();
+      }
+      return null;
+    }
   }
 }

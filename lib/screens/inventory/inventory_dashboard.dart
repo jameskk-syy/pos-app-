@@ -9,6 +9,7 @@ import 'package:pos/screens/inventory/stock_receipt_page.dart';
 import 'package:pos/widgets/common/barcode_scanner_screen.dart';
 import 'package:pos/widgets/inventory/stock_level_detail_dialog.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/core/dependency.dart';
 // import 'package:pos/screens/inventory/create_material_transfer.dart';
 import 'package:pos/screens/inventory/inventory_discount_rules_screen.dart';
@@ -192,63 +193,67 @@ class _InventoryDashboardsState extends State<InventoryDashboards> {
                   const SizedBox(height: 10),
 
                   _grid([
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFE3F2FD),
-                      iconColor: Colors.blue,
-                      icon: Icons.inventory_2_outlined,
-                      title: "Stock Summary",
-                      subtitle: "View stock levels across",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => StockSummaryPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFF3E0),
-                      iconColor: Colors.orange,
-                      icon: Icons.warning_amber_outlined,
-                      title: "Low Stock Alert",
-                      subtitle: "Items below threshold",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => LowStockAlertPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFE8F5E9),
-                      iconColor: Colors.green,
-                      icon: Icons.receipt_long_outlined,
-                      title: "Stock Ledger",
-                      subtitle: "Transaction history",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => StockLedgerDetailsPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFEBEE),
-                      iconColor: Colors.red,
-                      icon: Icons.list_alt_outlined,
-                      title: "Stock Level Monitoring",
-                      subtitle: "View and track details",
-                      onTap: () => _handleStockMonitoring(),
-                    ),
+                    if (PermissionHelper.hasCapability('manage_inventory'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFE3F2FD),
+                        iconColor: Colors.blue,
+                        icon: Icons.inventory_2_outlined,
+                        title: "Stock Summary",
+                        subtitle: "View stock levels across",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StockSummaryPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:view'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFF3E0),
+                        iconColor: Colors.orange,
+                        icon: Icons.warning_amber_outlined,
+                        title: "Low Stock Alert",
+                        subtitle: "Items below threshold",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => LowStockAlertPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:view'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFE8F5E9),
+                        iconColor: Colors.green,
+                        icon: Icons.receipt_long_outlined,
+                        title: "Stock Ledger",
+                        subtitle: "Transaction history",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => StockLedgerDetailsPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:view'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFEBEE),
+                        iconColor: Colors.red,
+                        icon: Icons.list_alt_outlined,
+                        title: "Stock Level Monitoring",
+                        subtitle: "View and track details",
+                        onTap: () => _handleStockMonitoring(),
+                      ),
                   ]),
 
                   const SizedBox(height: 24),
@@ -256,126 +261,133 @@ class _InventoryDashboardsState extends State<InventoryDashboards> {
                   _sectionTitle("Stock Movements", Colors.blue),
                   const SizedBox(height: 10),
                   _grid([
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFE3F2FD),
-                      iconColor: Colors.blue,
-                      icon: Icons.input_outlined,
-                      title: "Stock Entries",
-                      subtitle: "View all stock entries",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => StockEntriesPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFF3E0),
-                      iconColor: Colors.orange,
-                      icon: Icons.download_outlined,
-                      title: "Material Receipt",
-                      subtitle: "Log incoming receipts",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => StockReceiptPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFE8F5E9),
-                      iconColor: Colors.green,
-                      icon: Icons.upload_outlined,
-                      title: "Material Issues",
-                      subtitle: "View and create issues",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => MaterialIssuePage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFEBEE),
-                      iconColor: Colors.red,
-                      icon: Icons.sync_alt_outlined,
-                      title: "Stock  Transfers",
-                      subtitle: "View and create transfers",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => StockTransferPage(),
-                          ),
-                        );
-                      },
-                    ),
+                    if (PermissionHelper.hasPermission('manage_inventory:view'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFE3F2FD),
+                        iconColor: Colors.blue,
+                        icon: Icons.input_outlined,
+                        title: "Stock Entries",
+                        subtitle: "View all stock entries",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => StockEntriesPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:create'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFF3E0),
+                        iconColor: Colors.orange,
+                        icon: Icons.download_outlined,
+                        title: "Material Receipt",
+                        subtitle: "Log incoming receipts",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => StockReceiptPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:create'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFE8F5E9),
+                        iconColor: Colors.green,
+                        icon: Icons.upload_outlined,
+                        title: "Material Issues",
+                        subtitle: "View and create issues",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => MaterialIssuePage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:create'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFEBEE),
+                        iconColor: Colors.red,
+                        icon: Icons.sync_alt_outlined,
+                        title: "Stock  Transfers",
+                        subtitle: "View and create transfers",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => StockTransferPage(),
+                            ),
+                          );
+                        },
+                      ),
                   ]),
                   const SizedBox(height: 24),
 
                   _sectionTitle("Stock Management", Colors.blue),
                   const SizedBox(height: 10),
                   _grid([
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFE3F2FD),
-                      iconColor: Colors.blue,
-                      icon: Icons.add_box_outlined,
-                      title: "Stock Entry",
-                      subtitle: "Create stock entry",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) => StockEntryPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFF3E0),
-                      iconColor: Colors.orange,
-                      icon: Icons.checklist_outlined,
-                      title: "Stock Multi Reconciliation",
-                      subtitle: "Reconcile stock counts",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) =>
-                                StockReconciliationMultiPage(),
-                          ),
-                        );
-                      },
-                    ),
-                    InventoryCard(
-                      backgroundColor: Colors.white,
-                      iconBackgroundColor: const Color(0xFFFFF3E0),
-                      iconColor: Colors.orange,
-                      icon: Icons.checklist_outlined,
-                      title: "Inventory Discounts",
-                      subtitle: "apply discount rules",
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context2) =>
-                                InventoryDiscountRulesScreen(),
-                          ),
-                        );
-                      },
-                    ),
+                    if (PermissionHelper.hasPermission('manage_inventory:create'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFE3F2FD),
+                        iconColor: Colors.blue,
+                        icon: Icons.add_box_outlined,
+                        title: "Stock Entry",
+                        subtitle: "Create stock entry",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) => StockEntryPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:create'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFF3E0),
+                        iconColor: Colors.orange,
+                        icon: Icons.checklist_outlined,
+                        title: "Stock Multi Reconciliation",
+                        subtitle: "Reconcile stock counts",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) =>
+                                  StockReconciliationMultiPage(),
+                            ),
+                          );
+                        },
+                      ),
+                    if (PermissionHelper.hasPermission('manage_inventory:edit'))
+                      InventoryCard(
+                        backgroundColor: Colors.white,
+                        iconBackgroundColor: const Color(0xFFFFF3E0),
+                        iconColor: Colors.orange,
+                        icon: Icons.checklist_outlined,
+                        title: "Inventory Discounts",
+                        subtitle: "apply discount rules",
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context2) =>
+                                  InventoryDiscountRulesScreen(),
+                            ),
+                          );
+                        },
+                      ),
                   ]),
                 ],
               ),

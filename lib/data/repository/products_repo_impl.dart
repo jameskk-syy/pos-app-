@@ -232,6 +232,16 @@ class ProductsRepoImpl implements ProductsRepo {
   }
 
   @override
+  Future<void> deleteBrand(String brandName, String company) async {
+    await productsRemoteDataSource.deleteBrand(brandName, company);
+  }
+
+  @override
+  Future<void> deleteItemGroup(String name) async {
+    await productsRemoteDataSource.deleteItemGroup(name);
+  }
+
+  @override
   Future<UOMResponse> getUnitOfmeasure() async {
     return await productsRemoteDataSource.getUom();
   }

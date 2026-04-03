@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/domain/responses/products/product_response.dart';
 
 class ProductsList extends StatelessWidget {
@@ -207,16 +208,17 @@ class ProductsList extends StatelessWidget {
           itemBuilder: (BuildContext context) {
             if (!product.isActive) {
               return [
-                const PopupMenuItem<String>(
-                  value: 'enable',
-                  child: Row(
-                    children: [
-                      Icon(Icons.check_circle, size: 18, color: Colors.green),
-                      SizedBox(width: 12),
-                      Text('Enable Product'),
-                    ],
+                if (PermissionHelper.hasPermission('manage_products:edit'))
+                  const PopupMenuItem<String>(
+                    value: 'enable',
+                    child: Row(
+                      children: [
+                        Icon(Icons.check_circle, size: 18, color: Colors.green),
+                        SizedBox(width: 12),
+                        Text('Enable Product'),
+                      ],
+                    ),
                   ),
-                ),
               ];
             }
             return [
@@ -230,49 +232,53 @@ class ProductsList extends StatelessWidget {
                   ],
                 ),
               ),
-              const PopupMenuItem<String>(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit, size: 18),
-                    SizedBox(width: 12),
-                    Text('Edit Product'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_products:edit'))
+                const PopupMenuItem<String>(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, size: 18),
+                      SizedBox(width: 12),
+                      Text('Edit Product'),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'barcode',
-                child: Row(
-                  children: [
-                    Icon(Icons.qr_code, size: 18),
-                    SizedBox(width: 12),
-                    Text('Manage Barcode'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_products:edit'))
+                const PopupMenuItem<String>(
+                  value: 'barcode',
+                  child: Row(
+                    children: [
+                      Icon(Icons.qr_code, size: 18),
+                      SizedBox(width: 12),
+                      Text('Manage Barcode'),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'price',
-                child: Row(
-                  children: [
-                    Icon(Icons.attach_money, size: 18),
-                    SizedBox(width: 12),
-                    Text('Manage Price'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_products:edit'))
+                const PopupMenuItem<String>(
+                  value: 'price',
+                  child: Row(
+                    children: [
+                      Icon(Icons.attach_money, size: 18),
+                      SizedBox(width: 12),
+                      Text('Manage Price'),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'disable',
-                child: Row(
-                  children: [
-                    Icon(Icons.block, size: 18, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text(
-                      'Disable Product',
-                      style: TextStyle(color: Colors.red),
-                    ),
-                  ],
+              if (PermissionHelper.hasPermission('manage_products:edit'))
+                const PopupMenuItem<String>(
+                  value: 'disable',
+                  child: Row(
+                    children: [
+                      Icon(Icons.block, size: 18, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text(
+                        'Disable Product',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
             ];
           },
         ),

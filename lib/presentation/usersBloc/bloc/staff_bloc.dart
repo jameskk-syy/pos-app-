@@ -143,7 +143,7 @@ class StaffBloc extends Bloc<StaffEvent, StaffState> {
     RemoveStaffFromWarehouse event,
     Emitter<StaffState> emit,
   ) async {
-    // emit(StaffStateLoading()); // Optional: loading state if you want to show a spinner during removal
+    emit(StaffStateLoading());
     try {
       final response = await userListRepo.removeStaffFromWarehouse(
         event.email,

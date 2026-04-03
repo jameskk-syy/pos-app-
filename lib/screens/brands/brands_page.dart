@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/domain/responses/products/item_brand.dart';
 import 'package:pos/presentation/brands/bloc/brands_bloc.dart';
 import 'package:pos/presentation/brands/bloc/brands_event.dart';
@@ -61,6 +63,54 @@ class _BrandsPageState extends State<BrandsPage> {
         child: EditBrandDialog(brand: brand),
       ),
     );
+  }
+
+  Future<String?> _getCompany() async {
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
+    if (userString == null) return null;
+    final userMap = jsonDecode(userString);
+    if (userMap['message'] != null && userMap['message']['company'] != null) {
+      return userMap['message']['company']['name'];
+    }
+    return null;
+  }
+
+  void _onDeleteBrand(Brand brand) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Brand'),
+        content: Text(
+          'Are you sure you want to delete brand "${brand.brandName}"?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      final company = await _getCompany();
+      if (company != null) {
+        _brandsBloc.add(
+          DeleteBrand(brandName: brand.brandName, company: company),
+        );
+      } else {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not determine company')),
+        );
+      }
+    }
   }
 
   @override
@@ -164,7 +214,11 @@ class _BrandsPageState extends State<BrandsPage> {
     } else if (state is BrandsError && state is! BrandsLoaded) {
       return Center(child: Text(state.message));
     } else if (state is BrandsLoaded) {
-      return BrandsList(brands: state.filteredBrands, onEdit: _onEditBrand);
+      return BrandsList(
+        brands: state.filteredBrands,
+        onEdit: _onEditBrand,
+        onDelete: _onDeleteBrand,
+      );
     }
     return const Center(child: CircularProgressIndicator());
   }

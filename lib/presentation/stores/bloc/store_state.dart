@@ -20,3 +20,11 @@ final class StoreStateFailure extends StoreState {
 }
 
 final class StoreUpdateSuccessState extends StoreState {}
+
+final class WarehouseDetailLoading extends StoreState {}
+
+final class WarehouseDetailLoaded extends StoreState {
+  final Warehouse warehouse;
+
+  WarehouseDetailLoaded({required this.warehouse});
+}

@@ -96,7 +96,6 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
             }
           },
         ),
-        // ADD THIS NEW LISTENER FOR MATERIAL RECEIPT
         BlocListener<InventoryBloc, InventoryState>(
           listener: (context, state) {
             if (state is CreateMaterialReceiptSuccess) {
@@ -113,8 +112,9 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
             } else if (state is CreateMaterialReceiptError) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Error: ${state.message}'),
+                  content: Text(_formatErrorMessage(state.message)),
                   backgroundColor: Colors.red,
+                  showCloseIcon: true,
                 ),
               );
             }
@@ -137,7 +137,6 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
             style: TextStyle(color: Colors.black, fontSize: 18),
           ),
           actions: [
-            // TextButton(onPressed: () {}, child: const Text('View History')),
             const SizedBox(width: 12),
           ],
         ),
@@ -177,7 +176,6 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
     );
   }
 
-  // ─── Searchable picker bottom sheet ──────────────────────────────────────
   Future<T?> _showSearchableBottomSheet<T>({
     required BuildContext context,
     required String title,
@@ -744,6 +742,30 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
         );
       },
     );
+  }
+
+  String _formatErrorMessage(String message) {
+    var coreMessage = message;
+    
+    if (coreMessage.startsWith('Error: ')) {
+      coreMessage = coreMessage.substring(7);
+    }
+    
+    if (coreMessage.contains('Valuation Rate for the Item')) {
+      final itemMatch = RegExp(r'Valuation Rate for the Item (.*?), is required').firstMatch(coreMessage);
+      if (itemMatch != null) {
+        return 'Valuation Rate for Item ${itemMatch.group(1)}, is required,  please manage price at product  level';
+      }
+    }
+
+    final regex = RegExp(r'\.([A-Z])|\. (Here|If|Please|You|Note)');
+    final match = regex.firstMatch(coreMessage);
+    
+    if (match != null) {
+      coreMessage = '${coreMessage.substring(0, match.start).trim()}.';
+    }
+    
+    return coreMessage;
   }
 
   void _submitMaterialReceipt() {

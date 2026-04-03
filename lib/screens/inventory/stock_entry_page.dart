@@ -198,7 +198,6 @@ class _StockEntryPageState extends State<StockEntryPage> {
     );
   }
 
-  // ─── Searchable picker bottom sheet ──────────────────────────────────────
   Future<T?> _showSearchableBottomSheet<T>({
     required BuildContext context,
     required String title,
@@ -838,7 +837,6 @@ class _StockEntryPageState extends State<StockEntryPage> {
   }
 
   void _submit() {
-    // Validations
     if ((selectedType == 'Material Issue' ||
             selectedType == 'Material Transfer') &&
         _selectedSourceStoreName == null) {
@@ -872,14 +870,6 @@ class _StockEntryPageState extends State<StockEntryPage> {
                 itemCode: item.itemCode!,
                 qty: item.quantity.toDouble(),
                 tWarehouse: _selectedTargetStoreName!,
-                // Note: MaterialReceiptItem logic from page had no rate?
-                // Wait, StockReceiptPage items had basicRate but request didn't use it?
-                // Let me double check CreateMaterialReceiptRequest structure.
-                // In StockReceiptPage:
-                // MaterialReceiptItem(itemCode: ..., qty: ..., tWarehouse: ...)
-                // It seems Basic Rate is NOT part of the request in the other file?
-                // Let's assume it isn't or I should check the file.
-                // For now I follow StockReceiptPage implementation.
               ),
             )
             .toList(),
@@ -933,9 +923,37 @@ class _StockEntryPageState extends State<StockEntryPage> {
     }
   }
 
+  String _formatErrorMessage(String message) {
+    var coreMessage = message;
+    
+    if (coreMessage.startsWith('Error: ')) {
+      coreMessage = coreMessage.substring(7);
+    }
+    
+    if (coreMessage.contains('Valuation Rate for the Item')) {
+      final itemMatch = RegExp(r'Valuation Rate for the Item (.*?), is required').firstMatch(coreMessage);
+      if (itemMatch != null) {
+        return 'Valuation Rate for Item ${itemMatch.group(1)}, is required,  please manage price at product  level';
+      }
+    }
+
+    final regex = RegExp(r'\.([A-Z])|\. (Here|If|Please|You|Note)');
+    final match = regex.firstMatch(coreMessage);
+    
+    if (match != null) {
+      coreMessage = '${coreMessage.substring(0, match.start).trim()}.';
+    }
+    
+    return coreMessage;
+  }
+
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message), backgroundColor: Colors.red),
+      SnackBar(
+        content: Text(_formatErrorMessage(message)),
+        backgroundColor: Colors.red,
+        showCloseIcon: true,
+      ),
     );
   }
 

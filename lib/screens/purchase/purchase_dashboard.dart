@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/screens/purchase/purchase_order_list.dart';
 import 'package:pos/screens/purchase/purchase_invoice_list.dart';
 import 'package:pos/screens/purchase/grn_list_screen.dart';
@@ -28,70 +29,74 @@ class PurchaseDashboards extends StatelessWidget {
             const SizedBox(height: 10),
 
             _grid([
-              InventoryCard(
-                backgroundColor: Colors.white,
-                iconBackgroundColor: const Color(0xFFE3F2FD),
-                iconColor: Colors.blue,
-                icon: Icons.shopping_cart_outlined,
-                title: "Purchase Orders",
-                subtitle: "View and create purchase orders",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context2) => PurchaseOrdersPage(),
-                    ),
-                  );
-                },
-              ),
-              InventoryCard(
-                backgroundColor: Colors.white,
-                iconBackgroundColor: const Color(0xFFE8F5E9),
-                iconColor: Colors.green,
-                icon: Icons.receipt_long,
-                title: "Purchase Invoices",
-                subtitle: "View supplier invoices",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PurchaseInvoiceListScreen(),
-                    ),
-                  );
-                },
-              ),
-              InventoryCard(
-                backgroundColor: Colors.white,
-                iconBackgroundColor: const Color(0xFFF3E5F5),
-                iconColor: Colors.purple,
-                icon: Icons.inventory_2_outlined,
-                title: "Goods Received Notes",
-                subtitle: "View purchase receipts",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const GrnListScreen(),
-                    ),
-                  );
-                },
-              ),
-              InventoryCard(
-                backgroundColor: Colors.white,
-                iconBackgroundColor: const Color(0xFFFFEBEE),
-                iconColor: Colors.red,
-                icon: Icons.assignment_return_outlined,
-                title: "Purchase Returns",
-                subtitle: "View and track purchase returns",
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => const PurchaseReturnListScreen(),
-                    ),
-                  );
-                },
-              ),
+              if (PermissionHelper.hasPermission('manage_purchases:view'))
+                InventoryCard(
+                  backgroundColor: Colors.white,
+                  iconBackgroundColor: const Color(0xFFE3F2FD),
+                  iconColor: Colors.blue,
+                  icon: Icons.shopping_cart_outlined,
+                  title: "Purchase Orders",
+                  subtitle: "View and create purchase orders",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context2) => PurchaseOrdersPage(),
+                      ),
+                    );
+                  },
+                ),
+              if (PermissionHelper.hasPermission('manage_purchases:view'))
+                InventoryCard(
+                  backgroundColor: Colors.white,
+                  iconBackgroundColor: const Color(0xFFE8F5E9),
+                  iconColor: Colors.green,
+                  icon: Icons.receipt_long,
+                  title: "Purchase Invoices",
+                  subtitle: "View supplier invoices",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PurchaseInvoiceListScreen(),
+                      ),
+                    );
+                  },
+                ),
+              if (PermissionHelper.hasPermission('manage_purchases:view'))
+                InventoryCard(
+                  backgroundColor: Colors.white,
+                  iconBackgroundColor: const Color(0xFFF3E5F5),
+                  iconColor: Colors.purple,
+                  icon: Icons.inventory_2_outlined,
+                  title: "Goods Received Notes",
+                  subtitle: "View purchase receipts",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const GrnListScreen(),
+                      ),
+                    );
+                  },
+                ),
+              if (PermissionHelper.hasPermission('manage_purchases:view'))
+                InventoryCard(
+                  backgroundColor: Colors.white,
+                  iconBackgroundColor: const Color(0xFFFFEBEE),
+                  iconColor: Colors.red,
+                  icon: Icons.assignment_return_outlined,
+                  title: "Purchase Returns",
+                  subtitle: "View and track purchase returns",
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const PurchaseReturnListScreen(),
+                      ),
+                    );
+                  },
+                ),
             ]),
           ],
         ),

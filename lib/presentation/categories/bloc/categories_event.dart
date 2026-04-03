@@ -48,3 +48,12 @@ class UpdateCategory extends CategoriesEvent {
   @override
   List<Object?> get props => [company, name, itemGroupName, parentItemGroup];
 }
+
+class DeleteCategory extends CategoriesEvent {
+  final String name;
+
+  const DeleteCategory({required this.name});
+
+  @override
+  List<Object?> get props => [name];
+}

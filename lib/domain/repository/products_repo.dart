@@ -61,6 +61,8 @@ abstract class ProductsRepo {
   Future<void> createUom(String company, String uomName);
   Future<void> updateUom(String name, String uomName, bool mustBeWholeNumber);
   Future<void> deleteUom(String company, String uomName);
+  Future<void> deleteBrand(String brandName, String company);
+  Future<void> deleteItemGroup(String name);
   Future<CreateProductResponse> createProduct(
     CreateProductRequest createProductRequest,
   );

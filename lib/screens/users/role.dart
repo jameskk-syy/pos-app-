@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/presentation/roles/bloc/role_bloc.dart';
 import 'package:pos/domain/responses/users/roles.dart';
 import 'package:pos/widgets/users/create_role.dart';
@@ -222,25 +223,26 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
           ),
         ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: ElevatedButton.icon(
-              onPressed: _navigateToCreateRole,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Role'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue[600],
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          if (PermissionHelper.hasPermission('manage_users:create'))
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: ElevatedButton.icon(
+                onPressed: _navigateToCreateRole,
+                icon: const Icon(Icons.add),
+                label: const Text('Create Role'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue[600],
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
       body: BlocConsumer<RoleBloc, RoleState>(
@@ -302,19 +304,20 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                     style: TextStyle(fontSize: 16, color: Colors.black54),
                   ),
                   const SizedBox(height: 24),
-                  ElevatedButton.icon(
-                    onPressed: _navigateToCreateRole,
-                    icon: const Icon(Icons.add),
-                    label: const Text('Create First Role'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue[600],
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 24,
-                        vertical: 16,
+                  if (PermissionHelper.hasPermission('manage_users:create'))
+                    ElevatedButton.icon(
+                      onPressed: _navigateToCreateRole,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Create First Role'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blue[600],
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 16,
+                        ),
                       ),
                     ),
-                  ),
                 ],
               ),
             );
@@ -470,51 +473,55 @@ class _RoleManagementPageState extends State<RoleManagementPage> {
                   ],
                 ),
               ),
-              const PopupMenuItem(
-                value: 'edit',
-                child: Row(
-                  children: [
-                    Icon(Icons.edit_outlined, size: 18),
-                    SizedBox(width: 12),
-                    Text('Edit'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_users:edit'))
+                const PopupMenuItem(
+                  value: 'edit',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit_outlined, size: 18),
+                      SizedBox(width: 12),
+                      Text('Edit'),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem(
-                value: 'permissions',
-                child: Row(
-                  children: [
-                    Icon(Icons.admin_panel_settings_outlined, size: 18),
-                    SizedBox(width: 12),
-                    Text('Manage Permission'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_users:edit'))
+                const PopupMenuItem(
+                  value: 'permissions',
+                  child: Row(
+                    children: [
+                      Icon(Icons.admin_panel_settings_outlined, size: 18),
+                      SizedBox(width: 12),
+                      Text('Manage Permission'),
+                    ],
+                  ),
                 ),
-              ),
-              PopupMenuItem(
-                value: 'disable',
-                child: Row(
-                  children: [
-                    Icon(
-                      role.isDisabled
-                          ? Icons.check_circle_outline
-                          : Icons.block,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(role.isDisabled ? 'Enable' : 'Disable'),
-                  ],
+              if (PermissionHelper.hasPermission('manage_users:edit'))
+                PopupMenuItem(
+                  value: 'disable',
+                  child: Row(
+                    children: [
+                      Icon(
+                        role.isDisabled
+                            ? Icons.check_circle_outline
+                            : Icons.block,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 12),
+                      Text(role.isDisabled ? 'Enable' : 'Disable'),
+                    ],
+                  ),
                 ),
-              ),
-              const PopupMenuItem(
-                value: 'delete',
-                child: Row(
-                  children: [
-                    Icon(Icons.delete_outline, size: 18, color: Colors.red),
-                    SizedBox(width: 12),
-                    Text('Delete', style: TextStyle(color: Colors.red)),
-                  ],
+              if (PermissionHelper.hasPermission('manage_users:delete'))
+                const PopupMenuItem(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete_outline, size: 18, color: Colors.red),
+                      SizedBox(width: 12),
+                      Text('Delete', style: TextStyle(color: Colors.red)),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
