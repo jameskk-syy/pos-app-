@@ -1,5 +1,5 @@
 import 'dart:convert';
-
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
@@ -24,13 +24,14 @@ import 'package:pos/screens/sales/invoices_page.dart';
 import 'package:pos/screens/sales/pos_opening_entries_page.dart';
 import 'package:pos/utils/cart_manager.dart';
 import 'package:pos/domain/responses/sales/crm_customer.dart';
-import 'dart:async';
-
 import 'package:pos/widgets/sales/customer_dropdown.dart';
 import 'package:pos/widgets/sales/open_session_dialog.dart';
 import 'package:pos/widgets/inventory/warehouse_dropdown.dart';
 import 'package:pos/widgets/common/barcode_scanner_screen.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/screens/pages/point_of_sale/widgets/product_selection_widgets.dart';
+import 'package:pos/screens/pages/point_of_sale/widgets/product_category_widgets.dart';
+import 'package:pos/screens/pages/point_of_sale/widgets/product_list_widgets.dart';
 
 class ProductsPage extends StatefulWidget {
   const ProductsPage({super.key});
@@ -55,7 +56,6 @@ class _ProductsPageState extends State<ProductsPage> {
   String _searchQuery = '';
 
   List<ProductItem> _allProducts = [];
-  List<ProductItem> _displayedProducts = [];
   bool _isLoadingProducts = true;
   String? _productsError;
 
@@ -63,13 +63,11 @@ class _ProductsPageState extends State<ProductsPage> {
   String? _selectedCategory;
   final List<InventoryDiscountRule> _discountRules = [];
 
-  // Infinite Scroll variables
   final ScrollController _scrollController = ScrollController();
   int _currentPage = 1;
   final int _pageSize = 20;
   bool _hasMore = true;
   bool _isLoadingMore = false;
-
   bool _isAutoAddingFromBarcode = false;
 
   @override
@@ -96,81 +94,42 @@ class _ProductsPageState extends State<ProductsPage> {
       if (_searchDebounce?.isActive ?? false) {
         _searchDebounce!.cancel();
       }
-
       _searchDebounce = Timer(const Duration(milliseconds: 800), () {
         if (_searchController.text.trim() != _searchQuery) {
           setState(() {
             _searchQuery = _searchController.text.trim();
-            _currentPage = 1; // Reset to first page
+            _currentPage = 1;
             _hasMore = true;
             _allProducts.clear();
-            _fetchProducts(
-              currentUserResponse?.message.company.name,
-              _searchQuery,
-              _selectedCategory,
-              selectedWarehouse?.name,
-            );
           });
+          _fetchProducts();
         }
       });
     });
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent * 0.9 &&
-        !_isLoadingMore &&
-        _hasMore &&
-        !_isLoadingProducts) {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.9 && !_isLoadingMore && _hasMore && !_isLoadingProducts) {
       _loadMoreProducts();
     }
   }
 
   void _loadMoreProducts() {
     if (currentUserResponse != null) {
-      setState(() {
-        _isLoadingMore = true;
-        _currentPage++;
-      });
-      _fetchProducts(
-        currentUserResponse!.message.company.name,
-        _searchQuery,
-        _selectedCategory,
-        selectedWarehouse?.name,
-      );
+      setState(() { _isLoadingMore = true; _currentPage++; });
+      _fetchProducts();
     }
   }
 
-  void _filterProducts() {
-    _displayedProducts = List.from(_allProducts);
-  }
-
   void _initializeWalkInCustomer() {
-    final walkInCustomer = Customer(
-      name: "Walk-in Customer",
-      customerName: "Walk-in Customer",
-      customerType: "Individual",
-      disabled: 0,
-      creditLimit: 0.0,
-      outstandingAmount: 0.0,
-      availableCredit: 0.0,
-      creditUtilizationPercent: 0.0,
-      isOverLimit: false,
-    );
-
-    setState(() {
-      selectedCustomer = walkInCustomer;
-      customers.add(walkInCustomer);
-    });
+    final walkInCustomer = Customer(name: "Walk-in Customer", customerName: "Walk-in Customer", customerType: "Individual", disabled: 0, creditLimit: 0.0, outstandingAmount: 0.0, availableCredit: 0.0, creditUtilizationPercent: 0.0, isOverLimit: false);
+    setState(() { selectedCustomer = walkInCustomer; customers.add(walkInCustomer); });
   }
 
   Future<void> _loadCart() async {
     final loadedCart = await CartManager.getCart();
     final count = await CartManager.getCartCount();
-    setState(() {
-      cart = loadedCart;
-      cartCount = count;
-    });
+    setState(() { cart = loadedCart; cartCount = count; });
   }
 
   Future<CurrentUserResponse?> _getSavedCurrentUser() async {
@@ -182,800 +141,187 @@ class _ProductsPageState extends State<ProductsPage> {
 
   Future<void> _loadCurrentUser() async {
     final savedUser = await _getSavedCurrentUser();
-    if (!mounted || savedUser == null) return;
-
-    setState(() {
-      currentUserResponse = savedUser;
-    });
-    _fetchWarehouses(currentUserResponse!.message.company.name);
-    _fetchProducts(
-      currentUserResponse!.message.company.name,
-      _searchQuery,
-      _selectedCategory,
-      selectedWarehouse?.name,
-    );
+    if (!mounted || savedUser == null) {
+      return;
+    }
+    setState(() { currentUserResponse = savedUser; });
+    _fetchWarehouses();
+    _fetchProducts();
     _fetchDiscountRules();
   }
 
   void _fetchDiscountRules() {
     if (currentUserResponse != null) {
-      context.read<InventoryBloc>().add(
-        GetInventoryDiscountRules(
-          request: GetInventoryDiscountRulesRequest(
-            ruleType: 'Item',
-            company: currentUserResponse!.message.company.name,
-            pageSize: 1000, // Fetch all for lookup
-          ),
-        ),
-      );
-      // Also fetch Item Group rules
-      context.read<InventoryBloc>().add(
-        GetInventoryDiscountRules(
-          request: GetInventoryDiscountRulesRequest(
-            ruleType: 'Item Group',
-            company: currentUserResponse!.message.company.name,
-            pageSize: 1000,
-          ),
-        ),
-      );
+      context.read<InventoryBloc>().add(GetInventoryDiscountRules(request: GetInventoryDiscountRulesRequest(ruleType: 'Item', company: currentUserResponse!.message.company.name, pageSize: 1000)));
+      context.read<InventoryBloc>().add(GetInventoryDiscountRules(request: GetInventoryDiscountRulesRequest(ruleType: 'Item Group', company: currentUserResponse!.message.company.name, pageSize: 1000)));
     }
   }
 
-  Future<void> _fetchCategories() async {
-    context.read<ProductsBloc>().add(GetItemGroup());
-  }
-
-  Future<void> _fetchWarehouses([String? name]) async {
-    context.read<StoreBloc>().add(GetAllStores(company: name ?? ''));
-  }
-
-  Future<void> _fetchProducts([
-    String? name,
-    String? searchTerm,
-    String? category,
-    String? warehouse,
-  ]) async {
-    if (name != null && name.isNotEmpty) {
-      context.read<ProductsBloc>().add(
-        GetAllProducts(
-          company: name,
-          searchTerm: searchTerm ?? '',
-          itemGroup: category,
-          warehouse: warehouse,
-          page: _currentPage,
-          pageSize: _pageSize,
-        ),
-      );
+  void _fetchCategories() => context.read<ProductsBloc>().add(GetItemGroup());
+  void _fetchWarehouses() => context.read<StoreBloc>().add(GetAllStores(company: currentUserResponse?.message.company.name ?? ''));
+  void _fetchProducts() {
+    if (currentUserResponse != null) {
+      context.read<ProductsBloc>().add(GetAllProducts(company: currentUserResponse!.message.company.name, searchTerm: _searchQuery, itemGroup: _selectedCategory, warehouse: selectedWarehouse?.name, page: _currentPage, pageSize: _pageSize));
     }
   }
 
   void _showAddToCartDialog(ProductItem product) {
-    showDialog(
-      context: context,
-      builder: (context) => AddToCartDialog(
-        product: Products(
-          id: product.itemCode,
-          name: product.itemName,
-          price: product.price,
-          image: product.image ?? "📦",
-          category: product.itemGroup,
-          stockQty: product.stockQty,
-          uom: product.stockUom,
-        ),
-        onAdd: (quantity, amount) async {
-          await CartManager.addToCart(
-            Products(
-              id: product.itemCode,
-              name: product.itemName,
-              price: product.price,
-              image: product.image ?? "📦",
-              category: product.itemGroup,
-              stockQty: product.stockQty,
-              uom: product.stockUom,
-            ),
-            quantity: quantity,
-            discountRules: _discountRules,
-          );
-          await _loadCart();
-
-          if (mounted) {
-            // ignore: use_build_context_synchronously
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$quantity x ${product.itemName} added to cart'),
-                duration: const Duration(seconds: 2),
-              ),
-            );
-          }
-        },
-      ),
-    );
+    showDialog(context: context, builder: (dialogContext) => AddToCartDialog(
+      product: Products(id: product.itemCode, name: product.itemName, price: product.price, image: product.image ?? "📦", category: product.itemGroup, stockQty: product.stockQty, uom: product.stockUom),
+      onAdd: (quantity, amount) async {
+        await CartManager.addToCart(Products(id: product.itemCode, name: product.itemName, price: product.price, image: product.image ?? "📦", category: product.itemGroup, stockQty: product.stockQty, uom: product.stockUom), quantity: quantity, discountRules: _discountRules);
+        await _loadCart();
+        if (mounted && dialogContext.mounted) {
+          ScaffoldMessenger.of(dialogContext).showSnackBar(SnackBar(content: Text('$quantity x ${product.itemName} added to cart'), duration: const Duration(seconds: 2)));
+        }
+      },
+    ));
   }
 
   Future<void> _openBarcodeScanner() async {
-    final result = await Navigator.push<String>(
-      context,
-      MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()),
-    );
-
-    if (result != null && result.isNotEmpty) {
-      if (mounted) {
-        context.read<ProductsBloc>().add(
-          SearchProductByBarcode(
-            barcode: result,
-            posProfile: currentUserResponse?.message.posProfile.name ?? '',
-          ),
-        );
+    final result = await Navigator.push<String>(context, MaterialPageRoute(builder: (context) => const BarcodeScannerScreen()));
+    if (result != null && result.isNotEmpty && mounted) {
+      if (!context.mounted) {
+        return;
       }
+      context.read<ProductsBloc>().add(SearchProductByBarcode(barcode: result, posProfile: currentUserResponse?.message.posProfile.name ?? ''));
     }
   }
 
   void _showCustomerSelectionBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return BlocProvider(
-          create: (context) => getIt<CrmBloc>(),
-          child: CustomerSelectionBottomSheet(
-            selectedCustomer: selectedCustomer,
-            company: currentUserResponse?.message.company.name,
-            onCustomerSelected: (customer) {
-              setState(() {
-                selectedCustomer = customer;
-              });
-            },
-          ),
-        );
-      },
-    );
+    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => BlocProvider(create: (context) => getIt<CrmBloc>(), child: CustomerSelectionBottomSheet(selectedCustomer: selectedCustomer, company: currentUserResponse?.message.company.name, onCustomerSelected: (customer) => setState(() => selectedCustomer = customer))));
   }
 
   void _showOpenSessionBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return OpenSessionBottomSheet(
-          company: currentUserResponse!.message.company.name,
-          currentUser: currentUserResponse!.message.user.name,
-          profilePos: currentUserResponse!.message.posProfile.name,
-          onSessionOpened: (session) {
-            setState(() {});
-          },
-        );
-      },
-    );
+    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => OpenSessionBottomSheet(company: currentUserResponse!.message.company.name, currentUser: currentUserResponse!.message.user.name, profilePos: currentUserResponse!.message.posProfile.name, onSessionOpened: (session) => setState(() {})));
   }
 
   void _showWarehouseSelectionBottomSheet() {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) {
-        return BlocProvider(
-          create: (context) => getIt<StoreBloc>(),
-          child: WarehouseSelectionBottomSheet(
-            selectedWarehouse: selectedWarehouse,
-            warehouses: warehouses,
-            onWarehouseSelected: (warehouse) {
-              setState(() {
-                selectedWarehouse = warehouse;
-                _currentPage = 1;
-                _allProducts.clear();
-              });
-              _fetchProducts(
-                currentUserResponse?.message.company.name,
-                _searchQuery,
-                _selectedCategory,
-                warehouse?.name,
-              );
-            },
-          ),
-        );
+    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => BlocProvider(create: (context) => getIt<StoreBloc>(), child: WarehouseSelectionBottomSheet(
+      selectedWarehouse: selectedWarehouse, warehouses: warehouses,
+      onWarehouseSelected: (warehouse) {
+        setState(() { selectedWarehouse = warehouse; _currentPage = 1; _allProducts.clear(); });
+        _fetchProducts();
       },
-    );
+    )));
   }
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
       listeners: [
-        BlocListener<StoreBloc, StoreState>(
-          listener: (context, state) {
-            if (state is StoreStateSuccess) {
-              setState(() {
-                warehouses = state.storeGetResponse.message.data;
-                isLoadingWarehouses = false;
-                if (selectedWarehouse == null) {
-                  final defaultWarehouse = warehouses.firstWhere(
-                    (w) => w.isDefault,
-                    orElse: () => warehouses.isNotEmpty
-                        ? warehouses[0]
-                        : Warehouse(
-                            name: '',
-                            warehouseName: 'No Warehouse',
-                            company: '',
-                            isGroup: 0,
-                            disabled: 0,
-                            isMainDepot: false,
-                            isDefault: false,
-                          ),
-                  );
-                  selectedWarehouse = defaultWarehouse;
-                  // Fetch products for the default warehouse
-                  _currentPage = 1;
-                  _allProducts.clear();
-                  _fetchProducts(
-                    currentUserResponse?.message.company.name,
-                    _searchQuery,
-                    _selectedCategory,
-                    selectedWarehouse?.name,
-                  );
-                }
-              });
-            } else if (state is StoreStateFailure) {
-              setState(() {
-                isLoadingWarehouses = false;
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to load warehouses: ${state.error}'),
-                ),
-              );
-            }
-          },
-        ),
-        BlocListener<ProductsBloc, ProductsState>(
-          listener: (context, state) {
-            if (state is ProductsStateSuccess) {
-              setState(() {
-                if (_currentPage == 1) {
-                  _allProducts = state.productResponse.products;
-                } else {
-                  _allProducts.addAll(state.productResponse.products);
-                }
-                _hasMore = state.productResponse.pagination.hasNextPage;
-                _isLoadingProducts = false;
-                _isLoadingMore = false;
-                _filterProducts();
-
-                if (_isAutoAddingFromBarcode) {
-                  _isAutoAddingFromBarcode = false;
-                  if (_allProducts.isNotEmpty) {
-                    _showAddToCartDialog(_allProducts.first);
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'No product matches found for the scanned item.',
-                        ),
-                      ),
-                    );
-                  }
-                }
-              });
-            } else if (state is ProductsStateLoading) {
-              if (_currentPage == 1) {
-                setState(() {
-                  _isLoadingProducts = true;
-                  _productsError = null;
-                });
+        BlocListener<StoreBloc, StoreState>(listener: (context, state) {
+          if (state is StoreStateSuccess) {
+            setState(() {
+              warehouses = state.storeGetResponse.message.data;
+              isLoadingWarehouses = false;
+              if (selectedWarehouse == null) {
+                selectedWarehouse = warehouses.firstWhere((w) => w.isDefault, orElse: () => warehouses.isNotEmpty ? warehouses[0] : Warehouse(name: '', warehouseName: 'No Warehouse', company: '', isGroup: 0, disabled: 0, isMainDepot: false, isDefault: false));
+                _currentPage = 1; _allProducts.clear(); _fetchProducts();
               }
-            } else if (state is ProductsStateFailure) {
-              setState(() {
-                _isLoadingProducts = false;
-                _isLoadingMore = false;
-                _productsError = state.error;
-                if (_currentPage == 1) {
-                  _displayedProducts = [];
+            });
+          } else if (state is StoreStateFailure) {
+            setState(() => isLoadingWarehouses = false);
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Failed to load warehouses: ${state.error}')));
+          }
+        }),
+        BlocListener<ProductsBloc, ProductsState>(listener: (context, state) {
+          if (state is ProductsStateSuccess) {
+            setState(() {
+              if (_currentPage == 1) { _allProducts = state.productResponse.products; } else { _allProducts.addAll(state.productResponse.products); }
+              _hasMore = state.productResponse.pagination.hasNextPage;
+              _isLoadingProducts = false; _isLoadingMore = false;
+              if (_isAutoAddingFromBarcode) {
+                _isAutoAddingFromBarcode = false;
+                if (_allProducts.isNotEmpty) {
+                  _showAddToCartDialog(_allProducts.first);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No product matches found for the scanned item.')));
                 }
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to load products: Retry please'),
-                ),
-              );
-            } else if (state is ProductsItemGroupsStateSuccess) {
-              setState(() {
-                _categories = state.itemGroupResponse.message.itemGroups;
-              });
-            } else if (state is BarcodeSearchSuccess) {
-              setState(() {
-                _isAutoAddingFromBarcode = true;
-                _searchController.text = state.product.itemName;
-                _searchQuery = state.product.itemName;
-                _currentPage = 1;
-                _allProducts.clear();
-              });
-              _fetchProducts(
-                currentUserResponse?.message.company.name,
-                state.product.itemName,
-                _selectedCategory,
-                selectedWarehouse?.name,
-              );
-            }
-          },
-        ),
-        BlocListener<InventoryBloc, InventoryState>(
-          listener: (context, state) {
-            if (state is GetInventoryDiscountRulesLoaded) {
-              setState(() {
-                final newRules = state.response.message.data.rules
-                    .map((e) => InventoryDiscountRule.fromApiModel(e))
-                    .toList();
-
-                // Merge with existing rules, avoiding duplicates
-                for (var rule in newRules) {
-                  if (!_discountRules.any((r) => r.name == rule.name)) {
-                    _discountRules.add(rule);
-                  }
-                }
-              });
-            }
-          },
-        ),
-        BlocListener<SalesBloc, SalesState>(
-          listener: (context, state) {
-            if (state is POSSessionClosed) {
-              getIt<StorageService>().remove('current_pos_session');
-
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PosOpeningEntriesPage(),
-                ),
-                (route) => route.isFirst,
-              );
-            } else if (state is POSSessionCloseError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.message),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            } else if (state is POSSessionCloseLoading) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Closing session...'),
-                  duration: Duration(seconds: 1),
-                ),
-              );
-            }
-          },
-        ),
+              }
+            });
+          } else if (state is ProductsStateLoading) { if (_currentPage == 1) { setState(() { _isLoadingProducts = true; _productsError = null; }); } }
+          else if (state is ProductsStateFailure) { setState(() { _isLoadingProducts = false; _isLoadingMore = false; _productsError = state.error; }); ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Failed to load products: Retry please'))); }
+          else if (state is ProductsItemGroupsStateSuccess) { setState(() => _categories = state.itemGroupResponse.message.itemGroups); }
+          else if (state is BarcodeSearchSuccess) { setState(() { _isAutoAddingFromBarcode = true; _searchController.text = state.product.itemName; _searchQuery = state.product.itemName; _currentPage = 1; _allProducts.clear(); }); _fetchProducts(); }
+        }),
+        BlocListener<InventoryBloc, InventoryState>(listener: (context, state) {
+          if (state is GetInventoryDiscountRulesLoaded) {
+            setState(() {
+              for (var rule in state.response.message.data.rules.map((e) => InventoryDiscountRule.fromApiModel(e))) {
+                if (!_discountRules.any((r) => r.name == rule.name)) _discountRules.add(rule);
+              }
+            });
+          }
+        }),
+        BlocListener<SalesBloc, SalesState>(listener: (context, state) {
+          if (state is POSSessionClosed) {
+            getIt<StorageService>().remove('current_pos_session');
+            Navigator.pushAndRemoveUntil(context, MaterialPageRoute(builder: (context) => const PosOpeningEntriesPage()), (route) => route.isFirst);
+          } else if (state is POSSessionCloseError) {
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(state.message), backgroundColor: Colors.red));
+          } else if (state is POSSessionCloseLoading) {
+            ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Closing session...'), duration: Duration(seconds: 1)));
+          }
+        }),
       ],
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
-        appBar: POSAppBar(
-          statusText: 'Open session',
-          statusColor: Colors.green,
-          onBackPressed: () => Navigator.pop(context),
-          onStatusPressed: _showOpenSessionBottomSheet,
-        ),
+        appBar: POSAppBar(statusText: 'Open session', statusColor: Colors.green, onBackPressed: () => Navigator.pop(context), onStatusPressed: _showOpenSessionBottomSheet),
         body: Column(
           children: [
-            // Fixed height for the header section
             Container(
-              constraints: BoxConstraints(
-                maxHeight:
-                    MediaQuery.of(context).size.height *
-                    0.45, // 45% of screen height
-              ),
+              constraints: BoxConstraints(maxHeight: MediaQuery.of(context).size.height * 0.45),
               child: SingleChildScrollView(
                 physics: const NeverScrollableScrollPhysics(),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     POSActionButtons(
-                      onInvoicesPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const InvoicesPage(),
-                          ),
-                        );
-                      },
-                      onCloseSession: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const PosOpeningEntriesPage(),
-                          ),
-                        );
-                      },
-                      onSaveDraft: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Draft saved successfully'),
-                          ),
-                        );
-                      },
+                      onInvoicesPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const InvoicesPage())),
+                      onCloseSession: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const PosOpeningEntriesPage())),
+                      onSaveDraft: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Draft saved successfully'))),
                     ),
-                    const Padding(
-                      padding: EdgeInsets.fromLTRB(10, 16, 16, 12),
-                      child: Text(
-                        'Products',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              controller: _searchController,
-                              style: const TextStyle(fontSize: 13),
-                              decoration: InputDecoration(
-                                hintText:
-                                    'Search products using any of the above filters...',
-                                hintStyle: TextStyle(
-                                  fontSize: 12,
-                                  color: Colors.grey.shade400,
-                                ),
-                                prefixIcon: Icon(
-                                  Icons.search,
-                                  size: 20,
-                                  color: Colors.grey.shade600,
-                                ),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    Icons.qr_code_scanner,
-                                    size: 20,
-                                    color: Colors.grey.shade600,
-                                  ),
-                                  onPressed: _openBarcodeScanner,
-                                ),
-                                filled: true,
-                                fillColor: Colors.white,
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.circular(6),
-                                  borderSide: BorderSide(
-                                    color: Colors.grey.shade300,
-                                  ),
-                                ),
-                                isDense: true,
-                                contentPadding: const EdgeInsets.symmetric(
-                                  vertical: 8,
-                                  horizontal: 10,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(6),
-                              color: Colors.white,
-                            ),
-                            child: IconButton(
-                              icon: Icon(
-                                Icons.filter_list,
-                                color: Colors.grey.shade700,
-                              ),
-                              onPressed: () {},
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const Padding(padding: EdgeInsets.fromLTRB(10, 16, 16, 12), child: Text('Products', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.blue))),
+                    ProductSearchBar(controller: _searchController, onBarcodeScannerPressed: _openBarcodeScanner, onFilterPressed: () {}),
                     Padding(
                       padding: const EdgeInsets.all(16.0),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Select Customer:',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                GestureDetector(
-                                  onTap: _showCustomerSelectionBottomSheet,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            _getFirstName(
-                                              selectedCustomer?.customerName ??
-                                                  'Walk-in Customer',
-                                            ),
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade700,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Icon(
-                                          Icons.arrow_drop_down,
-                                          size: 20,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text(
-                                  'Select Warehouse*',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                GestureDetector(
-                                  onTap: _showWarehouseSelectionBottomSheet,
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 10,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white,
-                                      border: Border.all(
-                                        color: Colors.grey.shade300,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Text(
-                                            selectedWarehouse?.warehouseName ??
-                                                'Select Warehouse',
-                                            style: TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey.shade700,
-                                            ),
-                                            overflow: TextOverflow.ellipsis,
-                                            maxLines: 1,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        if (isLoadingWarehouses)
-                                          SizedBox(
-                                            width: 20,
-                                            height: 20,
-                                            child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: Colors.grey.shade600,
-                                            ),
-                                          )
-                                        else
-                                          Icon(
-                                            Icons.arrow_drop_down,
-                                            size: 20,
-                                            color: Colors.grey.shade600,
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
+                      child: Row(children: [
+                        Expanded(child: CustomerSelectionCard(selectedCustomer: selectedCustomer, onTap: _showCustomerSelectionBottomSheet)),
+                        const SizedBox(width: 12),
+                        Expanded(child: WarehouseSelectionCard(selectedWarehouse: selectedWarehouse, isLoading: isLoadingWarehouses, onTap: _showWarehouseSelectionBottomSheet)),
+                      ]),
                     ),
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedCategory = null;
-                                _currentPage = 1;
-                                _hasMore = true;
-                                _allProducts.clear();
-                                _fetchProducts(
-                                  currentUserResponse?.message.company.name,
-                                  _searchQuery,
-                                  _selectedCategory,
-                                );
-                              });
-                            },
-                            child: _buildChip(
-                              'All Items',
-                              _selectedCategory == null,
-                            ),
-                          ),
-                          ..._categories.map((category) {
-                            return GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  _selectedCategory = category.name;
-                                  _currentPage = 1;
-                                  _hasMore = true;
-                                  _allProducts.clear();
-                                  _fetchProducts(
-                                    currentUserResponse?.message.company.name,
-                                    _searchQuery,
-                                    _selectedCategory,
-                                  );
-                                });
-                              },
-                              child: _buildChip(
-                                category.name,
-                                _selectedCategory == category.name,
-                              ),
-                            );
-                          }),
-                        ],
-                      ),
+                    CategoryFilterList(
+                      categories: _categories, selectedCategory: _selectedCategory,
+                      onCategorySelected: (category) {
+                        setState(() { _selectedCategory = category; _currentPage = 1; _allProducts.clear(); });
+                        _fetchProducts();
+                      },
                     ),
                     const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16.0,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          const Expanded(
-                            flex: 3,
-                            child: Text(
-                              'Product',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 60,
-                            child: Text(
-                              'Stock Qty',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 50,
-                            child: Text(
-                              'Price',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 60,
-                            child: Text(
-                              'Category',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(
-                            width: 50,
-                            child: Text(
-                              'Actions',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.black87,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
+                    const ProductListHeader(),
                   ],
                 ),
               ),
             ),
-            // Products list that takes remaining space
-            Expanded(child: _buildProductsList()),
-            // Fixed bottom button
+            Expanded(child: ProductListView(
+              products: _allProducts, scrollController: _scrollController, hasMore: _hasMore, isLoadingProducts: _isLoadingProducts, isLoadingMore: _isLoadingMore,
+              productsError: _productsError, searchQuery: _searchQuery, onRetry: _fetchProducts, onAddToCart: _showAddToCartDialog,
+            )),
             Container(
-              padding: const EdgeInsets.all(16.0),
-              color: Colors.white,
+              padding: const EdgeInsets.all(16.0), color: Colors.white,
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
                     await _loadCart();
-                    if (mounted) {
-                      Navigator.push(
-                        // ignore: use_build_context_synchronously
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SaleSummaryPage(
-                            selectedCustomer: selectedCustomer!,
-                            selectedWarehouse: selectedWarehouse!.name,
-                            company: currentUserResponse!.message.company.name,
-                            posName:
-                                currentUserResponse!.message.posProfile.name,
-                          ),
-                        ),
-                      );
+                    if (mounted && context.mounted) {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => SaleSummaryPage(selectedCustomer: selectedCustomer!, selectedWarehouse: selectedWarehouse!.name, company: currentUserResponse!.message.company.name, posName: currentUserResponse!.message.posProfile.name)));
                     }
                   },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Text(
-                        'View Cart',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(
-                        Icons.arrow_forward,
-                        size: 18,
-                        color: Colors.white,
-                      ),
-                    ],
-                  ),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)), elevation: 0),
+                  child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [Text('View Cart', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)), SizedBox(width: 8), Icon(Icons.arrow_forward, size: 18, color: Colors.white)]),
                 ),
               ),
             ),
@@ -983,222 +329,5 @@ class _ProductsPageState extends State<ProductsPage> {
         ),
       ),
     );
-  }
-
-  Widget _buildProductsList() {
-    if (_isLoadingProducts && _currentPage == 1) {
-      return Center(child: CircularProgressIndicator(color: Colors.blue));
-    }
-
-    if (_productsError != null) {
-      return SingleChildScrollView(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.error_outline, color: Colors.red, size: 48),
-              SizedBox(height: 16),
-              Text(
-                'Failed to load products',
-                style: TextStyle(
-                  color: Colors.red,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                "Retry please, to fetch  new products",
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
-              ),
-              SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () {
-                  if (currentUserResponse != null) {
-                    setState(() {
-                      _currentPage = 1;
-                      _allProducts.clear();
-                    });
-                    _fetchProducts(currentUserResponse!.message.company.name);
-                  }
-                },
-                child: Text('Retry'),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    if (_displayedProducts.isEmpty) {
-      return SingleChildScrollView(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.search_off, color: Colors.grey.shade400, size: 48),
-              SizedBox(height: 16),
-              Text(
-                _searchQuery.isEmpty
-                    ? 'No products available'
-                    : 'No products found',
-                style: TextStyle(
-                  color: Colors.grey.shade600,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              if (_searchQuery.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 8.0),
-                  child: Text(
-                    'Try a different search term',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                  ),
-                ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      itemCount: _displayedProducts.length + (_hasMore ? 1 : 0),
-      itemBuilder: (context, index) {
-        if (index == _displayedProducts.length) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0),
-            child: Center(
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.blue,
-              ),
-            ),
-          );
-        }
-        final product = _displayedProducts[index];
-        return Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade200,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: Center(
-                  child: Text(
-                    product.image ?? "📦",
-                    style: const TextStyle(fontSize: 24),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                flex: 3,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      product.itemName,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                        color: Colors.black87,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      product.itemCode,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  product.stockQty.toStringAsFixed(2),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                ),
-              ),
-              SizedBox(
-                width: 50,
-                child: Text(
-                  product.price.toStringAsFixed(2),
-                  style: TextStyle(fontSize: 12, color: Colors.grey.shade700),
-                ),
-              ),
-              SizedBox(
-                width: 60,
-                child: Text(
-                  product.itemGroup,
-                  style: TextStyle(fontSize: 10, color: Colors.grey.shade700),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              SizedBox(
-                width: 50,
-                child: Center(
-                  child: IconButton(
-                    icon: const Icon(
-                      Icons.add_circle,
-                      color: Colors.blue,
-                      size: 24,
-                    ),
-                    padding: EdgeInsets.zero,
-                    constraints: const BoxConstraints(),
-                    onPressed: () => _showAddToCartDialog(product),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildChip(String label, bool selected) {
-    return Container(
-      margin: const EdgeInsets.only(right: 8),
-      child: Chip(
-        label: Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            color: selected ? Colors.white : Colors.grey.shade700,
-            fontWeight: selected ? FontWeight.w500 : FontWeight.normal,
-          ),
-        ),
-        backgroundColor: selected ? Colors.blue : Colors.white,
-        side: BorderSide(color: selected ? Colors.blue : Colors.grey.shade300),
-        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
-    );
-  }
-
-  String _getFirstName(String fullName) {
-    List<String> nameParts = fullName.split(' ');
-
-    if (nameParts.length <= 2) {
-      return fullName;
-    }
-    return nameParts.take(2).join(' ');
   }
 }

@@ -1,5 +1,4 @@
 import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/core/dependency.dart';
@@ -10,6 +9,7 @@ import 'package:pos/presentation/stores/bloc/store_bloc.dart';
 import 'package:pos/screens/inventory/create_stock_transfer.dart';
 import 'package:pos/screens/inventory/stock_entry_page.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/screens/inventory/widgets/stock_summary_widgets.dart';
 
 class StockSummaryPage extends StatefulWidget {
   const StockSummaryPage({super.key});
@@ -57,7 +57,6 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
       currentUserResponse = savedUser;
     });
 
-    // Load stock summary on init
     inventoryBloc.add(
       GetStockSummary(
         company: savedUser.message.company.name,
@@ -96,9 +95,7 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
         offset: 0,
         warehouse: _selectedWarehouse,
         itemGroup: _selectedItemGroup,
-        search: _searchController.text.isNotEmpty
-            ? _searchController.text
-            : null,
+        search: _searchController.text.isNotEmpty ? _searchController.text : null,
       ),
     );
   }
@@ -113,273 +110,9 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
   }
 
   void _showItemDetails(StockSummaryItem item) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final bool isMobile = screenWidth < 600;
-
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        // Square corners as requested
-        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-        insetPadding: isMobile
-            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 24)
-            : const EdgeInsets.symmetric(horizontal: 60, vertical: 40),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: isMobile ? screenWidth * 0.95 : 1200,
-            maxHeight: screenHeight * (isMobile ? 0.80 : 0.85),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // ── Header ────────────────────────────────────────────────────
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 20,
-                  vertical: isMobile ? 14 : 16,
-                ),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.zero,
-                  border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.itemName,
-                        style: TextStyle(
-                          fontSize: isMobile ? 15 : 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                        maxLines: 2,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close, size: 20),
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ── Content ───────────────────────────────────────────────────
-              Flexible(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(isMobile ? 16 : 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Item info
-                      _detailRow("Item Code:", item.itemCode, context),
-                      _detailRow("Item Group:", item.itemGroup, context),
-                      _detailRow("Warehouse:", item.warehouse, context),
-                      SizedBox(height: isMobile ? 14 : 18),
-
-                      // Stock Details section
-                      Text(
-                        "Stock Details",
-                        style: TextStyle(
-                          fontSize: isMobile ? 13 : 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(isMobile ? 12 : 14),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          children: [
-                            _detailRow(
-                              "Actual QTY:",
-                              "${item.actualQty.toStringAsFixed(2)} ${item.stockUom}",
-                              context,
-                            ),
-                            _detailRow(
-                              "Reserved QTY:",
-                              "${item.reservedQty.toStringAsFixed(2)} ${item.stockUom}",
-                              context,
-                            ),
-                            _detailRow(
-                              "Ordered QTY:",
-                              "${item.orderedQty.toStringAsFixed(2)} ${item.stockUom}",
-                              context,
-                            ),
-                            _detailRow(
-                              "Projected QTY:",
-                              "${item.projectedQty.toStringAsFixed(2)} ${item.stockUom}",
-                              context,
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: isMobile ? 14 : 18),
-
-                      // Financial Details section
-                      Text(
-                        "Financial Details",
-                        style: TextStyle(
-                          fontSize: isMobile ? 13 : 14,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: EdgeInsets.all(isMobile ? 12 : 14),
-                        decoration: BoxDecoration(
-                          color: Colors.grey.shade50,
-                          borderRadius: BorderRadius.zero,
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: Column(
-                          children: [
-                            _detailRow(
-                              "Stock Value:",
-                              "\$${item.stockValue.toStringAsFixed(2)}",
-                              context,
-                            ),
-                            _detailRow(
-                              "Valuation Rate:",
-                              "\$${item.valuationRate.toStringAsFixed(2)}",
-                              context,
-                            ),
-                            _detailRow(
-                              "Unit of Measure:",
-                              item.stockUom,
-                              context,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Actions ───────────────────────────────────────────────────
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 16 : 20,
-                  vertical: isMobile ? 10 : 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(top: BorderSide(color: Colors.grey.shade200)),
-                ),
-                child: Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text(
-                      "Close",
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 15,
-                        color: const Color(0xFF2563EB),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _detailRow(String label, String value, BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 3 : 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: isMobile ? 100 : 120,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 14,
-                fontWeight: FontWeight.w500,
-                color: Colors.black,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  InputDecoration _decoration(String hint, BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
-
-    return InputDecoration(
-      hintText: hint,
-      isDense: true,
-      hintStyle: TextStyle(
-        fontSize: isMobile ? 13 : 14,
-        color: Colors.grey[600],
-      ),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 12 : 16,
-        vertical: isMobile ? 12 : 14,
-      ),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.blue.shade200),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.blue.shade200),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(10),
-        borderSide: BorderSide(color: Colors.blue.shade400, width: 1.5),
-      ),
-    );
-  }
-
-  Widget _input(String label, Widget field, BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: isMobile ? 11 : 12,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-        SizedBox(height: isMobile ? 4 : 6),
-        field,
-      ],
+      builder: (context) => StockSummaryDetailDialog(item: item),
     );
   }
 
@@ -401,13 +134,10 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
                       .where((wh) => wh.disabled == 0)
                       .map((wh) => wh.warehouseName)
                       .toList();
-
                   warehouseList.insert(0, "All Warehouses");
                 });
               } catch (e) {
-                setState(() {
-                  warehouseList = ["All Warehouses"];
-                });
+                setState(() { warehouseList = ["All Warehouses"]; });
               }
             }
           },
@@ -447,33 +177,22 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
               child: OutlinedButton.icon(
                 onPressed: () {},
                 icon: Icon(Icons.download, size: isMobile ? 16 : 18),
-                label: Text(
-                  "Export CSV",
-                  style: TextStyle(fontSize: isMobile ? 12 : 14),
-                ),
+                label: Text("Export CSV", style: TextStyle(fontSize: isMobile ? 12 : 14)),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: Colors.blue,
                   side: const BorderSide(color: Colors.blue),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 12 : 16,
-                    vertical: isMobile ? 8 : 10,
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  padding: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 16, vertical: isMobile ? 8 : 10),
                 ),
               ),
             ),
           ],
         ),
-
         body: BlocConsumer<InventoryBloc, InventoryState>(
           bloc: inventoryBloc,
           listener: (context, state) {
             if (state is StockSummaryError) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Error: ${state.message}')),
-              );
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${state.message}')));
             }
           },
           builder: (context, state) {
@@ -488,363 +207,41 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
             } else if (state is StockSummaryLoaded) {
               try {
                 items = state.response.data;
-                if (warehouseList.isEmpty) {
-                  _fetchWarehouses();
-                }
+                if (warehouseList.isEmpty) _fetchWarehouses();
               } catch (e) {
                 errorMessage = 'Error loading data';
               }
             }
 
-            // Show loading or error state
-            if (isLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (errorMessage != null) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.error_outline, size: 64, color: Colors.red),
-                    SizedBox(height: 16),
-                    Text(
-                      'Error: $errorMessage',
-                      style: TextStyle(color: Colors.red, fontSize: 16),
-                    ),
-                    SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: _loadStockSummary,
-                      child: Text('Retry'),
-                    ),
-                  ],
-                ),
-              );
-            }
+            if (isLoading) return const Center(child: CircularProgressIndicator());
+            if (errorMessage != null) return _buildErrorView(errorMessage);
 
             return Padding(
               padding: EdgeInsets.all(padding),
               child: Column(
                 children: [
-                  // Filters Section - Collapsible
-                  Container(
-                    padding: EdgeInsets.all(padding),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFFBFDBFE),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Filter Header with Collapse Button
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Text(
-                              "Filters",
-                              style: TextStyle(
-                                fontSize: isMobile ? 13 : 14,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                _isFiltersExpanded
-                                    ? Icons.keyboard_arrow_up
-                                    : Icons.keyboard_arrow_down,
-                                size: isMobile ? 18 : 20,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isFiltersExpanded = !_isFiltersExpanded;
-                                });
-                              },
-                            ),
-                          ],
-                        ),
-
-                        // Filter Content (Collapsible)
-                        if (_isFiltersExpanded) ...[
-                          SizedBox(height: isMobile ? 12 : 16),
-
-                          // First Row: 2 filters
-                          Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Search Field
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    right: isMobile ? 6.0 : 8.0,
-                                  ),
-                                  child: _input(
-                                    "Search Items",
-                                    TextField(
-                                      controller: _searchController,
-                                      onChanged: (value) {
-                                        if (value.isEmpty) {
-                                          _loadStockSummary();
-                                        }
-                                      },
-                                      onSubmitted: (_) => _loadStockSummary(),
-                                      style: TextStyle(
-                                        fontSize: isMobile ? 13 : 14,
-                                        color: Colors.black,
-                                      ),
-                                      decoration:
-                                          _decoration(
-                                            "Search items",
-                                            context,
-                                          ).copyWith(
-                                            prefixIcon: Icon(
-                                              Icons.search,
-                                              size: isMobile ? 18 : 20,
-                                              color: Colors.grey[600],
-                                            ),
-                                            suffixIcon:
-                                                _searchController
-                                                    .text
-                                                    .isNotEmpty
-                                                ? IconButton(
-                                                    icon: Icon(
-                                                      Icons.clear,
-                                                      size: isMobile ? 16 : 18,
-                                                    ),
-                                                    onPressed: () {
-                                                      _searchController.clear();
-                                                      _loadStockSummary();
-                                                    },
-                                                  )
-                                                : null,
-                                          ),
-                                    ),
-                                    context,
-                                  ),
-                                ),
-                              ),
-
-                              // Warehouse Dropdown
-                              Expanded(
-                                child: Padding(
-                                  padding: EdgeInsets.only(
-                                    left: isMobile ? 6.0 : 8.0,
-                                  ),
-                                  child: _input(
-                                    "Warehouse",
-                                    DropdownButtonFormField<String?>(
-                                      isExpanded: true,
-                                      initialValue: _selectedWarehouse,
-                                      style: TextStyle(
-                                        fontSize: isMobile ? 13 : 14,
-                                        color: Colors.black,
-                                      ),
-                                      decoration: _decoration(
-                                        "Warehouse",
-                                        context,
-                                      ),
-                                      items: [
-                                        DropdownMenuItem<String?>(
-                                          value: null,
-                                          child: Text(
-                                            "All Warehouses",
-                                            style: TextStyle(
-                                              fontSize: isMobile ? 13 : 14,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        ),
-                                        ...(warehouseList.isNotEmpty
-                                            ? warehouseList
-                                                  .where(
-                                                    (wh) =>
-                                                        wh != "All Warehouses",
-                                                  )
-                                                  .map((wh) {
-                                                    return DropdownMenuItem<
-                                                      String?
-                                                    >(
-                                                      value: wh,
-                                                      child: Text(
-                                                        wh,
-                                                        style: TextStyle(
-                                                          fontSize: isMobile
-                                                              ? 13
-                                                              : 14,
-                                                          color: Colors.black,
-                                                        ),
-                                                      ),
-                                                    );
-                                                  })
-                                                  .toList()
-                                            : []),
-                                      ],
-                                      onChanged: (value) {
-                                        setState(() {
-                                          _selectedWarehouse = value;
-                                        });
-                                        _loadStockSummary();
-                                      },
-                                    ),
-                                    context,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-
-                          SizedBox(height: isMobile ? 12 : 16),
-
-                          // Second Row: Item Group Dropdown
-                          _input(
-                            "Item Group",
-                            DropdownButtonFormField<String?>(
-                              isExpanded: true,
-                              initialValue: _selectedItemGroup,
-                              style: TextStyle(
-                                fontSize: isMobile ? 13 : 14,
-                                color: Colors.black,
-                              ),
-                              decoration: _decoration("Select Group", context),
-                              items: [
-                                DropdownMenuItem<String?>(
-                                  value: null,
-                                  child: Text(
-                                    "All Groups",
-                                    style: TextStyle(
-                                      fontSize: isMobile ? 13 : 14,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
-                                ...(itemGroupList.isNotEmpty
-                                    ? itemGroupList.map((group) {
-                                        return DropdownMenuItem<String?>(
-                                          value: group,
-                                          child: Text(
-                                            group,
-                                            style: TextStyle(
-                                              fontSize: isMobile ? 13 : 14,
-                                              color: Colors.black,
-                                            ),
-                                          ),
-                                        );
-                                      }).toList()
-                                    : []),
-                              ],
-                              onChanged: (value) {
-                                setState(() {
-                                  _selectedItemGroup = value;
-                                });
-                                _loadStockSummary();
-                              },
-                            ),
-                            context,
-                          ),
-
-                          SizedBox(height: isMobile ? 16 : 20),
-
-                          // Action Buttons
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              // Reset Filters Button
-                              OutlinedButton(
-                                onPressed: _clearFilters,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.red,
-                                  side: const BorderSide(
-                                    color: Colors.red,
-                                    width: 1.0,
-                                  ),
-                                  backgroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isMobile ? 16 : 20,
-                                    vertical: isMobile ? 10 : 14,
-                                  ),
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.clear_all,
-                                      color: Colors.red,
-                                      size: isMobile ? 16 : 18,
-                                    ),
-                                    SizedBox(width: isMobile ? 6 : 8),
-                                    Text(
-                                      "Clear Filters",
-                                      style: TextStyle(
-                                        color: Colors.red,
-                                        fontSize: isMobile ? 12 : 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              SizedBox(width: isMobile ? 8 : 12),
-
-                              // Apply Filters Button
-                              ElevatedButton(
-                                onPressed: _loadStockSummary,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF2563EB),
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  padding: EdgeInsets.symmetric(
-                                    horizontal: isMobile ? 16 : 20,
-                                    vertical: isMobile ? 10 : 14,
-                                  ),
-                                  elevation: 0,
-                                ),
-                                child: Text(
-                                  "Apply Filters",
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12 : 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
+                  StockSummaryFilters(
+                    searchController: _searchController,
+                    selectedWarehouse: _selectedWarehouse,
+                    selectedItemGroup: _selectedItemGroup,
+                    warehouseList: warehouseList,
+                    itemGroupList: itemGroupList,
+                    isFiltersExpanded: _isFiltersExpanded,
+                    onToggleFilters: () => setState(() => _isFiltersExpanded = !_isFiltersExpanded),
+                    onWarehouseChanged: (val) {
+                      setState(() => _selectedWarehouse = val);
+                      _loadStockSummary();
+                    },
+                    onItemGroupChanged: (val) {
+                      setState(() => _selectedItemGroup = val);
+                      _loadStockSummary();
+                    },
+                    onClearFilters: _clearFilters,
+                    onApplyFilters: _loadStockSummary,
+                    onLoadStockSummary: _loadStockSummary,
                   ),
-
                   SizedBox(height: isMobile ? 16 : 20),
-
-                  Padding(
-                    padding: EdgeInsets.only(bottom: isMobile ? 12 : 16),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Total Items: ${items.length}',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: isMobile ? 14 : 16,
-                          ),
-                        ),
-                        Text(
-                          'Showing: ${items.length} items',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: isMobile ? 12 : 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
+                  _buildSummaryHeader(items.length, isMobile),
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
@@ -853,35 +250,13 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
                         border: Border.all(color: Colors.blue.shade200),
                       ),
                       child: items.isEmpty
-                          ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.inventory,
-                                    size: isMobile ? 48 : 64,
-                                    color: Colors.grey,
-                                  ),
-                                  SizedBox(height: isMobile ? 12 : 16),
-                                  Text(
-                                    'No items found',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: isMobile ? 14 : 16,
-                                    ),
-                                  ),
-                                  SizedBox(height: isMobile ? 8 : 12),
-                                  Text(
-                                    'Try adjusting your filters',
-                                    style: TextStyle(
-                                      color: Colors.grey,
-                                      fontSize: isMobile ? 12 : 14,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            )
-                          : _buildDataTable(items, context),
+                          ? _buildEmptyState(isMobile)
+                          : StockSummaryTable(
+                              items: items,
+                              onViewDetails: _showItemDetails,
+                              onAdjustItem: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StockEntryPage())),
+                              onTransferItem: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const StockTransfer())),
+                            ),
                     ),
                   ),
                 ],
@@ -893,222 +268,46 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
     );
   }
 
-  Widget _buildDataTable(List<StockSummaryItem> items, BuildContext context) {
-    final bool isMobile = MediaQuery.of(context).size.width < 600;
+  Widget _buildSummaryHeader(int count, bool isMobile) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: isMobile ? 12 : 16),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text('Total Items: $count', style: TextStyle(fontWeight: FontWeight.bold, fontSize: isMobile ? 14 : 16)),
+          Text('Showing: $count items', style: TextStyle(color: Colors.grey[600], fontSize: isMobile ? 12 : 14)),
+        ],
+      ),
+    );
+  }
 
-    return Column(
-      children: [
-        // Header Row
-        Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 16,
-            vertical: isMobile ? 10 : 12,
-          ),
-          decoration: BoxDecoration(
-            color: Colors.grey.shade100,
-            border: Border(
-              bottom: BorderSide(color: Colors.grey.shade300, width: 2),
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                flex: 3,
-                child: Text(
-                  "Item Name",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 13 : 14,
-                  ),
-                ),
-              ),
-              SizedBox(width: isMobile ? 8 : 16),
-              Expanded(
-                flex: 2,
-                child: Text(
-                  "Actual QTY",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 13 : 14,
-                  ),
-                ),
-              ),
-              SizedBox(width: isMobile ? 4 : 8),
-              Container(
-                width: isMobile ? 40 : 48,
-                alignment: Alignment.center,
-                child: Text(
-                  "Action",
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: isMobile ? 12 : 14,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
+  Widget _buildEmptyState(bool isMobile) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.inventory, size: isMobile ? 48 : 64, color: Colors.grey),
+          SizedBox(height: isMobile ? 12 : 16),
+          Text('No items found', style: TextStyle(color: Colors.grey, fontSize: isMobile ? 14 : 16)),
+          SizedBox(height: isMobile ? 8 : 12),
+          Text('Try adjusting your filters', style: TextStyle(color: Colors.grey, fontSize: isMobile ? 12 : 14)),
+        ],
+      ),
+    );
+  }
 
-        // Data Rows
-        Expanded(
-          child: ListView.builder(
-            itemCount: items.length,
-            itemBuilder: (context, index) {
-              final item = items[index];
-              return Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isMobile ? 12 : 16,
-                  vertical: isMobile ? 10 : 12,
-                ),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    // Item Name
-                    Expanded(
-                      flex: 3,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.itemName,
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              fontSize: isMobile ? 13 : 14,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: isMobile ? 2 : 4),
-                          Text(
-                            item.itemCode,
-                            style: TextStyle(
-                              fontSize: isMobile ? 11 : 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(width: isMobile ? 8 : 16),
-
-                    // Quantity
-                    Expanded(
-                      flex: 2,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            item.actualQty.toStringAsFixed(2),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: isMobile ? 13 : 14,
-                            ),
-                          ),
-                          SizedBox(height: isMobile ? 2 : 4),
-                          Text(
-                            item.stockUom,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: isMobile ? 11 : 12,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(width: isMobile ? 4 : 8),
-
-                    // Action Menu
-                    SizedBox(
-                      width: isMobile ? 40 : 48,
-                      child: PopupMenuButton<String>(
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          Icons.more_vert,
-                          size: isMobile ? 18 : 20,
-                          color: Colors.blue,
-                        ),
-                        onSelected: (value) {
-                          switch (value) {
-                            case 'view':
-                              _showItemDetails(item);
-                              break;
-                            case 'adjust':
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const StockEntryPage(),
-                                ),
-                              );
-                              break;
-                            case 'transfer':
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) => const StockTransfer(),
-                                ),
-                              );
-                              break;
-                          }
-                        },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem(
-                            value: 'view',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.remove_red_eye,
-                                  size: 18,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(width: 8),
-                                Text('View Details'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'adjust',
-                            child: Row(
-                              children: [
-                                Icon(Icons.edit, size: 18, color: Colors.grey),
-                                SizedBox(width: 8),
-                                Text('Adjust'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuItem(
-                            value: 'transfer',
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.swap_horiz,
-                                  size: 18,
-                                  color: Colors.grey,
-                                ),
-                                SizedBox(width: 8),
-                                Text('Transfer'),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+  Widget _buildErrorView(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text('Error: $error', style: const TextStyle(color: Colors.red, fontSize: 16)),
+          const SizedBox(height: 16),
+          ElevatedButton(onPressed: _loadStockSummary, child: const Text('Retry')),
+        ],
+      ),
     );
   }
 }

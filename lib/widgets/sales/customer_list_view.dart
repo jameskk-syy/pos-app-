@@ -517,10 +517,7 @@ class _CustomerListViewState extends State<CustomerListView> {
         final double width = constraints.maxWidth;
         final bool isTablet = width >= 600;
 
-        // Define minimum widths to ensure content is readable
-        // On mobile, use the available width to adhere to "remain how it was"
         final double minTableWidth = isTablet ? 1000.0 : width;
-        // Use the larger of the screen width or the minimum table width
         final double tableWidth = width > minTableWidth ? width : minTableWidth;
 
         return SingleChildScrollView(

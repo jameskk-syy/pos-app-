@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/requests/crm/create_loyalty_program_request.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
+import 'package:pos/screens/crm/widgets/loyalty_text_field.dart';
+import 'package:pos/screens/crm/widgets/loyalty_date_field.dart';
+import 'package:pos/screens/crm/widgets/loyalty_dropdown_field.dart';
 
 class LoyaltyProgramScreen extends StatefulWidget {
   const LoyaltyProgramScreen({super.key});
@@ -38,36 +41,6 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
     super.dispose();
   }
 
-  Future<void> _selectDate(
-    BuildContext context,
-    TextEditingController controller,
-  ) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: const Color(0xFF1E88E5),
-              onPrimary: Colors.white,
-              surface: Colors.white,
-              onSurface: Colors.black87,
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-    if (picked != null) {
-      setState(() {
-        controller.text =
-            '${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
-      });
-    }
-  }
 
   void _createLoyaltyProgram() {
     if (_formKey.currentState!.validate()) {
@@ -257,7 +230,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         // Program Name
-                        _buildTextField(
+                        LoyaltyTextField(
                           controller: _programNameController,
                           label: 'Program Name',
                           icon: Icons.card_giftcard,
@@ -268,7 +241,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
 
                         // Points Per Unit and Program Type
                         if (isMobile) ...[
-                          _buildTextField(
+                          LoyaltyTextField(
                             controller: _pointsPerUnitController,
                             label: 'Points Per Unit',
                             icon: Icons.trending_up,
@@ -278,13 +251,24 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                             isMobile: isMobile,
                           ),
                           SizedBox(height: isMobile ? 16 : 20),
-                          _buildDropdown(isMobile),
+                          LoyaltyDropdownField(
+                            label: 'Program Type',
+                            value: _selectedProgramType,
+                            items: const [
+                              'Single Tier Program',
+                              'Multiple Tier Program',
+                              'Points Only',
+                            ],
+                            isMobile: isMobile,
+                            onChanged: (v) =>
+                                setState(() => _selectedProgramType = v),
+                          ),
                         ] else ...[
                           Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Expanded(
-                                child: _buildTextField(
+                                child: LoyaltyTextField(
                                   controller: _pointsPerUnitController,
                                   label: 'Points Per Unit',
                                   icon: Icons.trending_up,
@@ -295,14 +279,27 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                 ),
                               ),
                               const SizedBox(width: 16),
-                              Expanded(child: _buildDropdown(isMobile)),
+                              Expanded(
+                                child: LoyaltyDropdownField(
+                                  label: 'Program Type',
+                                  value: _selectedProgramType,
+                                  items: const [
+                                    'Single Tier Program',
+                                    'Multiple Tier Program',
+                                    'Points Only',
+                                  ],
+                                  isMobile: isMobile,
+                                  onChanged: (v) =>
+                                      setState(() => _selectedProgramType = v),
+                                ),
+                              ),
                             ],
                           ),
                         ],
                         SizedBox(height: isMobile ? 16 : 20),
 
                         // Tier Name
-                        _buildTextField(
+                        LoyaltyTextField(
                           controller: _tierNameController,
                           label: 'Tier Name',
                           icon: Icons.workspace_premium,
@@ -312,7 +309,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                         SizedBox(height: isMobile ? 16 : 20),
 
                         // Conversion Factor
-                        _buildTextField(
+                        LoyaltyTextField(
                           controller: _conversionFactorController,
                           label: 'Conversion Factor',
                           icon: Icons.sync_alt,
@@ -369,14 +366,14 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                               ),
                               SizedBox(height: isMobile ? 12 : 16),
                               if (isMobile) ...[
-                                _buildDateField(
+                                LoyaltyDateField(
                                   controller: _fromDateController,
                                   label: 'From Date',
                                   required: true,
                                   isMobile: isMobile,
                                 ),
                                 const SizedBox(height: 12),
-                                _buildDateField(
+                                LoyaltyDateField(
                                   controller: _toDateController,
                                   label: 'To Date',
                                   required: true,
@@ -386,7 +383,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                 Row(
                                   children: [
                                     Expanded(
-                                      child: _buildDateField(
+                                      child: LoyaltyDateField(
                                         controller: _fromDateController,
                                         label: 'From Date',
                                         required: true,
@@ -395,7 +392,7 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
                                     ),
                                     const SizedBox(width: 12),
                                     Expanded(
-                                      child: _buildDateField(
+                                      child: LoyaltyDateField(
                                         controller: _toDateController,
                                         label: 'To Date',
                                         required: true,
@@ -515,274 +512,4 @@ class _LoyaltyProgramScreenState extends State<LoyaltyProgramScreen> {
     );
   }
 
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    String? helperText,
-    bool required = false,
-    TextInputType? keyboardType,
-    required bool isMobile,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(icon, size: 18, color: const Color(0xFF1E88E5)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: isMobile ? 13 : 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
-              ),
-            ),
-            if (required) ...[
-              const SizedBox(width: 4),
-              const Text(
-                '*',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          keyboardType: keyboardType,
-          decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 12 : 14,
-              vertical: isMobile ? 12 : 14,
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Colors.red, width: 2),
-            ),
-          ),
-          style: TextStyle(fontSize: isMobile ? 14 : 15),
-          validator: required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'This field is required';
-                  }
-                  return null;
-                }
-              : null,
-        ),
-        if (helperText != null) ...[
-          const SizedBox(height: 4),
-          Text(
-            helperText,
-            style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-          ),
-        ],
-      ],
-    );
-  }
-
-  Widget _buildDateField({
-    required TextEditingController controller,
-    required String label,
-    bool required = false,
-    required bool isMobile,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: isMobile ? 12 : 13,
-                fontWeight: FontWeight.w500,
-                color: Colors.grey[700],
-              ),
-            ),
-            if (required) ...[
-              const SizedBox(width: 4),
-              const Text(
-                '*',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.red,
-                ),
-              ),
-            ],
-          ],
-        ),
-        const SizedBox(height: 6),
-        TextFormField(
-          controller: controller,
-          readOnly: true,
-          onTap: () => _selectDate(context, controller),
-          validator: required
-              ? (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'This field is required';
-                  }
-                  return null;
-                }
-              : null,
-          decoration: InputDecoration(
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: isMobile ? 10 : 12,
-              vertical: isMobile ? 10 : 12,
-            ),
-            hintText: 'yyyy-mm-dd',
-            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 13),
-            suffixIcon: const Icon(
-              Icons.calendar_today,
-              size: 18,
-              color: Color(0xFF1E88E5),
-            ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: BorderSide(color: Colors.grey[300]!),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-              borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
-            ),
-          ),
-          style: TextStyle(fontSize: isMobile ? 13 : 14),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDropdown(bool isMobile) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            const Icon(Icons.category, size: 18, color: Color(0xFF1E88E5)),
-            const SizedBox(width: 8),
-            Text(
-              'Program Type',
-              style: TextStyle(
-                fontSize: isMobile ? 13 : 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
-              ),
-            ),
-            const SizedBox(width: 4),
-            const Text(
-              '*',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: Colors.red,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[300]!),
-          ),
-          child: PopupMenuButton<String>(
-            offset: const Offset(0, 45),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            onSelected: (String value) {
-              setState(() {
-                _selectedProgramType = value;
-              });
-            },
-            itemBuilder: (BuildContext context) => [
-              _buildPopupMenuItem(
-                'Single Tier Program',
-                Icons.layers,
-                isMobile,
-              ),
-              _buildPopupMenuItem(
-                'Multiple Tier Program',
-                Icons.stairs,
-                isMobile,
-              ),
-              _buildPopupMenuItem('Points Only', Icons.stars, isMobile),
-            ],
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: isMobile ? 12 : 14,
-                vertical: isMobile ? 12 : 14,
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: Text(
-                      _selectedProgramType,
-                      style: TextStyle(
-                        fontSize: isMobile ? 14 : 15,
-                        color: Colors.grey[800],
-                      ),
-                    ),
-                  ),
-                  const Icon(Icons.expand_more, color: Color(0xFF1E88E5)),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  PopupMenuItem<String> _buildPopupMenuItem(
-    String value,
-    IconData icon,
-    bool isMobile,
-  ) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF1E88E5)),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(value, style: TextStyle(fontSize: isMobile ? 13 : 14)),
-          ),
-        ],
-      ),
-    );
-  }
 }

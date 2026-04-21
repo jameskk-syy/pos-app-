@@ -2,72 +2,14 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/requests/inventory/get_stock_reconciliations_request.dart';
-import 'package:pos/domain/responses/users/get_current_user.dart';
-import 'package:pos/domain/responses/inventory/stock_reconciliations_response.dart'
-    as pos;
 import 'package:pos/domain/responses/sales/store_response.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
-import 'package:pos/screens/inventory/create_stock_taking.dart';
 import 'package:pos/screens/inventory/multi_level_stock_reconciliation.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
-import 'package:intl/intl.dart';
-import 'package:pos/domain/requests/inventory/add_stock_take_request.dart';
-
-class StockReconciliation {
-  final String name;
-  final String company;
-  final String warehouse;
-  final String postingDate;
-  final String postingTime;
-  final String purpose;
-  final int docstatus;
-  final String workflowStatus;
-  final String creation;
-  final String modified;
-  final String owner;
-  final int itemsCount;
-  final List<String> warehouses;
-
-  StockReconciliation({
-    required this.name,
-    required this.company,
-    required this.warehouse,
-    required this.postingDate,
-    required this.postingTime,
-    required this.purpose,
-    required this.docstatus,
-    required this.workflowStatus,
-    required this.creation,
-    required this.modified,
-    required this.owner,
-    required this.itemsCount,
-    required this.warehouses,
-  });
-
-  String get workflowState => workflowStatus;
-  String get expenseAccount => 'Stock Adjustment - ${company.split(' ').last}';
-  String get costCenter => 'Main - ${company.split(' ').last}';
-
-  factory StockReconciliation.fromApiModel(pos.StockReconciliation apiModel) {
-    return StockReconciliation(
-      name: apiModel.name,
-      company: apiModel.company,
-      warehouse: apiModel.warehouse,
-      postingDate: apiModel.postingDate,
-      postingTime: apiModel.postingTime,
-      purpose: apiModel.purpose,
-      docstatus: apiModel.docstatus,
-      workflowStatus: apiModel.workflowStatus,
-      creation: apiModel.creation,
-      modified: apiModel.modified,
-      owner: apiModel.owner,
-      itemsCount: apiModel.itemsCount,
-      warehouses: apiModel.warehouses,
-    );
-  }
-}
+import 'package:pos/screens/inventory/widgets/stock_reconciliation_list_widgets.dart';
 
 class StockReconciliationMultiPage extends StatefulWidget {
   const StockReconciliationMultiPage({super.key});
@@ -160,21 +102,14 @@ class _StockReconciliationMultiPageState
   }
 
   void _loadWarehouses() {
-    if (currentUserResponse == null) {
-      debugPrint('Cannot load warehouses: currentUserResponse is null');
-      return;
-    }
-
+    if (currentUserResponse == null) return;
     context.read<StoreBloc>().add(
       GetAllStores(company: currentUserResponse!.message.company.name),
     );
   }
 
   void _loadReconciliations({bool reset = false}) {
-    if (currentUserResponse == null) {
-      debugPrint('Cannot load reconciliations: currentUserResponse is null');
-      return;
-    }
+    if (currentUserResponse == null) return;
 
     if (reset) {
       setState(() {
@@ -191,9 +126,7 @@ class _StockReconciliationMultiPageState
       offset: _currentOffset,
     );
 
-    context.read<InventoryBloc>().add(
-      GetStockReconciliations(request: request),
-    );
+    context.read<InventoryBloc>().add(GetStockReconciliations(request: request));
 
     setState(() {
       _isLoading = true;
@@ -203,7 +136,6 @@ class _StockReconciliationMultiPageState
   void _applyLocalFilters() {
     setState(() {
       _reconciliations = _allReconciliations.where((reconciliation) {
-        // Filter by purpose
         if (_selectedPurpose != null &&
             reconciliation.purpose != _selectedPurpose) {
           return false;
@@ -220,28 +152,18 @@ class _StockReconciliationMultiPageState
             }
             if (_toDate != null &&
                 postingDate.isAfter(
-                  DateTime(
-                    _toDate!.year,
-                    _toDate!.month,
-                    _toDate!.day,
-                    23,
-                    59,
-                    59,
-                  ),
+                  DateTime(_toDate!.year, _toDate!.month, _toDate!.day, 23, 59, 59),
                 )) {
               return false;
             }
           }
         }
-
         return true;
       }).toList();
     });
   }
 
-  void _applyFilters() {
-    _loadReconciliations(reset: true);
-  }
+  void _applyFilters() => _loadReconciliations(reset: true);
 
   void _resetFilters() {
     setState(() {
@@ -273,269 +195,6 @@ class _StockReconciliationMultiPageState
     }
   }
 
-  /* Original _getRoleForStatus commented out as requested
-  StockTakeRole? _getRoleForStatus(String status) {
-    if (currentUserResponse == null) return null;
-    final roles = currentUserResponse!.message.roles;
-
-    if ((status == 'Pending Sales User' || status == 'Pending Sales Person') &&
-        roles.contains('Sales User')) {
-      return StockTakeRole.salesPerson;
-    }
-    if (status == 'Pending Stock Manager' && roles.contains('Stock Manager')) {
-      return StockTakeRole.stockManager;
-    }
-    if (status == 'Pending Quality Manager' &&
-        (roles.contains('Quality Manager') ||
-            roles.contains('Stock Controller'))) {
-      return StockTakeRole.stockController;
-    }
-    return null;
-  }
-  */
-
-  void _showActionMenu(
-    BuildContext context,
-    StockReconciliation reconciliation,
-  ) {
-    // Original workflow/role check commented out as requested
-    // final role = _getRoleForStatus(reconciliation.workflowStatus);
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        color: Colors.white,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.visibility, color: Colors.blue),
-              title: const Text('View Details'),
-              onTap: () {
-                Navigator.pop(context);
-                _showViewDetailsDialog(context, reconciliation);
-              },
-            ),
-            const Divider(),
-            ListTile(
-              leading: const Icon(Icons.add_box, color: Colors.green),
-              title: const Text('Add Stock Take (Sales)'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StockTakePage(
-                      reconciliationName: reconciliation.name,
-                      role: StockTakeRole.salesPerson,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_box, color: Colors.orange),
-              title: const Text('Add Stock Take (Quality/Controller)'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StockTakePage(
-                      reconciliationName: reconciliation.name,
-                      role: StockTakeRole.stockController,
-                    ),
-                  ),
-                );
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_box, color: Colors.purple),
-              title: const Text('Submit Reconciliation (Manager)'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => StockTakePage(
-                      reconciliationName: reconciliation.name,
-                      role: StockTakeRole.stockManager,
-                    ),
-                  ),
-                );
-              },
-            ),
-            /* Original logic commented out
-            if (role != null) ...[
-              const Divider(),
-              ListTile(
-                leading: const Icon(Icons.add_box, color: Colors.green),
-                title: Text(
-                  role == StockTakeRole.stockManager
-                      ? 'Submit Reconciliation'
-                      : 'Add Stock Take',
-                ),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => StockTakePage(
-                        reconciliationName: reconciliation.name,
-                        role: role,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ],
-            */
-          ],
-        ),
-      ),
-    );
-  }
-
-  void _showViewDetailsDialog(
-    BuildContext context,
-    StockReconciliation reconciliation,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext dialogContext) {
-        return Dialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
-          backgroundColor: Colors.white,
-          insetPadding: const EdgeInsets.symmetric(
-            horizontal: 40,
-            vertical: 24,
-          ),
-          child: Container(
-            width: MediaQuery.of(context).size.width * 0.6,
-            constraints: BoxConstraints(maxWidth: 800, minWidth: 600),
-            padding: const EdgeInsets.all(24),
-            color: Colors.white,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const Icon(Icons.inventory_2, color: Color(0xFF1976F3)),
-                    const SizedBox(width: 12),
-                    const Text(
-                      'Reconciliation Details',
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.pop(dialogContext),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        _detailRow('Reconciliation ID', reconciliation.name),
-                        const Divider(height: 24),
-                        _detailRow('Company', reconciliation.company),
-                        const Divider(height: 24),
-                        _detailRow('Warehouse', reconciliation.warehouse),
-                        const Divider(height: 24),
-                        _detailRow('Posting Date', reconciliation.postingDate),
-                        const Divider(height: 24),
-                        _detailRow('Posting Time', reconciliation.postingTime),
-                        const Divider(height: 24),
-                        _detailRow('Purpose', reconciliation.purpose),
-                        const Divider(height: 24),
-                        _detailRow(
-                          'Workflow State',
-                          reconciliation.workflowState,
-                          valueColor: _getStatusColor(
-                            reconciliation.workflowState,
-                          ),
-                        ),
-                        const Divider(height: 24),
-                        _detailRow(
-                          'Expense Account',
-                          reconciliation.expenseAccount,
-                        ),
-                        const Divider(height: 24),
-                        _detailRow('Cost Center', reconciliation.costCenter),
-                        const Divider(height: 24),
-                        _detailRow(
-                          'Items Count',
-                          '${reconciliation.itemsCount}',
-                        ),
-                        const Divider(height: 24),
-                        _detailRow('Owner', reconciliation.owner),
-                        const Divider(height: 24),
-                        _detailRow('Created', reconciliation.creation),
-                        const Divider(height: 24),
-                        _detailRow('Modified', reconciliation.modified),
-                      ],
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(dialogContext),
-                    child: const Text('Close'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _detailRow(String label, String value, {Color? valueColor}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                color: Colors.grey,
-                fontSize: 14,
-              ),
-            ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: valueColor ?? Colors.black87,
-                fontSize: 14,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return MultiBlocListener(
@@ -560,11 +219,7 @@ class _StockReconciliationMultiPageState
         BlocListener<InventoryBloc, InventoryState>(
           listener: (context, state) {
             if (state is StockReconciliationsLoaded) {
-              final apiReconciliations = state
-                  .response
-                  .message
-                  .data
-                  .reconciliations
+              final apiReconciliations = state.response.message.data.reconciliations
                   .map((e) => StockReconciliation.fromApiModel(e))
                   .toList();
 
@@ -577,14 +232,10 @@ class _StockReconciliationMultiPageState
 
               _applyLocalFilters();
             } else if (state is StockReconciliationsError) {
-              setState(() {
-                _isLoading = false;
-              });
+              setState(() => _isLoading = false);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Failed to load reconciliations: ${state.message}',
-                  ),
+                  content: Text('Failed to load reconciliations: ${state.message}'),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -606,10 +257,7 @@ class _StockReconciliationMultiPageState
             children: [
               const Text(
                 "Stock Reconciliation",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
               ),
               Text(
                 _totalCount > 0
@@ -643,15 +291,10 @@ class _StockReconciliationMultiPageState
                   }
                 },
                 icon: const Icon(Icons.add, color: Colors.white),
-                label: const Text(
-                  "Create Reconciliation",
-                  style: TextStyle(color: Colors.white),
-                ),
+                label: const Text("Create Reconciliation", style: TextStyle(color: Colors.white)),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF1976F3),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                 ),
               ),
             ),
@@ -662,9 +305,35 @@ class _StockReconciliationMultiPageState
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              _filtersCard(),
+              StockReconciliationFilters(
+                isExpanded: _isFilterExpanded,
+                onToggleExpand: () => setState(() => _isFilterExpanded = !_isFilterExpanded),
+                selectedWarehouse: _selectedWarehouse,
+                warehouses: _warehouses,
+                warehousesLoaded: _warehousesLoaded,
+                selectedWorkflowState: _selectedWorkflowState,
+                workflowStateOptions: _workflowStateOptions,
+                selectedPurpose: _selectedPurpose,
+                purposeOptions: _purposeOptions,
+                fromDate: _fromDate,
+                toDate: _toDate,
+                onWarehouseChanged: (val) => setState(() => _selectedWarehouse = val),
+                onWorkflowStateChanged: (val) => setState(() => _selectedWorkflowState = val),
+                onPurposeChanged: (val) => setState(() => _selectedPurpose = val),
+                onSelectFromDate: () => _selectDate(context, true),
+                onSelectToDate: () => _selectDate(context, false),
+                onReset: _resetFilters,
+                onApply: _applyFilters,
+              ),
               const SizedBox(height: 16),
-              _tableCard(),
+              StockReconciliationTable(
+                reconciliations: _reconciliations,
+                onShowActions: (rec) => StockReconciliationActionMenu.show(
+                  context,
+                  rec,
+                  () => StockReconciliationDetailDialog.show(context, rec),
+                ),
+              ),
               if (_isLoading) ...[
                 const SizedBox(height: 16),
                 const Center(
@@ -679,336 +348,6 @@ class _StockReconciliationMultiPageState
           ),
         ),
       ),
-    );
-  }
-
-  Widget _filtersCard() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: _cardDecoration(),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          InkWell(
-            onTap: () {
-              setState(() {
-                _isFilterExpanded = !_isFilterExpanded;
-              });
-            },
-            child: Row(
-              children: [
-                const Text(
-                  "Filters",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                const Spacer(),
-                Icon(
-                  _isFilterExpanded
-                      ? Icons.keyboard_arrow_up
-                      : Icons.keyboard_arrow_down,
-                ),
-              ],
-            ),
-          ),
-          if (_isFilterExpanded) ...[
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _warehousesLoaded
-                      ? _dropdownField(
-                          "Warehouse",
-                          _selectedWarehouse,
-                          _warehouses.map((w) => w.name).toList(),
-                          (value) {
-                            setState(() {
-                              _selectedWarehouse = value;
-                            });
-                          },
-                        )
-                      : Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 16,
-                          ),
-                          decoration: _inputDecoration(),
-                          child: const Text(
-                            'Loading warehouses...',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                        ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _dropdownField(
-                    "Workflow State",
-                    _selectedWorkflowState,
-                    _workflowStateOptions,
-                    (value) {
-                      setState(() {
-                        _selectedWorkflowState = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _dropdownField(
-                    "Purpose",
-                    _selectedPurpose,
-                    _purposeOptions,
-                    (value) {
-                      setState(() {
-                        _selectedPurpose = value;
-                      });
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _dateField(
-                    "From Date",
-                    _fromDate,
-                    () => _selectDate(context, true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _dateField(
-                    "To Date",
-                    _toDate,
-                    () => _selectDate(context, false),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: _resetFilters,
-                    icon: const Icon(Icons.close, color: Colors.red),
-                    label: const Text(
-                      "Reset Filters",
-                      style: TextStyle(color: Colors.red),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.red),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: _applyFilters,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF1976F3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                    ),
-                    child: const Text(
-                      "Apply Filters",
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _tableCard() {
-    if (_isLoading && _allReconciliations.isEmpty) {
-      return Container(
-        decoration: _cardDecoration(),
-        padding: const EdgeInsets.all(40),
-        child: const Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    return Container(
-      decoration: _cardDecoration(),
-      child: _reconciliations.isEmpty
-          ? const Padding(
-              padding: EdgeInsets.all(40),
-              child: Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.inbox, size: 48, color: Colors.grey),
-                    SizedBox(height: 16),
-                    Text(
-                      'No stock reconciliations found',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  ],
-                ),
-              ),
-            )
-          : SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: DataTable(
-                headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFFF1F5F9),
-                ),
-                columns: const [
-                  DataColumn(label: Text("Reconciliation ID")),
-                  DataColumn(label: Text("Warehouse")),
-                  DataColumn(label: Text("Posting Date")),
-                  DataColumn(label: Text("Posting Time")),
-                  DataColumn(label: Text("Purpose")),
-                  DataColumn(label: Text("Workflow State")),
-                  DataColumn(label: Text("Expense Account")),
-                  DataColumn(label: Text("Cost Center")),
-                  DataColumn(label: Text("Actions")),
-                ],
-                rows: _reconciliations.map((reconciliation) {
-                  final dateTime = DateTime.tryParse(
-                    reconciliation.postingDate,
-                  );
-                  final formattedDate = dateTime != null
-                      ? DateFormat('dd MMM yyyy').format(dateTime)
-                      : reconciliation.postingDate;
-
-                  return DataRow(
-                    cells: [
-                      DataCell(Text(reconciliation.name)),
-                      DataCell(Text(reconciliation.warehouse)),
-                      DataCell(Text(formattedDate)),
-                      DataCell(Text(reconciliation.postingTime)),
-                      DataCell(Text(reconciliation.purpose)),
-                      DataCell(
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _getStatusColor(
-                              reconciliation.workflowState,
-                            ),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            reconciliation.workflowState,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                      ),
-                      DataCell(Text(reconciliation.expenseAccount)),
-                      DataCell(Text(reconciliation.costCenter)),
-                      DataCell(
-                        IconButton(
-                          icon: const Icon(Icons.more_vert),
-                          onPressed: () =>
-                              _showActionMenu(context, reconciliation),
-                        ),
-                      ),
-                    ],
-                  );
-                }).toList(),
-              ),
-            ),
-    );
-  }
-
-  Color _getStatusColor(String workflowState) {
-    switch (workflowState.toLowerCase()) {
-      case 'draft':
-        return Colors.grey;
-      case 'pending sales user':
-      case 'pending sale':
-        return Colors.orange;
-      case 'approved':
-        return Colors.blue;
-      case 'completed':
-        return Colors.green;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  Widget _dropdownField(
-    String hint,
-    String? value,
-    List<String> items,
-    Function(String?) onChanged,
-  ) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: _inputDecoration(),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          hint: Text(hint),
-          value: value,
-          isExpanded: true,
-          items: items.map((item) {
-            return DropdownMenuItem<String>(
-              value: item,
-              child: Text(item, style: const TextStyle(fontSize: 14)),
-            );
-          }).toList(),
-          onChanged: onChanged,
-        ),
-      ),
-    );
-  }
-
-  Widget _dateField(String hint, DateTime? date, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-        decoration: _inputDecoration(),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              date != null ? DateFormat('dd MMM yyyy').format(date) : hint,
-              style: TextStyle(
-                color: date != null ? Colors.black : Colors.grey,
-              ),
-            ),
-            const Icon(Icons.calendar_today, size: 18),
-          ],
-        ),
-      ),
-    );
-  }
-
-  BoxDecoration _inputDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      border: Border.all(color: const Color(0xFF1976F3), width: 0.6),
-    );
-  }
-
-  BoxDecoration _cardDecoration() {
-    return BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(4),
-      border: Border.all(color: const Color(0xFF1976F3), width: 0.4),
     );
   }
 }

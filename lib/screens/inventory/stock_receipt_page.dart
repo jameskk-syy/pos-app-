@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -10,9 +9,9 @@ import 'package:pos/domain/responses/sales/store_response.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
-import 'package:pos/widgets/common/delete_confirmation_dialog.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/screens/inventory/widgets/stock_receipt_widgets.dart';
 
 class StockReceiptPage extends StatefulWidget {
   const StockReceiptPage({super.key});
@@ -35,7 +34,6 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch stores and products
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCurrentUser();
     });
@@ -73,14 +71,11 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
             if (state is StoreStateSuccess) {
               setState(() {
                 _stores = state.storeGetResponse.message.data;
-                // Set default warehouse if available and none selected
                 if (_selectedStoreName == null && _stores.isNotEmpty) {
                   try {
-                    _selectedStoreName = _stores
-                        .firstWhere((store) => store.isDefault)
-                        .name;
+                    _selectedStoreName = _stores.firstWhere((store) => store.isDefault).name;
                   } catch (e) {
-                    // No default warehouse found, leave as null
+                    // No default warehouse found
                   }
                 }
               });
@@ -90,9 +85,7 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
         BlocListener<ProductsBloc, ProductsState>(
           listener: (context, state) {
             if (state is ProductsStateSuccess) {
-              setState(() {
-                _products = state.productResponse.products;
-              });
+              setState(() => _products = state.productResponse.products);
             }
           },
         ),
@@ -101,13 +94,10 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
             if (state is CreateMaterialReceiptSuccess) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    'Material receipt created: ${state.response.data?.name ?? ""}',
-                  ),
+                  content: Text('Material receipt created: ${state.response.data?.name ?? ""}'),
                   backgroundColor: Colors.green,
                 ),
               );
-              // Navigate back after successful creation
               Navigator.pop(context, true);
             } else if (state is CreateMaterialReceiptError) {
               ScaffoldMessenger.of(context).showSnackBar(
@@ -128,17 +118,9 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
           backgroundColor: Colors.white,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.black),
-            onPressed: () {
-              Navigator.pop(context);
-            },
+            onPressed: () => Navigator.pop(context),
           ),
-          title: const Text(
-            'Material Receipt',
-            style: TextStyle(color: Colors.black, fontSize: 18),
-          ),
-          actions: [
-            const SizedBox(width: 12),
-          ],
+          title: const Text('Material Receipt', style: TextStyle(color: Colors.black, fontSize: 18)),
         ),
         body: Padding(
           padding: const EdgeInsets.all(16),
@@ -147,28 +129,42 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
               Expanded(
                 child: ListView(
                   children: [
-                    _label('Target Warehouse*'),
-                    _storeDropdown(),
-                    const SizedBox(height: 16),
-
-                    _label('Posting Date*'),
-                    _dateField(),
-                    const SizedBox(height: 16),
-
-                    _label('Posting Time'),
-                    _timeField(),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Optional (HH:MM:SS)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    StockReceiptHeaderFields(
+                      selectedWarehouseName: _selectedStoreName,
+                      stores: _stores,
+                      postingDate: postingDate,
+                      postingTime: postingTime,
+                      onWarehouseChanged: (val) => setState(() => _selectedStoreName = val),
+                      onSelectDate: _selectDate,
+                      onSelectTime: _selectTime,
                     ),
-
                     const SizedBox(height: 20),
-                    _itemsCard(),
+                    StockReceiptItemsTable(
+                      items: items,
+                      products: _products,
+                      companyName: currentUserResponse?.message.company.name ?? '',
+                      onAddItem: () => setState(() => items.add(StockItem())),
+                      onDeleteItem: (index) => setState(() => items.removeAt(index)),
+                      onProductSelected: (index, product) {
+                        setState(() {
+                          items[index].selectedProduct = product;
+                          items[index].itemCode = product.itemCode;
+                          items[index].basicRate = product.standardRate;
+                        });
+                      },
+                      onQtyChanged: (index, val) => items[index].quantity = int.tryParse(val) ?? 1,
+                      onRateChanged: (index, val) => items[index].basicRate = double.tryParse(val) ?? 0.0,
+                    ),
                   ],
                 ),
               ),
-              _bottomButtons(),
+              BlocBuilder<InventoryBloc, InventoryState>(
+                builder: (context, state) => StockReceiptSubmitActions(
+                  isLoading: state is CreateMaterialReceiptLoading,
+                  onCancel: () => Navigator.pop(context),
+                  onSubmit: _submitMaterialReceipt,
+                ),
+              ),
             ],
           ),
         ),
@@ -176,659 +172,55 @@ class _StockReceiptPageState extends State<StockReceiptPage> {
     );
   }
 
-  Future<T?> _showSearchableBottomSheet<T>({
-    required BuildContext context,
-    required String title,
-    required List<T> items,
-    required String Function(T) displayLabel,
-    required T? currentValue,
-    bool isProductSearch = false,
-  }) async {
-    final searchController = TextEditingController();
-    Timer? debounce;
-
-    return showModalBottomSheet<T>(
+  Future<void> _selectDate() async {
+    final picked = await showDatePicker(
       context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.6,
-              minChildSize: 0.4,
-              maxChildSize: 0.9,
-              builder: (_, scrollController) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: searchController,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    if (isProductSearch &&
-                                        currentUserResponse != null) {
-                                      context.read<ProductsBloc>().add(
-                                        GetAllProducts(
-                                          company: currentUserResponse!
-                                              .message
-                                              .company
-                                              .name,
-                                          searchTerm: '',
-                                        ),
-                                      );
-                                    }
-                                    setModalState(() {});
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (val) {
-                          if (debounce?.isActive ?? false) debounce!.cancel();
-                          debounce = Timer(
-                            const Duration(milliseconds: 500),
-                            () {
-                              if (isProductSearch &&
-                                  currentUserResponse != null) {
-                                context.read<ProductsBloc>().add(
-                                  GetAllProducts(
-                                    company: currentUserResponse!
-                                        .message
-                                        .company
-                                        .name,
-                                    searchTerm: val,
-                                  ),
-                                );
-                              }
-                            },
-                          );
-                          setModalState(() {});
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: BlocBuilder<ProductsBloc, ProductsState>(
-                        builder: (context, state) {
-                          if (isProductSearch &&
-                              state is ProductsStateLoading) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          List<T> displayItems = items;
-                          if (isProductSearch &&
-                              state is ProductsStateSuccess) {
-                            displayItems =
-                                state.productResponse.products as List<T>;
-                          } else if (!isProductSearch) {
-                            final query = searchController.text.toLowerCase();
-                            displayItems = items
-                                .where(
-                                  (item) => displayLabel(
-                                    item,
-                                  ).toLowerCase().contains(query),
-                                )
-                                .toList();
-                          }
-
-                          if (displayItems.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                'No results found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            controller: scrollController,
-                            itemCount: displayItems.length,
-                            itemBuilder: (context, index) {
-                              final item = displayItems[index];
-                              final isSelected = item == currentValue;
-
-                              return ListTile(
-                                title: Text(
-                                  displayLabel(item),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Colors.blue[700]
-                                        : Colors.black87,
-                                  ),
-                                ),
-                                trailing: isSelected
-                                    ? Icon(
-                                        Icons.check,
-                                        color: Colors.blue[700],
-                                        size: 20,
-                                      )
-                                    : null,
-                                onTap: () => Navigator.pop(ctx, item),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
+      initialDate: postingDate,
+      firstDate: DateTime(2020),
+      lastDate: DateTime(2035),
     );
+    if (picked != null) setState(() => postingDate = picked);
   }
 
-  Widget _label(String text) {
-    return Text(
-      text,
-      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+  Future<void> _selectTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: postingTime,
     );
-  }
-
-  Widget _storeDropdown() {
-    return BlocBuilder<StoreBloc, StoreState>(
-      builder: (context, state) {
-        return Container(
-          margin: const EdgeInsets.only(top: 6),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              hint: Text(
-                state is StoreStateLoading
-                    ? 'Loading stores...'
-                    : _stores.isEmpty
-                    ? 'No stores available'
-                    : 'Choose a warehouse',
-              ),
-              value: _selectedStoreName,
-              items: _stores.map((store) {
-                return DropdownMenuItem<String>(
-                  value: store.name,
-                  child: Text(
-                    '${store.warehouseName}${store.isDefault ? ' (Default)' : ''}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  _selectedStoreName = newValue;
-                });
-              },
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _dateField() {
-    return InkWell(
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: postingDate,
-          firstDate: DateTime(2020),
-          lastDate: DateTime(2035),
-        );
-        if (picked != null) setState(() => postingDate = picked);
-      },
-      child: _inputBox(
-        '${postingDate.day}/${postingDate.month}/${postingDate.year}',
-        Icons.calendar_today,
-      ),
-    );
-  }
-
-  Widget _timeField() {
-    return InkWell(
-      onTap: () async {
-        final picked = await showTimePicker(
-          context: context,
-          initialTime: postingTime,
-        );
-        if (picked != null) setState(() => postingTime = picked);
-      },
-      child: _inputBox(
-        '${postingTime.hour.toString().padLeft(2, '0')}:${postingTime.minute.toString().padLeft(2, '0')}:00',
-        Icons.access_time,
-      ),
-    );
-  }
-
-  Widget _inputBox(String text, IconData icon) {
-    return Container(
-      margin: const EdgeInsets.only(top: 6),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(text),
-          Icon(icon, size: 18, color: Colors.grey),
-        ],
-      ),
-    );
-  }
-
-  Widget _itemsCard() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Items',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
-          ),
-          const SizedBox(height: 12),
-
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Column(
-              children: [
-                Row(
-                  children: const [
-                    _Header('Item Code*', 200),
-                    _Header('Qty*', 80),
-                    _Header('Basic Rate*', 100),
-                    _Header('', 50),
-                  ],
-                ),
-                const SizedBox(height: 8),
-
-                if (items.isEmpty)
-                  _itemRow(null, -1)
-                else
-                  ...items.asMap().entries.map((e) => _itemRow(e.value, e.key)),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                items.add(StockItem());
-              });
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add Item'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _itemRow(StockItem? item, int index) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Item Code Dropdown
-          SizedBox(
-            width: 200,
-            height: 40,
-            child: BlocBuilder<ProductsBloc, ProductsState>(
-              builder: (context, state) {
-                return InkWell(
-                  onTap: state is ProductsStateLoading || _products.isEmpty
-                      ? null
-                      : () async {
-                          final selected =
-                              await _showSearchableBottomSheet<ProductItem>(
-                                context: context,
-                                title: 'Select Item',
-                                items: _products,
-                                displayLabel: (p) =>
-                                    '${p.itemCode} - ${p.itemName}',
-                                currentValue: item?.selectedProduct,
-                                isProductSearch: true,
-                              );
-
-                          if (selected != null && index >= 0) {
-                            setState(() {
-                              items[index].selectedProduct = selected;
-                              items[index].itemCode = selected.itemCode;
-                              items[index].basicRate = selected.standardRate;
-                            });
-                          }
-                        },
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 0,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      isDense: true,
-                      suffixIcon: const Icon(Icons.arrow_drop_down, size: 20),
-                    ),
-                    child: Text(
-                      item?.selectedProduct != null
-                          ? '${item!.selectedProduct!.itemCode} - ${item.selectedProduct!.itemName}'
-                          : state is ProductsStateLoading
-                          ? 'Loading...'
-                          : _products.isEmpty
-                          ? 'No items'
-                          : 'Select Item',
-                      style: const TextStyle(fontSize: 12),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Quantity field
-          SizedBox(
-            width: 80,
-            height: 40,
-            child: TextFormField(
-              initialValue: item?.quantity.toString() ?? '1',
-              style: const TextStyle(fontSize: 12),
-              keyboardType: TextInputType.number,
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                isDense: true,
-              ),
-              onChanged: (value) {
-                if (index >= 0) {
-                  items[index].quantity = int.tryParse(value) ?? 1;
-                }
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Basic Rate field
-          SizedBox(
-            width: 100,
-            height: 40,
-            child: TextFormField(
-              initialValue: item?.basicRate.toStringAsFixed(2) ?? '0.00',
-              style: const TextStyle(fontSize: 12),
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              textAlign: TextAlign.center,
-              decoration: InputDecoration(
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 10,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                isDense: true,
-              ),
-              onChanged: (value) {
-                if (index >= 0) {
-                  items[index].basicRate = double.tryParse(value) ?? 0.0;
-                }
-              },
-            ),
-          ),
-          const SizedBox(width: 8),
-
-          // Delete button
-          if (index >= 0)
-            SizedBox(
-              width: 50,
-              height: 40,
-              child: IconButton(
-                padding: EdgeInsets.zero,
-                constraints: const BoxConstraints(),
-                icon: const Icon(
-                  Icons.delete_outline,
-                  size: 20,
-                  color: Colors.red,
-                ),
-                onPressed: () async {
-                  final confirmed = await DeleteConfirmationDialog.show(
-                    context,
-                  );
-                  if (confirmed == true) {
-                    setState(() => items.removeAt(index));
-                  }
-                },
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bottomButtons() {
-    return BlocBuilder<InventoryBloc, InventoryState>(
-      builder: (context, state) {
-        final isLoading = state is CreateMaterialReceiptLoading;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          Navigator.pop(context);
-                        },
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.red,
-                    side: const BorderSide(color: Colors.red),
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _submitMaterialReceipt,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.white,
-                            ),
-                          ),
-                        )
-                      : const Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.add, size: 18),
-                            SizedBox(width: 8),
-                            Text('Create'),
-                          ],
-                        ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
-    );
+    if (picked != null) setState(() => postingTime = picked);
   }
 
   String _formatErrorMessage(String message) {
     var coreMessage = message;
-    
-    if (coreMessage.startsWith('Error: ')) {
-      coreMessage = coreMessage.substring(7);
-    }
-    
+    if (coreMessage.startsWith('Error: ')) coreMessage = coreMessage.substring(7);
     if (coreMessage.contains('Valuation Rate for the Item')) {
       final itemMatch = RegExp(r'Valuation Rate for the Item (.*?), is required').firstMatch(coreMessage);
       if (itemMatch != null) {
         return 'Valuation Rate for Item ${itemMatch.group(1)}, is required,  please manage price at product  level';
       }
     }
-
-    final regex = RegExp(r'\.([A-Z])|\. (Here|If|Please|You|Note)');
-    final match = regex.firstMatch(coreMessage);
-    
-    if (match != null) {
-      coreMessage = '${coreMessage.substring(0, match.start).trim()}.';
-    }
-    
+    final match = RegExp(r'\.([A-Z])|\. (Here|If|Please|You|Note)').firstMatch(coreMessage);
+    if (match != null) coreMessage = '${coreMessage.substring(0, match.start).trim()}.';
     return coreMessage;
   }
 
   void _submitMaterialReceipt() {
     if (_selectedStoreName == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a warehouse')),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a warehouse')));
       return;
     }
-
     if (items.isEmpty || items.any((item) => item.selectedProduct == null)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please add at least one item with valid item code'),
-        ),
-      );
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please add at least one item with valid item code')));
       return;
     }
-
-    // Format posting date
-    final formattedDate =
-        '${postingDate.year}-${postingDate.month.toString().padLeft(2, '0')}-${postingDate.day.toString().padLeft(2, '0')}';
-
-    // Create the request object
+    final formattedDate = '${postingDate.year}-${postingDate.month.toString().padLeft(2, '0')}-${postingDate.day.toString().padLeft(2, '0')}';
     final request = CreateMaterialReceiptRequest(
-      items: items.map((item) {
-        return MaterialReceiptItem(
-          itemCode: item.itemCode!,
-          qty: item.quantity.toDouble(),
-          tWarehouse: _selectedStoreName!,
-        );
-      }).toList(),
+      items: items.map((item) => MaterialReceiptItem(itemCode: item.itemCode!, qty: item.quantity.toDouble(), tWarehouse: _selectedStoreName!)).toList(),
       targetWarehouse: _selectedStoreName!,
       postingDate: formattedDate,
       doNotSubmit: false,
       company: currentUserResponse!.message.company.name,
     );
-
-    // Dispatch the event to BLoC
     context.read<InventoryBloc>().add(CreateMaterialReceipt(request: request));
   }
-}
-
-class _Header extends StatelessWidget {
-  final String text;
-  final double width;
-  const _Header(this.text, this.width);
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-}
-
-class StockItem {
-  String? itemCode;
-  int quantity = 1;
-  double basicRate = 0;
-  ProductItem? selectedProduct;
 }

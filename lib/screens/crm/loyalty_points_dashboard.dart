@@ -75,6 +75,16 @@ class _LoyaltyProgramsListScreenState extends State<LoyaltyProgramsListScreen> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         actions: [
+          IconButton(
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder: (context) => const LoyaltyInstructionsDialog(),
+              );
+            },
+            icon: const Icon(Icons.info_outline, color: Color(0xFF1E88E5)),
+          ),
+          Spacer(),
           Padding(
             padding: EdgeInsets.symmetric(
               horizontal: isTablet ? 16 : 8,
@@ -164,106 +174,6 @@ class _LoyaltyProgramsListScreenState extends State<LoyaltyProgramsListScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Info Card
-                    Container(
-                      width: double.infinity,
-                      padding: EdgeInsets.all(isTablet ? 24 : 16),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withAlpha(5),
-                            blurRadius: 10,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF1E88E5).withAlpha(10),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.star,
-                                  color: Color(0xFF1E88E5),
-                                  size: 24,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: Text(
-                                  'About Loyalty Programs',
-                                  style: TextStyle(
-                                    color: const Color(0xFF1E40AF),
-                                    fontSize: isTablet ? 18 : 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          SizedBox(height: isTablet ? 16 : 12),
-                          Text(
-                            'Loyalty programs allow you to reward customers with points based on their purchases. Points are calculated using the collection factor (points per unit) you define.',
-                            style: TextStyle(
-                              color: Colors.grey[700],
-                              fontSize: isTablet ? 15 : 14,
-                              height: 1.5,
-                            ),
-                          ),
-                          SizedBox(height: isTablet ? 16 : 12),
-                          Container(
-                            padding: EdgeInsets.all(isTablet ? 16 : 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF0F9FF),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: const Color(0xFFBAE6FD),
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Points Calculation:',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: isTablet ? 15 : 14,
-                                    color: const Color(0xFF0C4A6E),
-                                  ),
-                                ),
-                                SizedBox(height: isTablet ? 8 : 6),
-                                Text(
-                                  'If your collection factor is 10, customers earn 1 point for every 10 currency units spent. For example:',
-                                  style: TextStyle(
-                                    fontSize: isTablet ? 14 : 13,
-                                    color: const Color(0xFF0C4A6E),
-                                  ),
-                                ),
-                                SizedBox(height: isTablet ? 8 : 6),
-                                _buildBulletPoint(
-                                  'Purchase of 100 = 10 points',
-                                  isTablet,
-                                ),
-                                _buildBulletPoint(
-                                  'Purchase of 25 = 2 points (integer division)',
-                                  isTablet,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    SizedBox(height: isTablet ? 32 : 24),
 
                     // Active Programs Section
                     Row(
@@ -384,30 +294,6 @@ class _LoyaltyProgramsListScreenState extends State<LoyaltyProgramsListScreen> {
     );
   }
 
-  Widget _buildBulletPoint(String text, bool isTablet) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 8, bottom: 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 6),
-            child: Icon(Icons.circle, size: 6, color: Color(0xFF0C4A6E)),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: isTablet ? 14 : 13,
-                color: const Color(0xFF0C4A6E),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   Widget _buildLoyaltyTable(List<LoyaltyProgramData> programs) {
     return LayoutBuilder(
@@ -575,4 +461,133 @@ class LoyaltyProgramData {
     required this.fromDate,
     required this.toDate,
   });
+}
+
+class LoyaltyInstructionsDialog extends StatelessWidget {
+  const LoyaltyInstructionsDialog({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    final isTablet = size.width >= 600;
+    
+    final dialogWidth = isTablet ? 500.0 : size.width * 0.9;
+
+    return Dialog(
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+      child: Container(
+        width: dialogWidth,
+        padding: EdgeInsets.all(isTablet ? 24 : 16),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E88E5).withAlpha(10),
+                      ),
+                      child: const Icon(
+                        Icons.star,
+                        color: Color(0xFF1E88E5),
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Text(
+                      'Loyalty Programs',
+                      style: TextStyle(
+                        color: const Color(0xFF1E40AF),
+                        fontSize: isTablet ? 18 : 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                )
+              ],
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Text(
+              'Loyalty programs allow you to reward customers with points based on their purchases. Points are calculated using the collection factor (points per unit) you define.',
+              style: TextStyle(
+                color: Colors.grey[700],
+                fontSize: isTablet ? 15 : 14,
+                height: 1.5,
+              ),
+            ),
+            SizedBox(height: isTablet ? 16 : 12),
+            Container(
+              padding: EdgeInsets.all(isTablet ? 16 : 12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F9FF),
+                border: Border.all(
+                  color: const Color(0xFFBAE6FD),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Points Calculation:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: isTablet ? 15 : 14,
+                      color: const Color(0xFF0C4A6E),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 8 : 6),
+                  Text(
+                    'If your collection factor is 10, customers earn 1 point for every 10 currency units spent. For example:',
+                    style: TextStyle(
+                      fontSize: isTablet ? 14 : 13,
+                      color: const Color(0xFF0C4A6E),
+                    ),
+                  ),
+                  SizedBox(height: isTablet ? 8 : 6),
+                  _buildBulletPoint('Purchase of 100 = 10 points', isTablet),
+                  _buildBulletPoint('Purchase of 25 = 2 points (integer division)', isTablet),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBulletPoint(String text, bool isTablet) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 8, bottom: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.only(top: 6),
+            child: Icon(Icons.circle, size: 6, color: Color(0xFF0C4A6E)),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: isTablet ? 14 : 13,
+                color: const Color(0xFF0C4A6E),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
