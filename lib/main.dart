@@ -112,6 +112,13 @@ class MyApp extends StatelessWidget {
             scaffoldMessengerKey: scaffoldMessengerKey,
             debugShowCheckedModeBanner: false,
             theme: AppTheme().init(),
+            builder: (context, child) {
+              return SafeArea(
+                top: false,
+                bottom: true,
+                child: child!,
+              );
+            },
             home: const SplashScreen(),
           ),
         ),

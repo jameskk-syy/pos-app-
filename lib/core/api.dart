@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart'; // For kIsWeb
+import 'package:flutter/foundation.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/core/dependency.dart';

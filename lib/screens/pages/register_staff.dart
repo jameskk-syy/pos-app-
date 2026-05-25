@@ -1,6 +1,4 @@
 import 'dart:convert';
-import 'package:flutter/services.dart';
-
 import 'package:flutter/material.dart' hide DataCell;
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:pos/domain/requests/users/create_staff.dart';
@@ -11,17 +9,14 @@ import 'package:pos/presentation/usersBloc/bloc/staff_bloc.dart';
 import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
 import 'package:pos/domain/requests/biller/biller_requests.dart';
 import 'package:pos/domain/models/biller_models.dart';
-import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/widgets/users/edit_staff.dart';
-
 import 'package:pos/widgets/users/manage_user_roles.dart';
 import 'package:pos/widgets/users/staff_multi_select_dialog.dart';
 import 'package:pos/widgets/users/view_staff_widget.dart';
 import 'package:pos/core/services/storage_service.dart';
-import 'package:pos/core/utils/permission_helper.dart';
 import 'package:pos/core/dependency.dart';
-
-enum StaffMenuAction { viewDetails, edit, manange }
+import 'package:pos/screens/pages/widgets/staff_list_widgets.dart';
+import 'package:pos/screens/pages/widgets/staff_form_widgets.dart';
 
 class RegisterStaff extends StatefulWidget {
   const RegisterStaff({super.key});
@@ -33,13 +28,15 @@ class RegisterStaff extends StatefulWidget {
 class _RegisterStaffState extends State<RegisterStaff> {
   bool _showCreateStaff = false;
   bool _isObscure = true;
-  Role? role;
-  List<Role> availableRolesList = []; // Store fetched roles
+  List<Role> availableRolesList = [];
   final TextEditingController _firstNameController = TextEditingController();
   final TextEditingController _lastNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
   List<String> _selectedRoles = [];
   List<BillerProfile> _availableBillers = [];
   List<String> _selectedBillers = [];
@@ -53,18 +50,14 @@ class _RegisterStaffState extends State<RegisterStaff> {
   bool _isLoading = false;
   bool _hasMore = true;
   int _totalStaff = 0;
-  final ScrollController _scrollController = ScrollController();
-  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
-    debugPrint('RegisterStaff initState called');
     _scrollController.addListener(_onScroll);
     _searchController.addListener(_filterStaff);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadCurrentUser();
-      // Fetch roles on init
       context.read<StaffBloc>().add(GetUserRoles());
       context.read<BillerBloc>().add(ListBillers(ListBillersRequest(limit: 100)));
     });
@@ -73,320 +66,94 @@ class _RegisterStaffState extends State<RegisterStaff> {
   void _filterStaff() {
     final query = _searchController.text.toLowerCase();
     setState(() {
-      if (query.isEmpty) {
-        _filteredStaffUsers = List.from(_staffUsers);
-      } else {
-        _filteredStaffUsers = _staffUsers.where((user) {
-          final fullName = user.fullName.toLowerCase();
-          final email = user.email.toLowerCase();
-          final phone = user.phone.toLowerCase();
-          return fullName.contains(query) ||
-              email.contains(query) ||
-              phone.contains(query);
-        }).toList();
-      }
+      if (query.isEmpty) { _filteredStaffUsers = List.from(_staffUsers); }
+      else { _filteredStaffUsers = _staffUsers.where((u) => u.fullName.toLowerCase().contains(query) || u.email.toLowerCase().contains(query) || u.phone.toLowerCase().contains(query)).toList(); }
     });
-  }
-
-  Future<CurrentUserResponse?> _getSavedCurrentUser() async {
-    final storage = getIt<StorageService>();
-    final userString = await storage.getString('current_user');
-    if (userString == null) return null;
-    return CurrentUserResponse.fromJson(jsonDecode(userString));
   }
 
   Future<void> _loadCurrentUser() async {
-    final savedUser = await _getSavedCurrentUser();
-    if (!mounted || savedUser == null) return;
-
-    setState(() {
-      currentUserResponse = savedUser;
-    });
+    final storage = getIt<StorageService>();
+    final userString = await storage.getString('current_user');
+    if (!mounted || userString == null) {
+      return;
+    }
+    setState(() => currentUserResponse = CurrentUserResponse.fromJson(jsonDecode(userString)));
     _loadStaff();
   }
 
-  void _loadStaff() {
-    context.read<StaffBloc>().add(
-      GetUserListEvent(limit: _limit, offset: _currentOffset),
-    );
-  }
-
+  void _loadStaff() => context.read<StaffBloc>().add(GetUserListEvent(limit: _limit, offset: _currentOffset));
   void _onScroll() {
     if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent * 0.9) {
-      if (!_isLoading && _hasMore) {
-        _loadMore();
-      }
+            _scrollController.position.maxScrollExtent * 0.9 &&
+        !_isLoading &&
+        _hasMore) {
+      _loadMore();
     }
   }
-
-  void _loadMore() {
-    setState(() {
-      _isLoading = true;
-      _currentOffset += _limit;
-    });
-    _loadStaff();
-  }
-
-  void _refreshStaff() {
-    setState(() {
-      _currentOffset = 0;
-      _staffUsers.clear();
-      _hasMore = true;
-    });
-    _loadStaff();
-  }
+  void _loadMore() { setState(() { _isLoading = true; _currentOffset += _limit; }); _loadStaff(); }
+  void _refreshStaff() { setState(() { _currentOffset = 0; _staffUsers.clear(); _hasMore = true; }); _loadStaff(); }
 
   @override
   void dispose() {
-    _scrollController.dispose();
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
-    _phoneController.dispose();
-    _passwordController.dispose();
-    _searchController.dispose();
+    _scrollController.dispose(); _firstNameController.dispose(); _lastNameController.dispose();
+    _emailController.dispose(); _phoneController.dispose(); _passwordController.dispose(); _searchController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    debugPrint(
-      'RegisterStaff build called, showCreateStaff: $_showCreateStaff',
-    );
-
     return SafeArea(
-      child: BlocListener<StaffBloc, StaffState>(
-        listener: (context, state) {
-          if (state is StaffStateSuccess) {
-            setState(() {
-              _isLoading = false;
-              final newUsers = state.staffUser.message.staffUsers;
-              if (newUsers.length < _limit) {
-                _hasMore = false;
-              }
-              _totalStaff = state.staffUser.message.count;
-              if (_currentOffset == 0) {
-                _staffUsers.clear();
-              }
-              _staffUsers.addAll(newUsers);
-              _filterStaff();
-            });
-          }
-          // Handle staff update success
-          else if (state is StaffUpdateSuccess) {
-            // Refresh the user list
-            _refreshStaff();
-          }
-          // Handle staff role assignment success
-          else if (state is StaffRolesAssignSuccess) {
-            _refreshStaff();
-          }
-          // Handle staff create success
-          else if (state is StaffCreateUser) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Staff user created successfully'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-            setState(() {
-              _showCreateStaff = false;
-              _resetForm();
-            });
-            _refreshStaff();
-          }
-          // Store available roles when loaded
-          else if (state is StaffRoleList) {
-            setState(() {
-              availableRolesList = state.response.message.roles;
-            });
-          }
-            // Handle failures
-          else if (state is StaffStateFailure) {
-            setState(() {
-              _isLoading = false;
-            });
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Error: ${state.error}'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 4),
-              ),
-            );
-          }
-        },
-        child: BlocListener<BillerBloc, BillerState>(
-          listener: (context, state) {
+      child: MultiBlocListener(
+        listeners: [
+          BlocListener<StaffBloc, StaffState>(listener: (context, state) {
+            if (state is StaffStateSuccess) {
+              setState(() { _isLoading = false; final newUsers = state.staffUser.message.staffUsers; if (newUsers.length < _limit) _hasMore = false; _totalStaff = state.staffUser.message.count; if (_currentOffset == 0) _staffUsers.clear(); _staffUsers.addAll(newUsers); _filterStaff(); });
+            } else if (state is StaffUpdateSuccess || state is StaffRolesAssignSuccess) { _refreshStaff(); }
+            else if (state is StaffCreateUser) { ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Staff user created successfully'), backgroundColor: Colors.green)); setState(() { _showCreateStaff = false; _resetForm(); }); _refreshStaff(); }
+            else if (state is StaffRoleList) { setState(() => availableRolesList = state.response.message.roles); }
+            else if (state is StaffStateFailure) { setState(() => _isLoading = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${state.error}'), backgroundColor: Colors.red)); }
+          }),
+          BlocListener<BillerBloc, BillerState>(listener: (context, state) {
             if (state is ListBillersLoaded) {
-              setState(() {
-                _availableBillers = state.response.billers;
-              });
+              setState(() => _availableBillers = state.response.billers);
             }
-          },
-          child: Container(
-            color: const Color(0xFFF6F8FB),
-            padding: const EdgeInsets.all(16),
-            child: _showCreateStaff ? _createStaffUI() : _usersListUI(),
-          ),
-        ),
+          }),
+        ],
+        child: Container(color: const Color(0xFFF6F8FB), padding: const EdgeInsets.all(16), child: _showCreateStaff ? _buildCreateStaffUI() : _buildUsersListUI()),
       ),
     );
   }
 
-  Widget _usersListUI() {
+  Widget _buildUsersListUI() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Container(
-                height: 48,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: const InputDecoration(
-                    hintText: 'Search staff...',
-                    border: InputBorder.none,
-                    enabledBorder: InputBorder.none,
-                    focusedBorder: InputBorder.none,
-                    icon: Icon(Icons.search, color: Colors.grey),
-                    contentPadding: EdgeInsets.symmetric(vertical: 14),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(width: 16),
-            if (PermissionHelper.hasPermission('manage_users:create'))
-              SizedBox(
-                width: 150,
-                height: 48,
-                child: ElevatedButton.icon(
-                  onPressed: () {
-                    debugPrint('Add Staff button pressed');
-                    setState(() {
-                      _showCreateStaff = true;
-                    });
-                  },
-                  icon: const Icon(Icons.add, color: AppColors.white),
-                  label: const Text(
-                    'Add Staff',
-                    style: TextStyle(color: AppColors.white),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
+        StaffListHeader(searchController: _searchController, onAddStaff: () => setState(() => _showCreateStaff = true)),
         const SizedBox(height: 16),
-        Expanded(child: _usersTable()),
+        Expanded(
+          child: StaffTable(
+            totalStaff: _totalStaff,
+            child: _buildUserListContent(),
+          ),
+        ),
       ],
     );
   }
 
-  Widget _usersTable() {
-    return BlocProvider.value(
-      value: context.read<StaffBloc>(),
-      child: BlocBuilder<StaffBloc, StaffState>(
-        builder: (context, state) {
-          debugPrint('StaffBloc state: $state');
-
-          return Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.blue.shade100),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Users List ($_totalStaff)',
-                  style: const TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      _tableHeader(),
-                      const Divider(),
-                      Expanded(child: _buildUserList()),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildUserList() {
-    if (_staffUsers.isEmpty &&
-        context.read<StaffBloc>().state is StaffStateLoading) {
+  Widget _buildUserListContent() {
+    final state = context.read<StaffBloc>().state;
+    if (_staffUsers.isEmpty && state is StaffStateLoading) {
       return const Center(child: CircularProgressIndicator());
     }
-
     if (_staffUsers.isEmpty) {
-      if (context.read<StaffBloc>().state is StaffStateLoading) {
-        return const Center(child: CircularProgressIndicator());
-      }
-      return Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.people_outline, size: 64, color: Colors.grey),
-          SizedBox(height: 16),
-          Text(
-            'No users found',
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-          Text(
-            'Click "Add Staff" to create new users',
-            style: TextStyle(fontSize: 14, color: Colors.grey),
-          ),
-        ],
-      );
+      return const StaffEmptyState();
     }
-
     if (_filteredStaffUsers.isEmpty && _searchController.text.isNotEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search_off, size: 64, color: Colors.grey),
-            const SizedBox(height: 16),
-            Text(
-              'No users found matching "${_searchController.text}"',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
+      return StaffEmptyState(searchQuery: _searchController.text);
     }
 
     return RefreshIndicator(
-      onRefresh: () async {
-        _refreshStaff();
-      },
+      onRefresh: () async => _refreshStaff(),
       child: ListView.builder(
         physics: const AlwaysScrollableScrollPhysics(),
         controller: _scrollController,
@@ -395,756 +162,106 @@ class _RegisterStaffState extends State<RegisterStaff> {
           if (index == _filteredStaffUsers.length) {
             return const Center(child: CircularProgressIndicator());
           }
-          final staff = _filteredStaffUsers[index];
-          return _staffRowWithData(staff);
+          return StaffRow(staff: _filteredStaffUsers[index], onAction: _handleMenuAction);
         },
       ),
     );
   }
 
-  Widget _tableHeader() {
-    return Row(
-      children: const [
-        Expanded(
-          flex: 2,
-          child: Text('Name', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        Expanded(
-          flex: 1,
-          child: Text('Status', style: TextStyle(fontWeight: FontWeight.bold)),
-        ),
-        Expanded(
-          flex: 1,
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              'Actions',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _staffRowWithData(StaffUser staff) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              staff.fullName,
-              style: const TextStyle(fontSize: 14),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: staff.enabled == 1 ? Colors.green : Colors.red,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  staff.enabled == 1 ? 'Active' : 'Inactive',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 1,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: PopupMenuButton<StaffMenuAction>(
-                color: Colors.white,
-                onSelected: (action) {
-                  _handleMenuAction(action, staff);
-                },
-                itemBuilder: (_) => [
-                  _menuItem(
-                    Icons.visibility,
-                    'View Details',
-                    StaffMenuAction.viewDetails,
-                  ),
-                  if (PermissionHelper.hasPermission('manage_users:edit'))
-                    _menuItem(Icons.edit, 'Edit', StaffMenuAction.edit),
-                  if (PermissionHelper.hasPermission('manage_users:edit'))
-                    _menuItem(
-                      Icons.assignment,
-                      'Manage Roles',
-                      StaffMenuAction.manange,
-                    ),
-                  // _menuItem(Icons.block, 'Disable', StaffMenuAction.disable),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  PopupMenuItem<StaffMenuAction> _menuItem(
-    IconData icon,
-    String text,
-    StaffMenuAction value,
-  ) {
-    return PopupMenuItem<StaffMenuAction>(
-      value: value,
-      child: Row(
-        children: [Icon(icon, size: 18), const SizedBox(width: 8), Text(text)],
-      ),
-    );
-  }
-
-  void _handleMenuAction(StaffMenuAction action, StaffUser staff) {
-    debugPrint('Menu action: $action for ${staff.name}');
-    switch (action) {
-      case StaffMenuAction.viewDetails:
-        _openViewDetailsDialog(staff);
-        break;
-      case StaffMenuAction.edit:
-        showEditStaffDialog(context, staff);
-        break;
-      // case StaffMenuAction.disable:
-      //   _confirmDisableStaff(staff);
-      //   break;
-      case StaffMenuAction.manange:
-        showManageRolesDialog(context, staff);
-        break;
-    }
-  }
-
-  void showManageRolesDialog(BuildContext context, StaffUser staff) {
-    // If roles are not loaded yet, fetch them first
-    if (availableRolesList.isEmpty) {
-      context.read<StaffBloc>().add(GetUserRoles());
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Loading roles...'),
-          duration: Duration(seconds: 1),
-        ),
-      );
-
-      // Wait a bit and try again
-      Future.delayed(const Duration(milliseconds: 1500), () {
-        if (availableRolesList.isNotEmpty) {
-          // ignore: use_build_context_synchronously
-          _showManageRolesDialogNow(context, staff);
-        } else {
-          // ignore: use_build_context_synchronously
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Failed to load roles. Please try again.'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      });
-      return;
-    }
-
-    _showManageRolesDialogNow(context, staff);
-  }
-
-  void _showManageRolesDialogNow(BuildContext context, StaffUser staff) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => BlocProvider.value(
-        value: context.read<StaffBloc>(),
-        child: ManageRolesDialog(
-          availableRoles: availableRolesList,
-          currentRoles: staff.roles,
-          staffName: staff.fullName,
-          staffEmail: staff.email,
-        ),
-      ),
-    );
-  }
-
-  void _openViewDetailsDialog(StaffUser staff) {
-    showDialog(
-      context: context,
-      builder: (_) => ViewStaffDetailsDialog(staff: staff),
-    );
-  }
-
-  void showEditStaffDialog(BuildContext context, StaffUser user) {
-    showDialog<StaffUser>(
-      context: context,
-      builder: (dialogContext) => BlocProvider.value(
-        value: context.read<StaffBloc>(),
-        child: EditStaffUserDialog(user: user),
-      ),
-    );
-  }
-
-  // void _confirmDisableStaff(StaffUser staff) {
-  //   showDialog(
-  //     context: context,
-  //     builder: (_) => AlertDialog(
-  //       title: const Text('Disable Staff'),
-  //       content: Text('Disable ${staff.name}?'),
-  //       actions: [
-  //         TextButton(
-  //           onPressed: () => Navigator.pop(context),
-  //           child: const Text('Cancel'),
-  //         ),
-  //         ElevatedButton(
-  //           onPressed: () {
-  //             Navigator.pop(context);
-  //           },
-  //           style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-  //           child: const Text('Disable'),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
-  Widget _createStaffUI() {
-    return BlocConsumer<StaffBloc, StaffState>(
-      listener: (context, state) {},
+  Widget _buildCreateStaffUI() {
+    return BlocBuilder<StaffBloc, StaffState>(
       builder: (context, state) {
-        final roleNames = availableRolesList.map((role) => role.name).toList();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left_rounded),
-                  onPressed: () {
-                    debugPrint('Back button pressed');
-                    setState(() {
-                      _showCreateStaff = false;
-                      _resetForm();
-                    });
-                  },
-                ),
-                const Text(
-                  'Create New Staff User',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
+        return CreateStaffForm(
+          header: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              IconButton(icon: const Icon(Icons.chevron_left_rounded), onPressed: () { setState(() { _showCreateStaff = false; _resetForm(); }); }),
+              const Text('Create New Staff User', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            ],
+          ),
+          body: StaffFormLayout(
+            firstNameController: _firstNameController,
+            lastNameController: _lastNameController,
+            emailController: _emailController,
+            phoneController: _phoneController,
+            passwordController: _passwordController,
+            isObscure: _isObscure,
+            onObscureTap: () => setState(() => _isObscure = !_isObscure),
+            selectedRoles: _selectedRoles,
+            selectedBillers: _selectedBillers,
+            onRolesTap: () => _showMultiSelectRolesDialog(),
+            onBillersTap: () => _showMultiSelectBillersDialog(),
+            toggles: StaffTogglesSection(
+              isEnabled: _isEnabled,
+              sendWelcomeEmail: _sendWelcomeEmail,
+              onEnabledChanged: (v) => setState(() => _isEnabled = v),
+              onEmailChanged: (v) => setState(() => _sendWelcomeEmail = v),
             ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: SingleChildScrollView(
-                child: LayoutBuilder(
-                  builder: (context, constraints) {
-                    final isTablet = constraints.maxWidth > 600;
-
-                    // Define the buttons row to reuse or inline
-                    final buttonsRow = Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              debugPrint('Cancel button pressed');
-                              setState(() {
-                                _showCreateStaff = false;
-                                _resetForm();
-                              });
-                            },
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(
-                                color: Colors.red,
-                                width: 1,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                            child: const Text(
-                              'Cancel',
-                              style: TextStyle(color: Colors.red),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: state is StaffStateLoading
-                                ? null
-                                : () {
-                                    _createStaffUser(context);
-                                  },
-                            icon: const Icon(Icons.add, color: Colors.white),
-                            label: state is StaffStateLoading
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                      color: Colors.white,
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text(
-                                    'Create',
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(4),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-
-                    // Define Toggles Row (Common)
-                    final togglesRow = SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Switch(
-                                value: _isEnabled,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _isEnabled = value;
-                                  });
-                                },
-                                activeThumbColor: Colors.white,
-                                activeTrackColor: Colors.blueAccent,
-                              ),
-                              const Text('Enabled'),
-                            ],
-                          ),
-                          const SizedBox(width: 24),
-                          Row(
-                            children: [
-                              Switch(
-                                value: _sendWelcomeEmail,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _sendWelcomeEmail = value;
-                                  });
-                                },
-                                activeThumbColor: Colors.white,
-                                activeTrackColor: Colors.blueAccent,
-                              ),
-                              const Text('Send Welcome Email'),
-                            ],
-                          ),
-                        ],
-                      ),
-                    );
-
-                    if (isTablet) {
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _firstNameController,
-                                  decoration: InputDecoration(
-                                    labelText: 'First Name',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextField(
-                                  controller: _lastNameController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Last Name',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _emailController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Email',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  keyboardType: TextInputType.emailAddress,
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextField(
-                                  controller: _phoneController,
-                                  decoration: InputDecoration(
-                                    labelText: 'Phone Number',
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                  keyboardType: TextInputType.number,
-                                  inputFormatters: [
-                                    FilteringTextInputFormatter.digitsOnly,
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: TextField(
-                                  controller: _passwordController,
-                                  obscureText: _isObscure,
-                                  decoration: InputDecoration(
-                                    labelText: 'Password',
-                                    suffixIcon: IconButton(
-                                      icon: Icon(
-                                        _isObscure
-                                            ? Icons.visibility
-                                            : Icons.visibility_off,
-                                      ),
-                                      onPressed: () {
-                                        setState(() {
-                                          _isObscure = !_isObscure;
-                                        });
-                                      },
-                                    ),
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(10),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () async {
-                                    await _showMultiSelectRolesDialog(
-                                      roleNames,
-                                    );
-                                  },
-                                  child: InputDecorator(
-                                    decoration: InputDecoration(
-                                      labelText: 'Roles',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _selectedRoles.isEmpty
-                                          ? 'Choose roles'
-                                          : _selectedRoles.join(', '),
-                                      style: TextStyle(
-                                        color: _selectedRoles.isEmpty
-                                            ? Colors.grey.shade600
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: InkWell(
-                                  onTap: () async {
-                                    final billerNames = _availableBillers.map((b) => b.name).toList();
-                                    await _showMultiSelectBillersDialog(billerNames);
-                                  },
-                                  child: InputDecorator(
-                                    decoration: InputDecoration(
-                                      labelText: 'Assigned Branches',
-                                      border: OutlineInputBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _selectedBillers.isEmpty
-                                          ? 'Choose branches'
-                                          : _selectedBillers.join(', '),
-                                      style: TextStyle(
-                                        color: _selectedBillers.isEmpty
-                                            ? Colors.grey.shade600
-                                            : Colors.black,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              const Expanded(child: SizedBox()), // spacer to keep widths uniform
-                            ],
-                          ),
-                          const SizedBox(height: 16),
-                          togglesRow,
-                          const SizedBox(height: 24),
-                          buttonsRow,
-                        ],
-                      );
-                    }
-
-                    // Mobile Layout
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        TextField(
-                          controller: _firstNameController,
-                          decoration: InputDecoration(
-                            labelText: 'First Name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _lastNameController,
-                          decoration: InputDecoration(
-                            labelText: 'Last Name',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _emailController,
-                          decoration: InputDecoration(
-                            labelText: 'Email',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          keyboardType: TextInputType.emailAddress,
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _phoneController,
-                          decoration: InputDecoration(
-                            labelText: 'Phone Number',
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        TextField(
-                          controller: _passwordController,
-                          obscureText: _isObscure,
-                          decoration: InputDecoration(
-                            labelText: 'Password',
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _isObscure
-                                    ? Icons.visibility
-                                    : Icons.visibility_off,
-                              ),
-                              onPressed: () {
-                                setState(() {
-                                  _isObscure = !_isObscure;
-                                });
-                              },
-                            ),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () async {
-                            await _showMultiSelectRolesDialog(roleNames);
-                          },
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: 'Roles',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              _selectedRoles.isEmpty
-                                  ? 'Choose roles'
-                                  : _selectedRoles.join(', '),
-                              style: TextStyle(
-                                color: _selectedRoles.isEmpty
-                                    ? Colors.grey.shade600
-                                    : Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        InkWell(
-                          onTap: () async {
-                            final billerNames = _availableBillers.map((b) => b.name).toList();
-                            await _showMultiSelectBillersDialog(billerNames);
-                          },
-                          child: InputDecorator(
-                            decoration: InputDecoration(
-                              labelText: 'Assigned Branches',
-                              border: OutlineInputBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            child: Text(
-                              _selectedBillers.isEmpty
-                                  ? 'Choose branches'
-                                  : _selectedBillers.join(', '),
-                              style: TextStyle(
-                                color: _selectedBillers.isEmpty
-                                    ? Colors.grey.shade600
-                                    : Colors.black,
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        togglesRow,
-                        const SizedBox(height: 24),
-                        buttonsRow,
-                      ],
-                    );
-                  },
-                ),
-              ),
+            actions: StaffFormActions(
+              isLoading: state is StaffStateLoading,
+              onCancel: () { setState(() { _showCreateStaff = false; _resetForm(); }); },
+              onCreate: () => _createStaffUser(),
             ),
-          ],
+          ),
         );
       },
     );
   }
 
-  Future<void> _showMultiSelectRolesDialog(List<String> availableRoles) async {
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (context) => StaffMultiSelectDialog(
-        title: 'Select Staff Roles',
-        availableItems: availableRoles,
-        initialSelectedItems: _selectedRoles,
-        searchHint: 'Search roles...',
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedRoles = result;
-      });
+  void _handleMenuAction(StaffMenuAction action, StaffUser staff) {
+    switch (action) {
+      case StaffMenuAction.viewDetails: showDialog(context: context, builder: (_) => ViewStaffDetailsDialog(staff: staff)); break;
+      case StaffMenuAction.edit: showDialog(context: context, builder: (_) => BlocProvider.value(value: context.read<StaffBloc>(), child: EditStaffUserDialog(user: staff))); break;
+      case StaffMenuAction.manange: _showManageRolesDialog(staff); break;
     }
   }
 
-  Future<void> _showMultiSelectBillersDialog(List<String> availableBillers) async {
-    final result = await showDialog<List<String>>(
-      context: context,
-      builder: (context) => StaffMultiSelectDialog(
-        title: 'Select Allowed Branches',
-        availableItems: availableBillers,
-        initialSelectedItems: _selectedBillers,
-        searchHint: 'Search branches...',
-      ),
-    );
-
-    if (result != null) {
-      setState(() {
-        _selectedBillers = result;
+  void _showManageRolesDialog(StaffUser staff) {
+    if (availableRolesList.isEmpty) {
+      context.read<StaffBloc>().add(GetUserRoles());
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Loading roles...'), duration: Duration(seconds: 1)));
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && availableRolesList.isNotEmpty) {
+          _showManageRolesDialogNow(staff);
+        } else if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+              content: Text('Failed to load roles. Please try again.'),
+              backgroundColor: Colors.red));
+        }
       });
-    }
-  }
-
-  void _createStaffUser(BuildContext context) {
-    if (_firstNameController.text.isEmpty ||
-        _lastNameController.text.isEmpty ||
-        _emailController.text.isEmpty ||
-        _phoneController.text.isEmpty ||
-        _passwordController.text.isEmpty ||
-        _selectedRoles.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'Please fill all required fields and select at least one role',
-          ),
-          backgroundColor: Colors.red,
-        ),
-      );
       return;
     }
+    _showManageRolesDialogNow(staff);
+  }
 
-    final staffRequest = StaffUserRequest(
-      email: _emailController.text,
-      firstName: _firstNameController.text,
-      lastName: _lastNameController.text,
-      password: _passwordController.text,
-      phone: _phoneController.text,
-      roles: _selectedRoles,
-      enabled: _isEnabled,
-      sendWelcomeEmail: _sendWelcomeEmail,
-      company: currentUserResponse!.message.company.companyName,
-      billers: _selectedBillers.isNotEmpty ? _selectedBillers : null,
-    );
+  void _showManageRolesDialogNow(StaffUser staff) {
+    showDialog(context: context, builder: (context) => BlocProvider.value(value: this.context.read<StaffBloc>(), child: ManageRolesDialog(availableRoles: availableRolesList, currentRoles: staff.roles, staffName: staff.fullName, staffEmail: staff.email)));
+  }
 
-    context.read<StaffBloc>().add(
-      CreateStaff(staffCreateRequest: staffRequest),
-    );
+  Future<void> _showMultiSelectRolesDialog() async {
+    final result = await showDialog<List<String>>(context: context, builder: (context) => StaffMultiSelectDialog(title: 'Select Staff Roles', availableItems: availableRolesList.map((r) => r.name).toList(), initialSelectedItems: _selectedRoles, searchHint: 'Search roles...'));
+    if (result != null) {
+      setState(() => _selectedRoles = result);
+    }
+  }
+
+  Future<void> _showMultiSelectBillersDialog() async {
+    final result = await showDialog<List<String>>(context: context, builder: (context) => StaffMultiSelectDialog(title: 'Select Allowed Branches', availableItems: _availableBillers.map((b) => b.name).toList(), initialSelectedItems: _selectedBillers, searchHint: 'Search branches...'));
+    if (result != null) {
+      setState(() => _selectedBillers = result);
+    }
+  }
+
+  void _createStaffUser() {
+    if (_firstNameController.text.isEmpty || _lastNameController.text.isEmpty || _emailController.text.isEmpty || _phoneController.text.isEmpty || _passwordController.text.isEmpty || _selectedRoles.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please fill all required fields and select at least one role'), backgroundColor: Colors.red)); return;
+    }
+    final staffRequest = StaffUserRequest(email: _emailController.text, firstName: _firstNameController.text, lastName: _lastNameController.text, password: _passwordController.text, phone: _phoneController.text, roles: _selectedRoles, enabled: _isEnabled, sendWelcomeEmail: _sendWelcomeEmail, company: currentUserResponse!.message.company.companyName, billers: _selectedBillers.isNotEmpty ? _selectedBillers : null);
+    context.read<StaffBloc>().add(CreateStaff(staffCreateRequest: staffRequest));
   }
 
   void _resetForm() {
-    _firstNameController.clear();
-    _lastNameController.clear();
-    _emailController.clear();
-    _phoneController.clear();
-    _passwordController.clear();
-    _selectedRoles.clear();
-    _selectedBillers.clear();
-    _isEnabled = true;
-    _sendWelcomeEmail = false;
-  }
-}
-
-// DataCell widget helper
-class DataCell extends StatelessWidget {
-  final String text;
-  final double width;
-
-  const DataCell(this.text, this.width, {super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
-      child: Text(
-        text,
-        overflow: TextOverflow.ellipsis,
-        style: const TextStyle(fontSize: 14),
-      ),
-    );
+    _firstNameController.clear(); _lastNameController.clear(); _emailController.clear(); _phoneController.clear(); _passwordController.clear();
+    _selectedRoles.clear(); _selectedBillers.clear(); _isEnabled = true; _sendWelcomeEmail = false;
   }
 }

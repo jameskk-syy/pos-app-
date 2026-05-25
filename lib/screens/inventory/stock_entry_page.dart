@@ -11,7 +11,7 @@ import 'package:pos/domain/responses/sales/store_response.dart';
 import 'package:pos/presentation/inventory/bloc/inventory_bloc.dart';
 import 'package:pos/presentation/products/bloc/products_bloc.dart';
 import 'package:pos/presentation/stores/bloc/store_bloc.dart';
-import 'package:pos/widgets/common/delete_confirmation_dialog.dart';
+import 'package:pos/screens/inventory/widgets/stock_entry_form_widgets.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
 
@@ -89,7 +89,6 @@ class _StockEntryPageState extends State<StockEntryPage> {
             if (state is StoreStateSuccess) {
               setState(() {
                 _stores = state.storeGetResponse.message.data;
-                // Set default warehouse if available and none selected
                 if (_stores.isNotEmpty) {
                   try {
                     final defaultStoreName = _stores
@@ -99,7 +98,7 @@ class _StockEntryPageState extends State<StockEntryPage> {
                     _selectedSourceStoreName ??= defaultStoreName;
                     _selectedTargetStoreName ??= defaultStoreName;
                   } catch (e) {
-                    // No default warehouse found, leave as null
+                    // No default warehouse found
                   }
                 }
               });
@@ -160,326 +159,65 @@ class _StockEntryPageState extends State<StockEntryPage> {
               Expanded(
                 child: ListView(
                   children: [
-                    _label('Stock Entry Type'),
-                    _typeDropdown(),
+                    const _Label('Stock Entry Type'),
+                    StockEntryTypeSelector(
+                      selectedType: selectedType,
+                      entryTypes: entryTypes,
+                      onChanged: (val) {
+                        if (val != null) setState(() => selectedType = val);
+                      },
+                    ),
                     const SizedBox(height: 16),
 
-                    if (selectedType == 'Material Issue' ||
-                        selectedType == 'Material Transfer') ...[
-                      _label('Source Warehouse*'),
-                      _storeDropdown(isSource: true),
-                      const SizedBox(height: 16),
-                    ],
+                    StockEntryWarehouseSection(
+                      selectedType: selectedType,
+                      selectedSourceStoreName: _selectedSourceStoreName,
+                      selectedTargetStoreName: _selectedTargetStoreName,
+                      stores: _stores,
+                      onSourceChanged: (val) => setState(() => _selectedSourceStoreName = val),
+                      onTargetChanged: (val) => setState(() => _selectedTargetStoreName = val),
+                    ),
 
-                    if (selectedType == 'Material Receipt' ||
-                        selectedType == 'Material Transfer') ...[
-                      _label('Target Warehouse*'),
-                      _storeDropdown(isSource: false),
-                      const SizedBox(height: 16),
-                    ],
-
-                    _label('Posting Date*'),
+                    const _Label('Posting Date*'),
                     _dateField(),
                     const SizedBox(height: 16),
 
-                    _label('Posting Time'),
+                    const _Label('Posting Time'),
                     _timeField(),
                     const SizedBox(height: 20),
 
-                    _itemsCard(),
+                    StockEntryItemsTable(
+                      selectedType: selectedType,
+                      items: items,
+                      products: _products,
+                      currentUserResponse: currentUserResponse,
+                      onAddItem: () => setState(() => items.add(StockEntryItemModel())),
+                      onRemoveItem: (index) => setState(() {
+                        items[index].dispose();
+                        items.removeAt(index);
+                      }),
+                      onStateChanged: () => setState(() {}),
+                    ),
                   ],
                 ),
               ),
-              _bottomButtons(),
+              BlocBuilder<InventoryBloc, InventoryState>(
+                builder: (context, state) {
+                  final isLoading = state is CreateMaterialReceiptLoading ||
+                      state is CreateMaterialIssueLoading ||
+                      state is CreateMaterialTransferLoading;
+                  return StockEntrySubmitActions(
+                    isLoading: isLoading,
+                    selectedType: selectedType,
+                    onCancel: () => Navigator.pop(context),
+                    onSubmit: _submit,
+                  );
+                },
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Future<T?> _showSearchableBottomSheet<T>({
-    required BuildContext context,
-    required String title,
-    required List<T> items,
-    required String Function(T) displayLabel,
-    required T? currentValue,
-    bool isProductSearch = false,
-  }) async {
-    final searchController = TextEditingController();
-    Timer? debounce;
-
-    return showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-      ),
-      builder: (ctx) {
-        return StatefulBuilder(
-          builder: (ctx, setModalState) {
-            return DraggableScrollableSheet(
-              expand: false,
-              initialChildSize: 0.6,
-              minChildSize: 0.4,
-              maxChildSize: 0.9,
-              builder: (_, scrollController) {
-                return Column(
-                  children: [
-                    const SizedBox(height: 8),
-                    Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      child: TextField(
-                        controller: searchController,
-                        autofocus: true,
-                        decoration: InputDecoration(
-                          hintText: 'Search...',
-                          prefixIcon: const Icon(Icons.search, size: 20),
-                          suffixIcon: searchController.text.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(Icons.clear, size: 18),
-                                  onPressed: () {
-                                    searchController.clear();
-                                    if (isProductSearch &&
-                                        currentUserResponse != null) {
-                                      context.read<ProductsBloc>().add(
-                                        GetAllProducts(
-                                          company: currentUserResponse!
-                                              .message
-                                              .company
-                                              .name,
-                                          searchTerm: '',
-                                        ),
-                                      );
-                                    }
-                                    setModalState(() {});
-                                  },
-                                )
-                              : null,
-                          filled: true,
-                          fillColor: Colors.grey[100],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 10,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            borderSide: BorderSide.none,
-                          ),
-                        ),
-                        onChanged: (val) {
-                          if (debounce?.isActive ?? false) debounce!.cancel();
-                          debounce = Timer(
-                            const Duration(milliseconds: 500),
-                            () {
-                              if (isProductSearch &&
-                                  currentUserResponse != null) {
-                                context.read<ProductsBloc>().add(
-                                  GetAllProducts(
-                                    company: currentUserResponse!
-                                        .message
-                                        .company
-                                        .name,
-                                    searchTerm: val,
-                                  ),
-                                );
-                              }
-                            },
-                          );
-                          setModalState(() {});
-                        },
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Divider(height: 1),
-                    Expanded(
-                      child: BlocBuilder<ProductsBloc, ProductsState>(
-                        builder: (context, state) {
-                          if (isProductSearch &&
-                              state is ProductsStateLoading) {
-                            return const Center(
-                              child: CircularProgressIndicator(),
-                            );
-                          }
-
-                          List<T> displayItems = items;
-                          if (isProductSearch &&
-                              state is ProductsStateSuccess) {
-                            displayItems =
-                                state.productResponse.products as List<T>;
-                          } else if (!isProductSearch) {
-                            final query = searchController.text.toLowerCase();
-                            displayItems = items
-                                .where(
-                                  (item) => displayLabel(
-                                    item,
-                                  ).toLowerCase().contains(query),
-                                )
-                                .toList();
-                          }
-
-                          if (displayItems.isEmpty) {
-                            return const Center(
-                              child: Text(
-                                'No results found',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            );
-                          }
-
-                          return ListView.builder(
-                            controller: scrollController,
-                            itemCount: displayItems.length,
-                            itemBuilder: (context, index) {
-                              final item = displayItems[index];
-                              final isSelected = item == currentValue;
-
-                              return ListTile(
-                                title: Text(
-                                  displayLabel(item),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: isSelected
-                                        ? FontWeight.w600
-                                        : FontWeight.normal,
-                                    color: isSelected
-                                        ? Colors.blue[700]
-                                        : Colors.black87,
-                                  ),
-                                ),
-                                trailing: isSelected
-                                    ? Icon(
-                                        Icons.check,
-                                        color: Colors.blue[700],
-                                        size: 20,
-                                      )
-                                    : null,
-                                onTap: () => Navigator.pop(ctx, item),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                );
-              },
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _label(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-      ),
-    );
-  }
-
-  Widget _typeDropdown() {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(8),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      child: DropdownButtonHideUnderline(
-        child: DropdownButton<String>(
-          isExpanded: true,
-          value: selectedType,
-          items: entryTypes.map((type) {
-            return DropdownMenuItem(
-              value: type,
-              child: Text(type, style: const TextStyle(fontSize: 14)),
-            );
-          }).toList(),
-          onChanged: (val) {
-            if (val != null) {
-              setState(() {
-                selectedType = val;
-                // Reset store selections if type changes to keep things clean?
-                // Alternatively, keep them if possible. I'll keep them.
-              });
-            }
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _storeDropdown({required bool isSource}) {
-    return BlocBuilder<StoreBloc, StoreState>(
-      builder: (context, state) {
-        final selectedStoreName = isSource
-            ? _selectedSourceStoreName
-            : _selectedTargetStoreName;
-        return Container(
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.grey.shade300),
-            borderRadius: BorderRadius.circular(8),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: DropdownButtonHideUnderline(
-            child: DropdownButton<String>(
-              isExpanded: true,
-              hint: Text(
-                state is StoreStateLoading
-                    ? 'Loading stores...'
-                    : _stores.isEmpty
-                    ? 'No stores available'
-                    : 'Choose a warehouse',
-                style: const TextStyle(fontSize: 14),
-              ),
-              value: selectedStoreName,
-              items: _stores.map((store) {
-                return DropdownMenuItem<String>(
-                  value: store.name,
-                  child: Text(
-                    '${store.name}${store.isDefault ? ' (Default)' : ''}',
-                    style: const TextStyle(fontSize: 14),
-                  ),
-                );
-              }).toList(),
-              onChanged: (String? newValue) {
-                setState(() {
-                  if (isSource) {
-                    _selectedSourceStoreName = newValue;
-                  } else {
-                    _selectedTargetStoreName = newValue;
-                  }
-                });
-              },
-            ),
-          ),
-        );
-      },
     );
   }
 
@@ -531,308 +269,6 @@ class _StockEntryPageState extends State<StockEntryPage> {
           Icon(icon, size: 18, color: Colors.grey),
         ],
       ),
-    );
-  }
-
-  Widget _itemsCard() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Items',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-          ),
-          const SizedBox(height: 12),
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    const _Header('Item Code*', 200),
-                    const _Header('Qty*', 90),
-                    if (selectedType == 'Material Receipt')
-                      const _Header('Basic Rate*', 100),
-                    if (selectedType != 'Material Receipt')
-                      const _Header('Purpose', 160),
-                    const _Header('', 50),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                if (items.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20),
-                    child: Text(
-                      'No items added yet',
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                  )
-                else
-                  ...items.asMap().entries.map((e) => _itemRow(e.value, e.key)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextButton.icon(
-            onPressed: () {
-              setState(() {
-                items.add(StockEntryItemModel());
-              });
-            },
-            icon: const Icon(Icons.add),
-            label: const Text('Add Item'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _itemRow(StockEntryItemModel item, int index) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Item Code
-          SizedBox(
-            width: 200,
-            height: 40,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: BlocBuilder<ProductsBloc, ProductsState>(
-                builder: (context, state) {
-                  return InkWell(
-                    onTap: state is ProductsStateLoading || _products.isEmpty
-                        ? null
-                        : () async {
-                            final selected =
-                                await _showSearchableBottomSheet<ProductItem>(
-                                  context: context,
-                                  title: 'Select Item',
-                                  items: _products,
-                                  displayLabel: (p) =>
-                                      '${p.itemCode} - ${p.itemName}',
-                                  currentValue: item.selectedProduct,
-                                  isProductSearch: true,
-                                );
-
-                            if (selected != null) {
-                              setState(() {
-                                item.selectedProduct = selected;
-                                item.itemCode = selected.itemCode;
-                                item.basicRate = selected.standardRate;
-                              });
-                            }
-                          },
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 0,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        isDense: true,
-                        suffixIcon: const Icon(Icons.arrow_drop_down, size: 20),
-                      ),
-                      child: Text(
-                        item.selectedProduct != null
-                            ? '${item.selectedProduct!.itemCode} - ${item.selectedProduct!.itemName}'
-                            : state is ProductsStateLoading
-                            ? 'Loading...'
-                            : _products.isEmpty
-                            ? 'No items'
-                            : 'Select Item',
-                        style: const TextStyle(fontSize: 12),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-
-          // Qty
-          SizedBox(
-            width: 90,
-            height: 40,
-            child: Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: TextFormField(
-                controller: item.qtyController,
-                style: const TextStyle(fontSize: 12),
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                decoration: InputDecoration(
-                  contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  isDense: true,
-                ),
-                onChanged: (value) {
-                  item.quantity = int.tryParse(value) ?? 1;
-                },
-              ),
-            ),
-          ),
-
-          // Rate
-          if (selectedType == 'Material Receipt')
-            SizedBox(
-              width: 100,
-              height: 40,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: TextFormField(
-                  initialValue: item.basicRate.toStringAsFixed(2),
-                  // controller: item.rateController, // If implementing controller
-                  style: const TextStyle(fontSize: 12),
-                  keyboardType: const TextInputType.numberWithOptions(
-                    decimal: true,
-                  ),
-                  textAlign: TextAlign.center,
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    isDense: true,
-                  ),
-                  onChanged: (value) {
-                    item.basicRate = double.tryParse(value) ?? 0.0;
-                  },
-                ),
-              ),
-            ),
-
-          // Purpose
-          if (selectedType != 'Material Receipt')
-            SizedBox(
-              width: 160,
-              height: 40,
-              child: Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: TextFormField(
-                  controller: item.purposeController,
-                  style: const TextStyle(fontSize: 12),
-                  decoration: InputDecoration(
-                    contentPadding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 8,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    isDense: true,
-                    hintText: 'Purpose',
-                    hintStyle: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  onChanged: (value) {
-                    item.purpose = value;
-                  },
-                ),
-              ),
-            ),
-
-          // Delete
-          SizedBox(
-            width: 50,
-            height: 40,
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: const Icon(
-                Icons.delete_outline,
-                color: Colors.red,
-                size: 20,
-              ),
-              onPressed: () async {
-                final confirmed = await DeleteConfirmationDialog.show(context);
-                if (confirmed == true) {
-                  setState(() {
-                    item.dispose();
-                    items.removeAt(index);
-                  });
-                }
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _bottomButtons() {
-    return BlocBuilder<InventoryBloc, InventoryState>(
-      builder: (context, state) {
-        final isLoading =
-            state is CreateMaterialReceiptLoading ||
-            state is CreateMaterialIssueLoading ||
-            state is CreateMaterialTransferLoading;
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: isLoading ? null : () => Navigator.pop(context),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.grey[700],
-                    side: BorderSide(color: Colors.grey[300]!),
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation(Colors.white),
-                          ),
-                        )
-                      : Text(
-                          'Create $selectedType', // Material Receipt -> Create Material Receipt
-                          style: const TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                ),
-              ),
-            ],
-          ),
-        );
-      },
     );
   }
 
@@ -965,42 +401,18 @@ class _StockEntryPageState extends State<StockEntryPage> {
   }
 }
 
-class _Header extends StatelessWidget {
+class _Label extends StatelessWidget {
   final String text;
-  final double width;
-  const _Header(this.text, this.width);
+  const _Label(this.text);
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: width,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
       child: Text(
         text,
-        style: const TextStyle(
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          color: Colors.blueGrey,
-        ),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
       ),
     );
-  }
-}
-
-class StockEntryItemModel {
-  String? itemCode;
-  int quantity = 1;
-  double basicRate = 0.0;
-  String purpose = '';
-  ProductItem? selectedProduct;
-  final TextEditingController qtyController;
-  final TextEditingController purposeController;
-
-  StockEntryItemModel()
-    : qtyController = TextEditingController(text: '1'),
-      purposeController = TextEditingController();
-
-  void dispose() {
-    qtyController.dispose();
-    purposeController.dispose();
   }
 }

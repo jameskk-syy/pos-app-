@@ -540,4 +540,3 @@ class _StaffAssignmentPageState extends State<StaffAssignmentPage> {
   }
 }
 
-// End of file

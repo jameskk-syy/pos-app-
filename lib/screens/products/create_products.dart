@@ -327,10 +327,6 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  // ─── Picker field widget ──────────────────────────────────────────────────
-
-  /// A tappable field that looks like the existing dropdowns but opens the
-  /// searchable bottom-sheet on tap.
   Widget _buildPickerField({
     required String hint,
     required String? selectedLabel,
@@ -398,7 +394,6 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  // ─── Dropdown builders ────────────────────────────────────────────────────
 
   Widget _buildItemGroupDropdown() {
     final selectedGroup = itemGroups
@@ -487,7 +482,6 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  // ─── Two-column row helper ─────────────────────────────────────────────────
 
   Widget _buildTwoColumnRow({required Widget left, required Widget right}) {
     return Row(
@@ -500,7 +494,6 @@ class _AddProductPageState extends State<AddProductPage> {
     );
   }
 
-  // ─── Screens ──────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {

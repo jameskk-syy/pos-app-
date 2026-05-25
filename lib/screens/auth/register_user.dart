@@ -9,6 +9,9 @@ import 'package:pos/screens/auth/login.dart';
 import 'package:pos/screens/auth/register_company_details.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:intl_phone_number_input/intl_phone_number_input.dart';
+import 'package:pos/screens/auth/widgets/auth_input_field.dart';
+import 'package:pos/screens/auth/widgets/password_section.dart';
+import 'package:pos/screens/auth/widgets/industry_dropdown.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -144,11 +147,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 40 : 32),
 
                             /// FIRST & LAST NAME (2 INPUTS PER ROW)
-                            _InputLabel("Your Name", isTablet: isTablet),
+                            AuthInputLabel("Your Name", isTablet: isTablet),
                             Row(
                               children: [
                                 Expanded(
-                                  child: _InputField(
+                                  child: AuthTextField(
                                     controller: firstNameController,
                                     hint: "First name",
                                     isTablet: isTablet,
@@ -156,7 +159,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                                 ),
                                 SizedBox(width: isTablet ? 16 : 12),
                                 Expanded(
-                                  child: _InputField(
+                                  child: AuthTextField(
                                     controller: lastNameController,
                                     hint: "Last name",
                                     isTablet: isTablet,
@@ -168,8 +171,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 20 : 16),
 
                             /// EMAIL (Full Width)
-                            _InputLabel("Email Address", isTablet: isTablet),
-                            _InputField(
+                            AuthInputLabel("Email Address", isTablet: isTablet),
+                            AuthTextField(
                               controller: emailController,
                               hint: "Email address",
                               isTablet: isTablet,
@@ -178,7 +181,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 20 : 16),
 
                             /// PHONE NUMBER (Country Code Picker + Input)
-                            _InputLabel("Phone Number", isTablet: isTablet),
+                            AuthInputLabel("Phone Number", isTablet: isTablet),
                             Container(
                               decoration: BoxDecoration(
                                 color: Colors.white,
@@ -252,10 +255,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 20 : 16),
 
                             /// INDUSTRY TYPE (Moved above Password)
-                            _InputLabel("Industry Type", isTablet: isTablet),
+                            AuthInputLabel("Industry Type", isTablet: isTablet),
                             industriesLoading
                                 ? const Center(child: LinearProgressIndicator())
-                                : _DropdownField(
+                                : AuthDropdownField(
                                     hint: "Select your industry",
                                     value: selectedIndustryCode,
                                     items: [
@@ -279,7 +282,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 20 : 16),
 
                             /// PASSWORD
-                            _PasswordSection(
+                            PasswordSection(
                               controller: passwordController,
                               isTablet: isTablet,
                             ),
@@ -287,8 +290,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             SizedBox(height: isTablet ? 24 : 20),
 
                             /// CONFIRM PASSWORD
-                            _InputLabel("Confirm Password", isTablet: isTablet),
-                            _InputField(
+                            AuthInputLabel("Confirm Password", isTablet: isTablet),
+                            AuthTextField(
                               controller: confirmController,
                               hint: "Re-enter password",
                               isTablet: isTablet,
@@ -519,227 +522,4 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 }
 
-class _InputLabel extends StatelessWidget {
-  final String text;
-  final bool isTablet;
-  const _InputLabel(this.text, {this.isTablet = false});
 
-  @override
-  Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 6),
-        child: Text(
-          text,
-          style: TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: isTablet ? 16 : 14,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _InputField extends StatelessWidget {
-  final String hint;
-  final TextEditingController? controller;
-  final bool isTablet;
-  const _InputField({
-    required this.hint,
-    this.controller,
-    this.isTablet = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return TextField(
-      controller: controller,
-      style: TextStyle(fontSize: isTablet ? 16 : 14),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(fontSize: isTablet ? 16 : 14),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 18 : 16,
-          vertical: isTablet ? 16 : 14,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-}
-
-class _PasswordRule extends StatelessWidget {
-  final String text;
-  final bool valid;
-  final bool isTablet;
-  const _PasswordRule(this.text, this.valid, {this.isTablet = false});
-
-  @override
-  Widget build(BuildContext context) {
-    if (valid) return const SizedBox.shrink();
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: isTablet ? 18 : 16,
-            color: Colors.red,
-          ),
-          SizedBox(width: isTablet ? 10 : 8),
-          Text(
-            text,
-            style: TextStyle(fontSize: isTablet ? 15 : 13, color: Colors.red),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DropdownField extends StatelessWidget {
-  final String hint;
-  final String? value;
-  final List<DropdownMenuItem<String>> items;
-  final ValueChanged<String?> onChanged;
-  final bool isTablet;
-
-  const _DropdownField({
-    required this.hint,
-    required this.value,
-    required this.items,
-    required this.onChanged,
-    this.isTablet = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return DropdownButtonFormField<String>(
-      initialValue: value,
-      onChanged: onChanged,
-      items: items,
-      style: TextStyle(fontSize: isTablet ? 16 : 14, color: Colors.black),
-      decoration: InputDecoration(
-        hintText: hint,
-        hintStyle: TextStyle(fontSize: isTablet ? 16 : 14),
-        filled: true,
-        fillColor: Colors.white,
-        contentPadding: EdgeInsets.symmetric(
-          horizontal: isTablet ? 18 : 16,
-          vertical: isTablet ? 16 : 14,
-        ),
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-      ),
-    );
-  }
-}
-
-class _PasswordSection extends StatefulWidget {
-  final TextEditingController controller;
-  final bool isTablet;
-
-  const _PasswordSection({required this.controller, this.isTablet = false});
-
-  @override
-  State<_PasswordSection> createState() => _PasswordSectionState();
-}
-
-class _PasswordSectionState extends State<_PasswordSection> {
-  bool obscure = true;
-  String password = "";
-
-  bool get showRules => password.isNotEmpty;
-  bool get hasMinLength => password.length >= 8;
-  bool get hasUpperLower =>
-      password.contains(RegExp(r'[A-Z]')) &&
-      password.contains(RegExp(r'[a-z]'));
-  bool get hasNumber => password.contains(RegExp(r'[0-9]'));
-  bool get hasSpecial => password.contains(RegExp(r'[!@#$%^&*(),.?":{}|<>]'));
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize password with current controller text in case of rebuilds/re-entry
-    password = widget.controller.text;
-    widget.controller.addListener(_updatePassword);
-  }
-
-  @override
-  void dispose() {
-    widget.controller.removeListener(_updatePassword);
-    super.dispose();
-  }
-
-  void _updatePassword() {
-    if (widget.controller.text != password) {
-      setState(() {
-        password = widget.controller.text;
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _InputLabel("Password", isTablet: widget.isTablet),
-        TextField(
-          controller: widget.controller,
-          obscureText: obscure,
-          // Update local state on change to trigger validation rules rebuild
-          // This only rebuilds _PasswordSection, not the entire screen
-          onChanged: (v) => setState(() => password = v),
-          style: TextStyle(fontSize: widget.isTablet ? 16 : 14),
-          decoration: InputDecoration(
-            hintText: "Keep it secure",
-            hintStyle: TextStyle(fontSize: widget.isTablet ? 16 : 14),
-            filled: true,
-            fillColor: Colors.white,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: widget.isTablet ? 18 : 16,
-              vertical: widget.isTablet ? 16 : 14,
-            ),
-            suffixIcon: GestureDetector(
-              onTap: () => setState(() => obscure = !obscure),
-              child: Icon(
-                obscure
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: widget.isTablet ? 22 : 20,
-              ),
-            ),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-          ),
-        ),
-        if (showRules) ...[
-          SizedBox(height: widget.isTablet ? 14 : 10),
-          _PasswordRule(
-            "Minimum 8 characters",
-            hasMinLength,
-            isTablet: widget.isTablet,
-          ),
-          _PasswordRule(
-            "Uppercase & lowercase letters",
-            hasUpperLower,
-            isTablet: widget.isTablet,
-          ),
-          _PasswordRule(
-            "At least 1 number",
-            hasNumber,
-            isTablet: widget.isTablet,
-          ),
-          _PasswordRule(
-            "At least 1 special character",
-            hasSpecial,
-            isTablet: widget.isTablet,
-          ),
-        ],
-      ],
-    );
-  }
-}
