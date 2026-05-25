@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:pos/core/constants/constant.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/services/connectivity_service.dart';
 import 'package:pos/core/dependency.dart';
@@ -13,7 +14,7 @@ class ApiClient {
   ApiClient() {
     dio = Dio(
       BaseOptions(
-        baseUrl: "https://savanna.nyikatech.com/api/method/",
+        baseUrl: AppConstants.frappBaseUrl,
         connectTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 60),
         headers: {
