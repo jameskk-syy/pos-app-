@@ -6,7 +6,7 @@ class AppConstants {
       'https://api.saas.techsavanna.technology';
  
   static const String signUpBaseUrl =
-      'https://savannapaypos.saas.techsavanna.technology';
+      'http://savannapaypos.saas.techsavanna.technology';
  
   // WebView URLs
   static const String signUpUrl = '$signUpBaseUrl/signup';
