@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:pos/core/constants/constant.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'dart:convert';
 import 'package:dio/dio.dart';
@@ -45,20 +46,21 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
           onWebResourceError: (WebResourceError error) {},
           onNavigationRequest: (NavigationRequest request) {
             final url = request.url.toLowerCase();
-            if (url.contains('/login')) {
+            if (url.contains(AppConstants.loginPath)) {         
               _navigateNext();
               return NavigationDecision.prevent;
             }
-            if (url.contains('/dashboard') ||
-                url.contains('/success') ||
-                url.contains('.pos.saas.techsavanna.technology')) {
+            if (url.contains(AppConstants.dashboardPath) ||     
+                url.contains(AppConstants.successPath) ||        
+                url.contains(AppConstants.posSaasDomain)) {      
               _handleSuccess(request.url);
               return NavigationDecision.prevent;
             }
             return NavigationDecision.navigate;
           },
           onUrlChange: (UrlChange change) {
-            if (change.url != null && change.url!.contains('/login')) {
+            if (change.url != null &&
+                change.url!.contains(AppConstants.loginPath)) { 
               _navigateNext();
             }
           },
@@ -71,7 +73,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
         },
       )
       ..loadRequest(
-        Uri.parse('https://savannapaypos.saas.techsavanna.technology/signup'),
+        Uri.parse(AppConstants.signUpUrl),                       
       );
 
     _controller = controller;
@@ -81,18 +83,15 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
     if (_isPolling || _isNavigating) return;
 
     try {
-      // If data is a URL, it might be a redirect to the new sub domain
       if (data.startsWith('http')) {
         final storage = getIt<StorageService>();
         await storage.remove('access_token');
-
-        // Extract tenant URL if it's a saas sub domain
-        if (data.contains('.pos.saas.techsavanna.technology')) {
+        if (data.contains(AppConstants.posSaasDomain)) {        
           final uri = Uri.parse(data);
           final siteUrl = '${uri.scheme}://${uri.host}';
           await storage.setString('base_url', siteUrl);
         }
-        
+
         _navigateNext();
         return;
       }
@@ -134,7 +133,7 @@ class _WebViewSignUpScreenState extends State<WebViewSignUpScreen> {
     while (!isProvisioned && mounted && !_isNavigating) {
       try {
         final response = await dio.get(
-          'https://api.saas.techsavanna.technology/api/v1/tenants/$tenantId/status',
+          AppConstants.tenantStatus(tenantId),      
           options: Options(validateStatus: (status) => true),
         );
 

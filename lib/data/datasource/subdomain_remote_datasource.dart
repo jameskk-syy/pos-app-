@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:pos/core/constants/constant.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/data/datasource/base_remote_datasource.dart';
 import 'package:pos/domain/models/subdomain_response.dart';
@@ -10,7 +11,7 @@ class SubdomainRemoteDataSource extends BaseRemoteDataSource {
   Future<SubdomainResponse> validateSubdomain(String slug) async {
     try {
       final response = await dio.get(
-        'https://api.saas.techsavanna.technology/api/v1/tenants/by-subdomain/$slug',
+        AppConstants.tenantBySubdomain(slug),
       );
 
       if (response.statusCode == 200) {
