@@ -7,6 +7,7 @@ import 'package:pos/domain/requests/users/login.dart';
 import 'package:pos/domain/requests/users/send_otp_request.dart';
 import 'package:pos/core/services/storage_service.dart';
 import 'package:pos/core/dependency.dart';
+import 'package:pos/data/datasource/local_datasource.dart';
 
 part 'login_event.dart';
 part 'login_state.dart';
@@ -55,6 +56,13 @@ class LoginBloc extends Bloc<LoginEvent, LoginState> {
 
       // Save encrypted password and email for App Lock & Biometrics
       final storageService = getIt<StorageService>();
+      
+      final previousEmail = await storageService.getString('last_login_email');
+      if (previousEmail != null && previousEmail != event.loginRequest.email) {
+        // A different user is logging in, clear the previous user's cache
+        await getIt<LocalDataSource>().clearCachesOnLogout();
+      }
+
       await storageService.saveEncryptedPassword(event.loginRequest.password);
       await storageService.setString(
         'last_login_email',

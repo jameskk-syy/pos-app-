@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:bloc/bloc.dart';
-import 'package:flutter/material.dart';
+import 'package:meta/meta.dart';
 import 'package:pos/domain/repository/products_repo.dart';
 import 'package:pos/domain/requests/products/create_product.dart';
 import 'package:pos/domain/requests/inventory/stock_request.dart';
@@ -63,7 +63,11 @@ class ProductsBloc extends Bloc<ProductsEvent, ProductsState> {
         warehouse: event.warehouse,
         page: event.page ?? 1,
         pageSize: event.pageSize ?? 20,
+        isSalesItem: event.isSalesItem,
+        isStockItem: event.isStockItem,
+        isPurchaseItem: event.isPurchaseItem,
       );
+      // debugPrint(response.products.toString());
       emit(ProductsStateSuccess(productResponse: response));
     } catch (e) {
       //debugPrint(e.toString());

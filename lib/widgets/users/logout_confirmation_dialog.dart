@@ -3,6 +3,7 @@ import 'package:pos/screens/splash_screen.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/core/dependency.dart';
 import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/data/datasource/local_datasource.dart';
 
 class LogoutConfirmationDialog extends StatelessWidget {
   const LogoutConfirmationDialog({super.key});
@@ -75,6 +76,11 @@ Future<void> handleLogout(BuildContext context) async {
   // Don't clear everything, just auth data
   await storage.remove('access_token');
   await storage.remove('current_user');
+  
+  // Clear master data caches (products, customers, etc.)
+  // but preserve offline sales and offline loyalty points!
+  await getIt<LocalDataSource>().clearCachesOnLogout();
+
   // keep 'ON_BOARDING', 'company_registered' etc if needed
   if (context.mounted) {
     Navigator.pushAndRemoveUntil(

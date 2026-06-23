@@ -11,6 +11,7 @@ import 'package:pos/presentation/widgets/custom_text_field.dart';
 import 'package:pos/presentation/biller/bloc/biller_bloc.dart';
 import 'package:pos/widgets/biller/biller_selector_sheet.dart';
 import 'package:pos/domain/requests/biller/biller_requests.dart';
+import 'package:pos/screens/auth/reset_password.dart';
 import 'dart:convert';
 
 class LockScreen extends StatefulWidget {
@@ -207,7 +208,30 @@ class _LockScreenState extends State<LockScreen> {
                   },
                 ),
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  const Spacer(),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context2) => const ResetPasswordPage(),
+                        ),
+                      );
+                    },
+                    child: const Text(
+                      "Forgot Password?",
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(

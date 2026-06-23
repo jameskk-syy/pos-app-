@@ -6,10 +6,10 @@ class AppConstants {
       'https://api.saas.techsavanna.technology';
  
   static const String signUpBaseUrl =
-      'http://savannapaypos.saas.techsavanna.technology';
+      'https://savannapaypos.saas.techsavanna.technology';
 
-  static const String frappBaseUrl =
-      'https://savanna.nyikatech.com/api/method/';
+  // static const String frappBaseUrl =
+  //     'https://savanna.nyikatech.com/api/method/';
  
   // WebView URLs
   static const String signUpUrl = '$signUpBaseUrl/signup';

@@ -22,17 +22,20 @@ class CustomerRequest {
   });
 
   Map<String, dynamic> toJson() {
-    return {
+    final map = <String, dynamic>{
       'search_term': searchTerm,
-      'customer_group': customerGroup,
-      'territory': territory,
-      'customer_type': customerType,
-      'disabled': disabled,
-      'filter_by_company_transactions': filterByCompanyTransactions,
       'company': company,
       'limit': limit,
       'offset': offset,
     };
+
+    if (customerGroup.isNotEmpty) map['customer_group'] = customerGroup;
+    if (territory.isNotEmpty) map['territory'] = territory;
+    if (customerType.isNotEmpty) map['customer_type'] = customerType;
+    if (disabled) map['disabled'] = disabled;
+    if (filterByCompanyTransactions) map['filter_by_company_transactions'] = filterByCompanyTransactions;
+
+    return map;
   }
 
   factory CustomerRequest.fromJson(Map<String, dynamic> json) {

@@ -294,13 +294,12 @@ class BulkUploadResultView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isSuccess = result.isSuccess;
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          BulkUploadStatusBanner(isSuccess: isSuccess, totalProcessed: result.totalProcessed),
+          BulkUploadStatusBanner(status: result.status, totalProcessed: result.totalProcessed),
           const SizedBox(height: 16),
           GridView.count(
             crossAxisCount: 3,
@@ -315,9 +314,9 @@ class BulkUploadResultView extends StatelessWidget {
               BulkUploadStatCard(label: 'Failed', value: result.failed, color: Colors.red, icon: Icons.cancel_outlined),
             ],
           ),
-          if (result.failedItems.isNotEmpty) ...[
+          if (result.hasIssues) ...[
             const SizedBox(height: 16),
-            _buildFailedItemsList(),
+            _buildIssuesList(),
           ],
           const SizedBox(height: 20),
           Row(
@@ -332,19 +331,57 @@ class BulkUploadResultView extends StatelessWidget {
     );
   }
 
-  Widget _buildFailedItemsList() {
+  Widget _buildIssuesList() {
     return Container(
-      decoration: BoxDecoration(border: Border.all(color: Colors.red.shade200)),
+      decoration: BoxDecoration(border: Border.all(color: Colors.orange.shade200)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Container(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), color: Colors.red.shade50, child: Text('Failed Items (${result.failedItems.length})', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.red.shade700))),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), 
+            color: Colors.orange.shade50, 
+            child: Text('Issues (${result.skipped + result.failed})', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.orange.shade800))
+          ),
           ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
-            itemCount: result.failedItems.length,
-            separatorBuilder: (_, _) => Divider(height: 1, color: Colors.red.shade100),
-            itemBuilder: (context, index) => Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), child: Text(result.failedItems[index].toString(), style: TextStyle(fontSize: 12, color: Colors.red.shade700))),
+            itemCount: result.failedItems.length + result.skippedItems.length,
+            separatorBuilder: (_, _) => Divider(height: 1, color: Colors.orange.shade100),
+            itemBuilder: (context, index) {
+              final isFailed = index < result.failedItems.length;
+              final item = isFailed ? result.failedItems[index] : result.skippedItems[index - result.failedItems.length];
+              
+              String title = 'Unknown Item';
+              String reason = 'Unknown reason';
+              
+              if (item is Map) {
+                title = item['item_code'] ?? item['prefixed_item_code'] ?? 'Unknown Item';
+                reason = item['reason'] ?? item['error'] ?? 'No reason provided';
+              } else {
+                title = item.toString();
+              }
+              
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8), 
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Icon(isFailed ? Icons.cancel : Icons.warning_amber_rounded, size: 16, color: isFailed ? Colors.red : Colors.orange),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(title, style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: isFailed ? Colors.red.shade700 : Colors.orange.shade800)),
+                          const SizedBox(height: 2),
+                          Text(reason, style: TextStyle(fontSize: 12, color: Colors.black87)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -353,25 +390,48 @@ class BulkUploadResultView extends StatelessWidget {
 }
 
 class BulkUploadStatusBanner extends StatelessWidget {
-  final bool isSuccess;
+  final String status;
   final int totalProcessed;
 
-  const BulkUploadStatusBanner({super.key, required this.isSuccess, required this.totalProcessed});
+  const BulkUploadStatusBanner({super.key, required this.status, required this.totalProcessed});
 
   @override
   Widget build(BuildContext context) {
+    final bool isSuccess = status == 'success';
+    final bool isPartial = status == 'partial_success';
+    
+    Color bgColor = Colors.red.shade50;
+    Color iconColor = Colors.red;
+    Color textColor = Colors.red.shade700;
+    IconData icon = Icons.error_outline;
+    String title = 'Upload Failed';
+
+    if (isSuccess) {
+      bgColor = Colors.green.shade50;
+      iconColor = Colors.green;
+      textColor = Colors.green.shade700;
+      icon = Icons.check_circle;
+      title = 'Upload Successful!';
+    } else if (isPartial) {
+      bgColor = Colors.orange.shade50;
+      iconColor = Colors.orange;
+      textColor = Colors.orange.shade800;
+      icon = Icons.warning_amber_rounded;
+      title = 'Partial Success';
+    }
+
     return Container(
       padding: const EdgeInsets.all(16),
-      color: isSuccess ? Colors.green.shade50 : Colors.red.shade50,
+      color: bgColor,
       child: Row(
         children: [
-          Icon(isSuccess ? Icons.check_circle : Icons.error_outline, color: isSuccess ? Colors.green : Colors.red, size: 28),
+          Icon(icon, color: iconColor, size: 28),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(isSuccess ? 'Upload Successful!' : 'Upload Completed with Issues', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: isSuccess ? Colors.green.shade700 : Colors.red.shade700)),
+                Text(title, style: TextStyle(fontWeight: FontWeight.w700, fontSize: 15, color: textColor)),
                 const SizedBox(height: 2),
                 Text('$totalProcessed items processed', style: const TextStyle(fontSize: 12, color: Colors.grey)),
               ],

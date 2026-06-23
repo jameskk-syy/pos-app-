@@ -88,18 +88,25 @@ class Customer {
   });
 
   factory Customer.fromJson(Map<String, dynamic> json) {
+    String? parseString(dynamic value) {
+      if (value == null) return null;
+      final str = value.toString();
+      if (str.toLowerCase() == 'null' || str.isEmpty) return null;
+      return str;
+    }
+
     return Customer(
       name: json['name'] ?? '',
       customerName: json['customer_name'] ?? '',
       customerType: json['customer_type'] ?? '',
-      customerGroup: json['customer_group'],
-      territory: json['territory'],
-      taxId: json['tax_id'],
-      mobileNo: json['mobile_no'],
-      emailId: json['email_id'],
+      customerGroup: parseString(json['customer_group']),
+      territory: parseString(json['territory']),
+      taxId: parseString(json['tax_id']),
+      mobileNo: parseString(json['mobile_no']),
+      emailId: parseString(json['email_id']),
       disabled: json['disabled'] ?? 0,
-      defaultCurrency: json['default_currency'],
-      defaultPriceList: json['default_price_list'],
+      defaultCurrency: parseString(json['default_currency']),
+      defaultPriceList: parseString(json['default_price_list']),
       creditLimit: _toDouble(json['credit_limit']),
       outstandingAmount: _toDouble(json['outstanding_amount']),
       availableCredit: _toDouble(json['available_credit']),

@@ -10,6 +10,8 @@ class GetAllProducts extends ProductsEvent {
   final String? brand;
   final String? warehouse;
   final bool? isSalesItem;
+  final bool? isStockItem;
+  final bool? isPurchaseItem;
   final bool? disabled;
   final int? page;
   final int? pageSize;
@@ -21,6 +23,8 @@ class GetAllProducts extends ProductsEvent {
     this.brand,
     this.warehouse,
     this.isSalesItem,
+    this.isStockItem,
+    this.isPurchaseItem,
     this.disabled,
     this.page = 1,
     this.pageSize = 20,

@@ -247,7 +247,41 @@ class _CheckoutPageState extends State<CheckoutPage> {
   }
 
   void _showInvoiceDetails(CreateInvoiceResponse response) {
-    showModalBottomSheet(context: context, isScrollControlled: true, backgroundColor: Colors.transparent, builder: (context) => InvoiceDetailsWidget(response: response)).then((result) {
+    final paymentMethod = _getSelectedPaymentMethod();
+    final isCash = paymentMethod.type.toLowerCase() == 'cash';
+    final amountPaid = isCash ? (double.tryParse(amountPaidController.text) ?? total) : total;
+
+    final singlePaymentList = [
+      InvoicePayment(
+        modeOfPayment: _isMPesa(paymentMethod.name) ? 'mpesa' : paymentMethod.name,
+        amount: amountPaid,
+        baseAmount: total,
+        mpesaNumber: _isMPesa(paymentMethod.name) ? _mpesaPhoneController.text.trim() : null,
+      )
+    ];
+
+    final splitPaymentList = splitPayments.map((split) {
+      final method = split.paymentMethod ?? '';
+      final amt = double.tryParse(split.amountController.text) ?? 0.0;
+      return InvoicePayment(
+        modeOfPayment: _isMPesa(method) ? 'mpesa' : method,
+        amount: amt,
+        baseAmount: amt,
+        mpesaNumber: _isMPesa(method) ? split.mpesaPhoneController.text.trim() : null,
+      );
+    }).toList();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => InvoiceDetailsWidget(
+        response: response,
+        cartItems: cart,
+        payments: isSplitPayment ? splitPaymentList : singlePaymentList,
+        change: isSplitPayment ? 0.0 : change,
+      ),
+    ).then((result) {
       if (result == true && mounted) Navigator.of(context).pop(true);
     });
   }

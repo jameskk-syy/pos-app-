@@ -48,9 +48,16 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
           } catch (_) {}
         }
       }
-      
+
       final results = await Future.wait([
-        dashboardRepo.getDashboardStats(req),
+        dashboardRepo.getDashboardStats(req).catchError((e) {
+          debugPrint('Dashboard stats API failed: $e');
+          return DashboardResponse(
+            success: false,
+            error: e.toString(),
+            data: DashboardData(), 
+          );
+        }),
         if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
           company: company,
           warehouse: req.warehouse,
@@ -82,7 +89,7 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
         ),
       );
     } catch (e) {
-      //debugPrint('Dashboard fetch error: ${e.toString()}');
+      debugPrint('Dashboard fetch error: ${e.toString()}');
       emit(
         DashboardError(
           message: e.toString(),
@@ -114,7 +121,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
       
       final results = await Future.wait([
-        dashboardRepo.getDashboardStats(request),
+        dashboardRepo.getDashboardStats(request).catchError((e) {
+          debugPrint('Dashboard stats API failed: $e');
+          return DashboardResponse(
+            success: false,
+            error: e.toString(),
+            data: DashboardData(), 
+          );
+        }),
         if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
           company: company,
           warehouse: request.warehouse,
@@ -176,7 +190,14 @@ class DashboardBloc extends Bloc<DashboardEvent, DashboardState> {
       }
 
       final results = await Future.wait([
-        dashboardRepo.getDashboardStats(req),
+        dashboardRepo.getDashboardStats(req).catchError((e) {
+          debugPrint('Dashboard stats API failed: $e');
+          return DashboardResponse(
+            success: false,
+            error: e.toString(),
+            data: DashboardData(), 
+          );
+        }),
         if (company.isNotEmpty) dashboardRepo.getTopSellingItems(
           company: company,
           warehouse: req.warehouse,

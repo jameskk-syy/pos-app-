@@ -200,4 +200,19 @@ class LocalDataSource {
     final box = Hive.box(boxDashboardData);
     await box.clear();
   }
+
+  /// Clears all master data caches to prevent data leakage between users
+  /// upon logout. EXCLUDES offline sales and offline loyalty points to 
+  /// prevent loss of un-synced data.
+  Future<void> clearCachesOnLogout() async {
+    await Hive.box(boxCustomers).clear();
+    await Hive.box(boxProducts).clear();
+    await Hive.box(boxInventoryRules).clear();
+    await Hive.box(boxPaymentMethods).clear();
+    await Hive.box(boxWarehouses).clear();
+    await Hive.box(boxLoyaltyPrograms).clear();
+    await Hive.box(boxDashboardData).clear();
+    await Hive.box(boxStaff).clear();
+    // Intentionally omitting boxOfflineSales and boxOfflineLoyaltyPoints
+  }
 }

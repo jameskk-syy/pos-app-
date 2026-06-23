@@ -34,11 +34,20 @@ class ProductResponse {
 
     final pagination = PaginationInfo.fromJson(paginationJson);
 
+    dynamic rawPriceList = messageData['price_list'] ?? json['price_list'] ?? '';
+    String parsedPriceList = '';
+    if (rawPriceList is String) {
+      parsedPriceList = rawPriceList;
+    } else if (rawPriceList is List) {
+      parsedPriceList = String.fromCharCodes(rawPriceList.whereType<int>());
+    } else {
+      parsedPriceList = rawPriceList.toString();
+    }
+
     return ProductResponse(
       products: productsList,
       pagination: pagination,
-      priceList:
-          (messageData['price_list'] ?? json['price_list'] ?? '') as String,
+      priceList: parsedPriceList,
       warehouse: (messageData['warehouse'] ?? '') as String,
     );
   }
@@ -137,6 +146,16 @@ class ProductItem extends Equatable {
   });
 
   factory ProductItem.fromJson(Map<String, dynamic> json) {
+    dynamic rawPriceList = json['price_list'] ?? json['priceList'] ?? '';
+    String parsedPriceList = '';
+    if (rawPriceList is String) {
+      parsedPriceList = rawPriceList;
+    } else if (rawPriceList is List) {
+      parsedPriceList = String.fromCharCodes(rawPriceList.whereType<int>());
+    } else {
+      parsedPriceList = rawPriceList.toString();
+    }
+
     return ProductItem(
       name: json['name']?.toString() ?? '',
       itemCode:
@@ -165,7 +184,7 @@ class ProductItem extends Equatable {
               .toDouble(),
       priceCurrency: (json['price_currency'] ?? json['priceCurrency'] ?? 'KES')
           .toString(),
-      priceList: (json['price_list'] ?? json['priceList'] ?? '').toString(),
+      priceList: parsedPriceList,
       priceSource: (json['price_source'] ?? json['priceSource'] ?? '')
           .toString(),
       stockQty: (json['stock_qty'] ?? json['stockQty'] ?? 0.0).toDouble(),
@@ -358,16 +377,24 @@ class ProductResponseSimple {
     final paginationMap = Map<String, dynamic>.from(paginationData);
     final pagination = PaginationInfo.fromJson(paginationMap);
 
-    return ProductResponseSimple(
-      products: productsList,
-      pagination: pagination,
-      priceList:
-          (messageMap['price_list'] ??
+    dynamic rawPriceList = messageMap['price_list'] ??
                   jsonMap['price_list'] ??
                   messageMap['priceList'] ??
                   jsonMap['priceList'] ??
-                  '')
-              .toString(),
+                  '';
+    String parsedPriceList = '';
+    if (rawPriceList is String) {
+      parsedPriceList = rawPriceList;
+    } else if (rawPriceList is List) {
+      parsedPriceList = String.fromCharCodes(rawPriceList.whereType<int>());
+    } else {
+      parsedPriceList = rawPriceList.toString();
+    }
+
+    return ProductResponseSimple(
+      products: productsList,
+      pagination: pagination,
+      priceList: parsedPriceList,
       warehouse:
           (messageMap['warehouse'] ??
                   jsonMap['warehouse'] ??

@@ -1,14 +1,31 @@
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
+import 'package:intl/intl.dart';
 import 'package:pos/domain/models/invoice_model.dart';
+import 'package:pos/domain/models/cart_item.dart';
+import 'package:pos/domain/models/invoice_model_get.dart';
+import 'package:pos/domain/responses/users/get_current_user.dart';
+import 'package:pos/core/services/storage_service.dart';
+import 'package:pos/core/dependency.dart';
+import 'package:pos/domain/repository/abstract_sales_repository.dart';
 
 class InvoiceDetailsWidget extends StatefulWidget {
   final CreateInvoiceResponse response;
+  final List<CartItem>? cartItems;
+  final List<InvoicePayment>? payments;
+  final double? change;
 
-  const InvoiceDetailsWidget({super.key, required this.response});
+  const InvoiceDetailsWidget({
+    super.key,
+    required this.response,
+    this.cartItems,
+    this.payments,
+    this.change,
+  });
 
   @override
   State<InvoiceDetailsWidget> createState() => _InvoiceDetailsWidgetState();
@@ -18,12 +35,42 @@ class _InvoiceDetailsWidgetState extends State<InvoiceDetailsWidget> {
   bool _isPrinting = false;
   bool _isDownloading = false;
   Uint8List? _pdfBytes;
+  CurrentUserResponse? _currentUser;
+  SalesInvoiceData? _fullInvoiceData;
 
   @override
   void initState() {
     super.initState();
-    // Load PDF when widget initializes
-    _generatePdf();
+    _loadDataAndGeneratePdf();
+  }
+
+  Future<void> _loadDataAndGeneratePdf() async {
+    setState(() {
+      _isDownloading = true;
+    });
+
+    try {
+      final storage = getIt<StorageService>();
+      final userString = await storage.getString('current_user');
+      if (userString != null) {
+        _currentUser = CurrentUserResponse.fromJson(jsonDecode(userString));
+      }
+
+      final invoiceName = widget.response.data?.name;
+      if (widget.cartItems == null && invoiceName != null && invoiceName.isNotEmpty) {
+        final salesRepo = getIt<SalesRepository>();
+        final response = await salesRepo.getSalesInvoice(invoiceName: invoiceName);
+        if (response.success) {
+          _fullInvoiceData = response.data;
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to load invoice or cashier details: $e');
+    } finally {
+      setState(() {
+      });
+      _generatePdf();
+    }
   }
 
   Future<void> _generatePdf() async {
@@ -45,99 +92,273 @@ class _InvoiceDetailsWidgetState extends State<InvoiceDetailsWidget> {
     }
   }
 
+  String formatDate(String? dateStr) {
+    if (dateStr == null || dateStr.isEmpty) {
+      return DateFormat('dd/MM/yyyy').format(DateTime.now());
+    }
+    try {
+      final parsed = DateTime.tryParse(dateStr);
+      if (parsed != null) {
+        return DateFormat('dd/MM/yyyy').format(parsed);
+      }
+    } catch (_) {}
+    return dateStr;
+  }
+
+  String formatTime(String? timeStr) {
+    if (timeStr == null || timeStr.isEmpty) {
+      return DateFormat('HH:mm:ss').format(DateTime.now());
+    }
+    if (timeStr.contains('.')) {
+      return timeStr.split('.').first;
+    }
+    return timeStr;
+  }
+
+  pw.Widget _buildReceiptRow(String left, String right, pw.TextStyle style) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: 1),
+      child: pw.Row(
+        mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+        children: [
+          pw.Text(left, style: style),
+          pw.Text(right, style: style),
+        ],
+      ),
+    );
+  }
+
   Future<Uint8List> _createInvoicePdf() async {
     final pdf = pw.Document();
 
-    final data = widget.response.data;
-    if (data == null) {
-      throw Exception('No invoice data available');
+    final fontRegular = pw.Font.courier();
+    final fontBold = pw.Font.courierBold();
+
+    final textStyle = pw.TextStyle(font: fontRegular, fontSize: 9);
+    final boldStyle = pw.TextStyle(font: fontBold, fontSize: 9);
+
+    final companyName = _currentUser?.message.company.companyName ?? 
+                        widget.response.data?.company ?? 
+                        _fullInvoiceData?.company ?? 
+                        'pybusiness';
+
+    final customerName = widget.response.data?.customer ?? 
+                         _fullInvoiceData?.customer ?? 
+                         'Walk-in Customer';
+
+    final receiptNo = widget.response.data?.name ?? 
+                      _fullInvoiceData?.name ?? 
+                      'N/A';
+
+    final warehouseName = _currentUser?.message.defaultWarehouse?? 
+                          _fullInvoiceData?.setWarehouse ?? 
+                          _currentUser?.message.posProfile.warehouse ?? 
+                          'pybusiness';
+
+    final cashierName = _currentUser?.message.user.fullName ?? 
+                        _fullInvoiceData?.owner ?? 
+                        'samson safdari';
+
+    final postingDate = widget.response.data?.postingDate ?? 
+                        _fullInvoiceData?.postingDate;
+
+    final postingTime = _fullInvoiceData?.postingTime;
+
+    final dateStr = formatDate(postingDate);
+    final timeStr = formatTime(postingTime);
+
+    final grandTotal = widget.response.data?.grandTotal ?? 
+                       _fullInvoiceData?.grandTotal ?? 
+                       0.0;
+
+    final List<pw.Widget> itemsWidgets = [];
+    int totalItemsQty = 0;
+
+    if (widget.cartItems != null) {
+      for (var item in widget.cartItems!) {
+        final name = item.product.name;
+        final qty = item.quantity;
+        final rate = item.product.price;
+        final amount = item.totalPrice;
+        totalItemsQty += qty;
+
+        itemsWidgets.add(
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(name, style: boldStyle),
+              _buildReceiptRow(
+                '${rate.toStringAsFixed(2)} x $qty',
+                amount.toStringAsFixed(2),
+                textStyle,
+              ),
+              pw.SizedBox(height: 2),
+            ],
+          ),
+        );
+      }
+    } else if (_fullInvoiceData != null) {
+      for (var item in _fullInvoiceData!.items) {
+        final name = item.itemName ?? item.itemCode;
+        final qty = item.qty;
+        final rate = item.rate;
+        final amount = item.amount;
+        totalItemsQty += qty;
+
+        itemsWidgets.add(
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Text(name, style: boldStyle),
+              _buildReceiptRow(
+                '${rate.toStringAsFixed(2)} x $qty',
+                amount.toStringAsFixed(2),
+                textStyle,
+              ),
+              pw.SizedBox(height: 2),
+            ],
+          ),
+        );
+      }
+    }
+
+    final List<pw.Widget> paymentsWidgets = [];
+    if (widget.payments != null) {
+      for (var payment in widget.payments!) {
+        final mode = payment.modeOfPayment.toUpperCase();
+        paymentsWidgets.add(
+          _buildReceiptRow(
+            '$mode PAYMENT',
+            payment.amount.toStringAsFixed(2),
+            textStyle,
+          ),
+        );
+      }
+    } else if (_fullInvoiceData?.payments != null && _fullInvoiceData!.payments!.isNotEmpty) {
+      for (var payment in _fullInvoiceData!.payments!) {
+        final mode = payment.modeOfPayment.toUpperCase();
+        paymentsWidgets.add(
+          _buildReceiptRow(
+            '$mode PAYMENT',
+            payment.amount.toStringAsFixed(2),
+            textStyle,
+          ),
+        );
+      }
+    } else {
+      paymentsWidgets.add(
+        _buildReceiptRow(
+          'CASH PAYMENT',
+          grandTotal.toStringAsFixed(2),
+          textStyle,
+        ),
+      );
+    }
+
+    if (widget.change != null && widget.change! > 0) {
+      paymentsWidgets.add(
+        _buildReceiptRow(
+          'CHANGE',
+          widget.change!.toStringAsFixed(2),
+          textStyle,
+        ),
+      );
     }
 
     pdf.addPage(
       pw.Page(
-        pageFormat: PdfPageFormat.a4,
+        pageFormat: PdfPageFormat.roll80,
+        margin: const pw.EdgeInsets.all(5 * PdfPageFormat.mm),
         build: (pw.Context context) {
           return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            crossAxisAlignment: pw.CrossAxisAlignment.stretch,
             children: [
-              // Header
               pw.Center(
                 child: pw.Text(
-                  'INVOICE',
+                  companyName.toUpperCase(),
                   style: pw.TextStyle(
-                    fontSize: 24,
-                    fontWeight: pw.FontWeight.bold,
+                    font: fontBold,
+                    fontSize: 12,
                   ),
                 ),
               ),
-              pw.SizedBox(height: 20),
-
-              pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text('Invoice Number: ${data.name}'),
-                      pw.Text('Customer: ${data.customer}'),
-                      pw.Text('Posting Date: ${data.postingDate}'),
-                      pw.Text('Due Date: ${data.postingDate}'),
-                    ],
-                  ),
-                  pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.end,
-                    children: [
-                      pw.Text(
-                        'Grand Total',
-                        style: pw.TextStyle(
-                          fontSize: 16,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.Text(
-                        'KES ${data.grandTotal.toStringAsFixed(2)}',
-                        style: pw.TextStyle(
-                          fontSize: 20,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      pw.Text(
-                        'Outstanding: KES ${data.outstandingAmount.toStringAsFixed(2)}',
-                        style: pw.TextStyle(
-                          fontSize: 12,
-                          color: PdfColors.grey,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-
-              pw.Divider(),
-              pw.SizedBox(height: 20),
-
-              // Status
-              pw.Container(
-                padding: const pw.EdgeInsets.all(8),
-                decoration: pw.BoxDecoration(
-                  border: pw.Border.all(color: PdfColors.black),
-                  borderRadius: pw.BorderRadius.circular(4),
-                ),
-                child: pw.Text(
-                  'Status: ${data.docstatus == 1 ? "paid" : "unpaid"}',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                ),
-              ),
-
-              pw.SizedBox(height: 20),
-
-              // Footer
               pw.Center(
                 child: pw.Text(
-                  'Thank you for your business!',
+                  'SALES RECEIPT',
                   style: pw.TextStyle(
-                    fontSize: 14,
-                    fontStyle: pw.FontStyle.italic,
+                    font: fontBold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 4),
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              pw.Center(
+                child: pw.Text(
+                  'Customer: $customerName',
+                  style: textStyle,
+                ),
+              ),
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              ...itemsWidgets,
+              
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              _buildReceiptRow('TOTAL BEFORE DISCOUNT', grandTotal.toStringAsFixed(2), textStyle),
+              _buildReceiptRow('SUB TOTAL', grandTotal.toStringAsFixed(2), textStyle),
+              _buildReceiptRow('TOTAL', grandTotal.toStringAsFixed(2), boldStyle),
+              
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              ...paymentsWidgets,
+              _buildReceiptRow('ITEMS NUMBER', totalItemsQty.toString(), textStyle),
+              
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              _buildReceiptRow('RECEIPT NO:', receiptNo, textStyle),
+              _buildReceiptRow('WAREHOUSE:', warehouseName, textStyle),
+              _buildReceiptRow('DATE: $dateStr', 'TIME: $timeStr', textStyle),
+              
+              pw.Divider(thickness: 0.8, color: PdfColors.black, height: 6),
+              
+              pw.Center(
+                child: pw.Text(
+                  'THANK YOU',
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              pw.Center(
+                child: pw.Text(
+                  cashierName,
+                  style: pw.TextStyle(
+                    font: fontBold,
+                    fontSize: 10,
+                  ),
+                ),
+              ),
+              pw.Center(
+                child: pw.Text(
+                  'Warehouse: $warehouseName',
+                  style: pw.TextStyle(
+                    font: fontRegular,
+                    fontSize: 8,
+                    color: PdfColors.grey,
+                  ),
+                ),
+              ),
+              pw.SizedBox(height: 8),
+              pw.Center(
+                child: pw.Text(
+                  'NON-BINDING INTERNAL RECORD',
+                  style: pw.TextStyle(
+                    font: fontRegular,
+                    fontSize: 8,
+                    color: PdfColors.grey,
                   ),
                 ),
               ),
