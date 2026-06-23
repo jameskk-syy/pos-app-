@@ -22,14 +22,22 @@ class StockItemResponse {
 
     // Get products list - note it's called 'products' in JSON, not 'data'
     List<dynamic> productsList = messageData['products'] ?? [];
-    
+    // Handle price_list which might be returned as an array of ASCII ints
+    dynamic rawPriceList = messageData['price_list'];
+    String parsedPriceList = '';
+    if (rawPriceList is String) {
+      parsedPriceList = rawPriceList;
+    } else if (rawPriceList is List) {
+      parsedPriceList = String.fromCharCodes(rawPriceList.whereType<int>());
+    }
+
     return StockItemResponse(
       success: json['success'] ?? true, // Assuming success if not present
       data: productsList
           .map((item) => StockItem.fromJson(item))
           .toList(),
       count: messageData['pagination']?['total'] ?? 0,
-      priceList: messageData['price_list'] ?? '',
+      priceList: parsedPriceList,
     );
   }
 
@@ -87,6 +95,14 @@ class StockItem {
   });
 
   factory StockItem.fromJson(Map<String, dynamic> json) {
+    dynamic rawPriceList = json['price_list'];
+    String parsedPriceList = '';
+    if (rawPriceList is String) {
+      parsedPriceList = rawPriceList;
+    } else if (rawPriceList is List) {
+      parsedPriceList = String.fromCharCodes(rawPriceList.whereType<int>());
+    }
+
     return StockItem(
       name: json['name'] ?? '',
       itemCode: json['item_code'] ?? '',
@@ -102,7 +118,7 @@ class StockItem {
       image: json['image'],
       price: (json['price'] ?? 0).toDouble(),
       priceCurrency: json['price_currency'] ?? '',
-      priceList: json['price_list'] ?? '',
+      priceList: parsedPriceList,
       priceSource: json['price_source'] ?? '',
       stockQty: (json['stock_qty'] ?? 0).toDouble(),
     );

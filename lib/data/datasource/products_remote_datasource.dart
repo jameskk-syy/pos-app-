@@ -720,6 +720,9 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
     String? warehouse,
     int page = 1,
     int pageSize = 20,
+    bool? isSalesItem,
+    bool? isStockItem,
+    bool? isPurchaseItem,
   }) async {
     try {
       final queryParams = {
@@ -728,8 +731,9 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         'brand': brand ?? '',
         'disabled': true,
         "warehouse": warehouse ?? "",
-        "is_stock_item": true,
-        "is_sales_item": true,
+        if (isStockItem != null) "is_stock_item": isStockItem,
+        if (isSalesItem != null) "is_sales_item": isSalesItem,
+        if (isPurchaseItem != null) "is_purchase_item": isPurchaseItem,
         'company': companyName,
         "price_list": "Standard Selling",
         'page': page,
@@ -1211,7 +1215,7 @@ class ProductsRemoteDataSource extends BaseRemoteDataSource {
         created: created,
         skipped: 0,
         failed: 0,
-        ignoredIndustries: [],
+        skippedItems: [],
         failedItems: [],
         totalProcessed: created,
       );

@@ -22,6 +22,9 @@ abstract class ProductsRepo {
     String? warehouse,
     int page = 1,
     int pageSize = 20,
+    bool? isSalesItem,
+    bool? isStockItem,
+    bool? isPurchaseItem,
   });
   // Future<ProductResponseSimple> getItemType();
   // Future<ProductResponseSimple> getItemBrand();

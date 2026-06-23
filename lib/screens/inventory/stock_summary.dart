@@ -88,6 +88,8 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
 
   void _loadStockSummary() {
     if (currentUserResponse == null) return;
+    debugPrint('Warehouse: $_selectedWarehouse');
+    
     inventoryBloc.add(
       GetStockSummary(
         company: currentUserResponse!.message.company.name,
@@ -132,7 +134,7 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
                 setState(() {
                   warehouseList = warehouses
                       .where((wh) => wh.disabled == 0)
-                      .map((wh) => wh.warehouseName)
+                      .map((wh) => wh.name)
                       .toList();
                   warehouseList.insert(0, "All Warehouses");
                 });
@@ -207,6 +209,22 @@ class _StockSummaryPageState extends State<StockSummaryPage> {
             } else if (state is StockSummaryLoaded) {
               try {
                 items = state.response.data;
+                
+                // Apply local filtering as a fallback in case the backend ignores the filters
+                if (_selectedWarehouse != null && _selectedWarehouse!.isNotEmpty && _selectedWarehouse != "All Warehouses") {
+                  items = items.where((item) => item.warehouse == _selectedWarehouse).toList();
+                }
+                if (_selectedItemGroup != null && _selectedItemGroup!.isNotEmpty && _selectedItemGroup != "All Groups") {
+                  items = items.where((item) => item.itemGroup == _selectedItemGroup).toList();
+                }
+                if (_searchController.text.isNotEmpty) {
+                  final search = _searchController.text.toLowerCase();
+                  items = items.where((item) => 
+                    item.itemName.toLowerCase().contains(search) || 
+                    item.itemCode.toLowerCase().contains(search)
+                  ).toList();
+                }
+
                 if (warehouseList.isEmpty) _fetchWarehouses();
               } catch (e) {
                 errorMessage = 'Error loading data';

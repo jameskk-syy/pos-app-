@@ -12,6 +12,7 @@ import 'package:pos/core/dependency.dart';
 import 'package:pos/utils/themes/app_colors.dart';
 import 'package:pos/utils/themes/app_sizes.dart';
 import 'package:pos/screens/products/widgets/item_seed_widgets.dart';
+import 'package:pos/widgets/common/error_dialog.dart';
 
 class CartItemData {
   final String itemCode, itemName, itemGroup;
@@ -120,16 +121,39 @@ class _ProductsGridPageState extends State<ProductsGridPage> {
   @override
   Widget build(BuildContext context) {
     return BlocListener<IndustriesBloc, IndustriesState>(
-      listener: (context, state) {
+      listener: (context, state) async {
         if (state is IndustriesLoading) {
           setState(() => isSendingToBackend = true);
         } else if (state is IndustriesSeedItemState) {
-          setState(() { isSendingToBackend = false; cartItemsMap.clear(); }); _saveCartToPrefs();
+          setState(() { isSendingToBackend = false; cartItemsMap.clear(); }); 
+          _saveCartToPrefs();
           getIt<StorageService>().setBool('is_seeded', true);
-          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Success! Created: ${state.createOrderResponse.message.created}, Skipped: ${state.createOrderResponse.message.skipped}'), backgroundColor: Colors.green));
-          final navigator = Navigator.of(context);
-          Future.delayed(const Duration(milliseconds: 500), () { if (mounted) navigator.pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const DashboardPage()), (r) => false); });
-        } else if (state is IndustriesFailure) { setState(() => isSendingToBackend = false); ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${state.error}'), backgroundColor: Colors.red)); }
+          
+          if (state.createOrderResponse.message.created == 0) {
+            await ErrorDialog.show(
+              context, 
+              'All selected items were skipped or already exist.', 
+              title: 'Skipped Seeding'
+            );
+          } else {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                content: Text('Success! Created: ${state.createOrderResponse.message.created}, Skipped: ${state.createOrderResponse.message.skipped}'), 
+                backgroundColor: Colors.green
+              ));
+            }
+          }
+          
+          if (context.mounted) {
+            final navigator = Navigator.of(context);
+            Future.delayed(const Duration(milliseconds: 500), () { 
+              if (mounted) navigator.pushAndRemoveUntil(MaterialPageRoute(builder: (_) => const DashboardPage()), (r) => false); 
+            });
+          }
+        } else if (state is IndustriesFailure) { 
+          setState(() => isSendingToBackend = false); 
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Error: ${state.error}'), backgroundColor: Colors.red)); 
+        }
       },
       child: Scaffold(
         backgroundColor: AppColors.white,

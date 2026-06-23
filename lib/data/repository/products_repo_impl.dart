@@ -47,6 +47,9 @@ class ProductsRepoImpl implements ProductsRepo {
     String? warehouse,
     int page = 1,
     int pageSize = 20,
+    bool? isSalesItem,
+    bool? isStockItem,
+    bool? isPurchaseItem,
   }) async {
     // Check internet connectivity first
     final isConnected = await connectivityService.checkNow();
@@ -74,6 +77,9 @@ class ProductsRepoImpl implements ProductsRepo {
         warehouse: warehouse,
         page: page,
         pageSize: pageSize,
+        isSalesItem: isSalesItem,
+        isStockItem: isStockItem,
+        isPurchaseItem: isPurchaseItem,
       );
       remoteSuccess = true;
 

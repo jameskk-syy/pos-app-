@@ -1,5 +1,5 @@
 import 'dart:convert';
-//import 'package:flutter/foundation.dart';
+import 'package:flutter/foundation.dart';
 import 'package:dio/dio.dart';
 import 'package:pos/domain/responses/system_responses.dart';
 import 'package:pos/domain/models/message.dart';
@@ -157,7 +157,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
       );
 
       final data = response.data;
-      // debugPrint("DEBUG: Login status code: ${response.data}");
+      debugPrint("DEBUG: Login status code: ${response.data}");
 
       if (data == null || data['message'] == null) {
         // debugPrint("DEBUG: Login failed - Invalid response structure");
@@ -166,7 +166,7 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       final messageMap = data['message'];
       if (messageMap is! Map<String, dynamic>) {
-        // debugPrint("DEBUG: Login failed - message is not a Map");
+        debugPrint("DEBUG: Login failed - message is not a Map");
         throw Exception('Unexpected response structure: message is not a Map');
       }
 
@@ -196,10 +196,10 @@ class AuthRemoteDataSource extends BaseRemoteDataSource {
 
       return loginResponse;
     } on DioException catch (e) {
-      // debugPrint("DEBUG: DioException during login: ${e.message}");
+      debugPrint("DEBUG: DioException during login: ${e.message}");
       throw Exception(getErrorMessage(e));
     } catch (e) {
-      //debugPrint("DEBUG: General error during login: $e");
+      debugPrint("DEBUG: General error during login: $e");
       throw Exception(e.toString());
     }
   }

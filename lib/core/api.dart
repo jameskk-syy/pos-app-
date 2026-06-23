@@ -14,7 +14,7 @@ class ApiClient {
   ApiClient() {
     dio = Dio(
       BaseOptions(
-        baseUrl: AppConstants.frappBaseUrl,
+        baseUrl: AppConstants.saasApiBaseUrl,
         connectTimeout: const Duration(seconds: 60),
         receiveTimeout: const Duration(seconds: 60),
         headers: {

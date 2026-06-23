@@ -264,27 +264,29 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Server returned ${response.statusCode}');
       }
 
-      final data = response.data;
+      final rawData = response.data;
       // debugPrint("API Response: ${response.statusCode}");
-      // debugPrint("Response Data: ${jsonEncode(data)}");
+      // debugPrint("Response Data: ${jsonEncode(rawData)}");
 
-      if (data == null) {
+      if (rawData == null) {
         throw Exception('Empty response from server');
       }
 
-      if (data is! Map<String, dynamic>) {
-        // debugPrint('Response type: ${data.runtimeType}');
+      // Safe cast: Dio can return _Map<dynamic, dynamic>
+      if (rawData is! Map) {
+        // debugPrint('Response type: ${rawData.runtimeType}');
         throw Exception(
-          'Response is not a valid JSON object. Type: ${data.runtimeType}',
+          'Response is not a valid JSON object. Type: ${rawData.runtimeType}',
         );
       }
 
+      final data = Map<String, dynamic>.from(rawData);
+
       // FIX: Check if response is wrapped in "message" key
       Map<String, dynamic> actualData = data;
-      if (data.containsKey('message') &&
-          data['message'] is Map<String, dynamic>) {
+      if (data.containsKey('message') && data['message'] is Map) {
         // debugPrint('Response wrapped in "message" key, unwrapping...');
-        actualData = data['message'] as Map<String, dynamic>;
+        actualData = Map<String, dynamic>.from(data['message'] as Map);
       }
 
       // Now check for errors in the actual data
@@ -312,7 +314,7 @@ class SalesRemoteDataSource extends BaseRemoteDataSource {
         throw Exception('Dashboard data field is null');
       }
 
-      if (dashboardData is! Map<String, dynamic>) {
+      if (dashboardData is! Map) {
         // debugPrint('Data type: ${dashboardData.runtimeType}');
         throw Exception(
           'Data field is not a valid object. Type: ${dashboardData.runtimeType}',

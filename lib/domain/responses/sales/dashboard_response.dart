@@ -12,7 +12,9 @@ class DashboardResponse {
   factory DashboardResponse.fromJson(Map<String, dynamic> json) {
     return DashboardResponse(
       success: json['success'] ?? false,
-      data: json['data'] != null ? DashboardData.fromJson(json['data']) : null,
+      data: json['data'] != null
+          ? DashboardData.fromJson(json['data'] is Map ? Map<String, dynamic>.from(json['data'] as Map) : json['data'])
+          : null,
       error: json['error'],
     );
   }
@@ -49,40 +51,40 @@ class DashboardData {
   factory DashboardData.fromJson(Map<String, dynamic> json) {
     return DashboardData(
       stats: json['stats'] != null 
-          ? DashboardStats.fromJson(json['stats']) 
+          ? DashboardStats.fromJson(Map<String, dynamic>.from(json['stats'] as Map)) 
           : null,
       salesLast30Days: json['salesLast30Days'] != null
           ? (json['salesLast30Days'] as List)
-              .map((e) => DailySales.fromJson(e))
+              .map((e) => DailySales.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       monthlySales: json['monthlySales'] != null
           ? (json['monthlySales'] as List)
-              .map((e) => MonthlySales.fromJson(e))
+              .map((e) => MonthlySales.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       salesDue: json['salesDue'] != null
           ? (json['salesDue'] as List)
-              .map((e) => SalesDue.fromJson(e))
+              .map((e) => SalesDue.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       purchasesDue: json['purchasesDue'] != null
           ? (json['purchasesDue'] as List)
-              .map((e) => PurchasesDue.fromJson(e))
+              .map((e) => PurchasesDue.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       stockAlerts: json['stockAlerts'] != null
           ? (json['stockAlerts'] as List)
-              .map((e) => StockAlert.fromJson(e))
+              .map((e) => StockAlert.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       pendingShipments: json['pendingShipments'] != null
           ? (json['pendingShipments'] as List)
-              .map((e) => PendingShipment.fromJson(e))
+              .map((e) => PendingShipment.fromJson(Map<String, dynamic>.from(e as Map)))
               .toList()
           : null,
       filters: json['filters'] != null
-          ? DashboardFilters.fromJson(json['filters'])
+          ? DashboardFilters.fromJson(Map<String, dynamic>.from(json['filters'] as Map))
           : null,
     );
   }

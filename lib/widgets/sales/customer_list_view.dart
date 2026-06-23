@@ -376,21 +376,6 @@ class _CustomerListViewState extends State<CustomerListView> {
               _hasMore = false;
             }
 
-            // Add new customers if not already in the list to avoid duplicates
-            // Or simply append if offset logic is robust.
-            // Since we control offset, appending is safe.
-            // Check for potential strict equality or ID overlap if needed,
-            // but for now simple append is standard for offset-based.
-
-            // However, we must ensure we don't duplicate on re-renders/bloc rebuilds
-            // from other events unless it's the specific GetAllCustomers success we triggered.
-            // But CrmBloc emits CrmStateSuccess only on GetAllCustomers.
-
-            // Wait, if we use BlocBuilder below, it will rebuild with valid state.
-            // We need to synchronize _customers list with what Bloc gives us only when fetching.
-
-            // To handle "append", we must rely on our internal _customers list accumulation.
-            // If it's a reset (offset 0), we replace.
             if (_searchRequest.offset == 0) {
               _customers = newCustomers;
             } else {
@@ -461,9 +446,6 @@ class _CustomerListViewState extends State<CustomerListView> {
         }
 
         if (state is CrmStateSuccess && _customers.isEmpty) {
-          // Should have been caught by listener updating _customers,
-          // but if empty response on first load:
-          // Note: Builder runs after listener.
           return Center(
             child: Column(
               children: [

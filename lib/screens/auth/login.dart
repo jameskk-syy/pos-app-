@@ -65,6 +65,7 @@ class _SignInScreenState extends State<SignInScreen> {
                   context,
                   MaterialPageRoute(
                     builder: (_) =>
+                      //  DashboardPage(),
                         OtpScreen(title: "login", email: emailCtrl.text),
                   ),
                 );

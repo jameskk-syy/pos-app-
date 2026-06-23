@@ -12,14 +12,28 @@ class PurchaseInvoiceResponse {
   });
 
   factory PurchaseInvoiceResponse.fromJson(Map<String, dynamic> json) {
-    final message = json['message'] as Map<String, dynamic>;
+    final rawMessage = json['message'];
+    final message = rawMessage is Map
+        ? Map<String, dynamic>.from(rawMessage)
+        : <String, dynamic>{};
+
+    List<PurchaseInvoiceData> parsedData = [];
+    final rawData = message['data'];
+    if (rawData is List) {
+      parsedData = rawData
+          .map((e) => PurchaseInvoiceData.fromJson(Map<String, dynamic>.from(e as Map)))
+          .toList();
+    }
+    final rawMeta = message['meta'];
+    final meta = rawMeta is Map
+        ? Meta.fromJson(Map<String, dynamic>.from(rawMeta))
+        : Meta(page: 1, pageSize: 20, total: 0, totalPages: 1);
+
     return PurchaseInvoiceResponse(
-      status: message['status'] ?? '',
-      message: message['message'] ?? '',
-      data: (message['data'] as List<dynamic>)
-          .map((e) => PurchaseInvoiceData.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      meta: Meta.fromJson(message['meta'] as Map<String, dynamic>),
+      status: message['status']?.toString() ?? '',
+      message: message['message']?.toString() ?? '',
+      data: parsedData,
+      meta: meta,
     );
   }
 }
